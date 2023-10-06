@@ -57,5 +57,6 @@ func buildProgramTestOptions(pt *ProviderTest, runningProviders []*ProviderAttac
 		Dir:      pt.dir,
 		EditDirs: editDirs,
 		Env:      env,
+		Config:   pt.config,
 	}
 }

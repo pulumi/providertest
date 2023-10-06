@@ -27,12 +27,14 @@ type ProviderTest struct {
 	dir              string
 	providerStartups []StartProvider
 	editDirs         []EditDir
+	config           map[string]string
 }
 
 // NewProviderTest creates a new provider test with the initial directory to be tested.
 func NewProviderTest(dir string, opts ...Option) *ProviderTest {
 	pt := &ProviderTest{
-		dir: dir,
+		dir:    dir,
+		config: map[string]string{},
 	}
 	for _, opt := range opts {
 		opt(pt)
@@ -45,6 +47,12 @@ type Option func(*ProviderTest)
 func (pt *ProviderTest) Configure(opts ...Option) {
 	for _, opt := range opts {
 		opt(pt)
+	}
+}
+
+func WithConfig(key, value string) Option {
+	return func(pt *ProviderTest) {
+		pt.config[key] = value
 	}
 }
 
