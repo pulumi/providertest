@@ -70,6 +70,7 @@ type providerUpgradeBuilder struct {
 	program                string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	baselineVersion        string
+	config                 map[string]string
 }
 
 func (b *providerUpgradeBuilder) Skip(
@@ -83,6 +84,11 @@ func (b *providerUpgradeBuilder) Skip(
 
 func (b *providerUpgradeBuilder) WithBaselineVersion(v string) *providerUpgradeBuilder {
 	b.baselineVersion = v
+	return b
+}
+
+func (b *providerUpgradeBuilder) WithConfig(key, value string) *providerUpgradeBuilder {
+	b.config[key] = value
 	return b
 }
 
@@ -289,8 +295,9 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 	t.Logf("Baseline provider version: %s", b.baselineVersion)
 
 	opts := integration.ProgramTestOptions{
-		Dir: b.program,
-		Env: []string{},
+		Dir:    b.program,
+		Env:    []string{},
+		Config: b.config,
 
 		// Skips are required by programTestHelper.previewOnlyUpgradeTest
 		SkipUpdate:       true,
@@ -469,6 +476,7 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 			writeFile(t, info.stateFile, state)
 			t.Logf("wrote %s", info.stateFile)
 		},
+		Config: b.config,
 
 		// TODO eks.Cluster fails refresh on 5.42.0
 		SkipRefresh: true,
