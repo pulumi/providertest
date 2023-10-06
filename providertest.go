@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/pulumi/providertest/flags"
-	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
 )
 
 type ProviderTest struct {
@@ -91,36 +90,17 @@ func WithProvider(start StartProvider) Option {
 
 // Run starts executing the configured tests
 func (pt *ProviderTest) Run(t *testing.T) {
-	t.Run("e2e", pt.runE2eTest)
-}
-
-func (pt *ProviderTest) runE2eTest(t *testing.T) {
 	t.Helper()
-	if flags.SkipE2e() {
-		t.Skip("Skipping e2e tests due to either -provider-skip-e2e or PULUMI_PROVIDER_TEST_MODE=skip-e2e being set")
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	t.Logf("starting providers")
-	providers, err := startProviders(ctx, pt)
-	if err != nil {
-		t.Errorf("failed to start providers: %v", err)
-		return
-	}
-	opts := buildProgramTestOptions(pt, providers)
-	// If we're not running full E2E test, we want to only run the non-effecting steps.
-	if !flags.IsE2e() {
-		// We can't currently do preview only, so this is as close as we can get.
-		opts.SkipEmptyPreviewUpdate = true
-		opts.SkipExportImport = true
-		opts.SkipRefresh = true
-		opts.SkipUpdate = true
-	}
-	integration.ProgramTest(t, &opts)
+	t.Run("e2e", func(t *testing.T) {
+		t.Helper()
+		if flags.SkipE2e() {
+			t.Skip("Skipping e2e tests due to either -provider-skip-e2e or PULUMI_PROVIDER_TEST_MODE=skip-e2e being set")
+		}
+		pt.RunE2e(t, flags.IsE2e())
+	})
 }
 
-func startProviders(ctx context.Context, pt *ProviderTest) ([]*ProviderAttach, error) {
+func (pt *ProviderTest) StartProviders(ctx context.Context) ([]*ProviderAttach, error) {
 	providers := make([]*ProviderAttach, len(pt.providerStartups))
 	for i, start := range pt.providerStartups {
 		provider, err := start(ctx)
@@ -132,23 +112,7 @@ func startProviders(ctx context.Context, pt *ProviderTest) ([]*ProviderAttach, e
 	return providers, nil
 }
 
-func buildProgramTestOptions(pt *ProviderTest, runningProviders []*ProviderAttach) integration.ProgramTestOptions {
-	editDirs := make([]integration.EditDir, len(pt.editDirs))
-	for i, ed := range pt.editDirs {
-		editDirs[i] = integration.EditDir{
-			Dir:      ed.dir,
-			Additive: !ed.clean,
-		}
-	}
-	env := []string{getProviderAttachEnv(runningProviders)}
-	return integration.ProgramTestOptions{
-		Dir:      pt.dir,
-		EditDirs: editDirs,
-		Env:      env,
-	}
-}
-
-func getProviderAttachEnv(runningProviders []*ProviderAttach) string {
+func GetProviderAttachEnv(runningProviders []*ProviderAttach) string {
 	env := make([]string, 0, len(runningProviders))
 	for _, rp := range runningProviders {
 		env = append(env, fmt.Sprintf("%s:%d", rp.Name, rp.Port))
