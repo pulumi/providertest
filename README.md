@@ -7,5 +7,5 @@ Incubating facilities for testing Pulumi providers
 ```go
 NewProviderTest("test/dir",
   WithProvider(StartLocalProvider),
-  WithEditDir("../dir2"))
+  WithEditDir("../dir2", WithClean()))
 ```
