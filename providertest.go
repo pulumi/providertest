@@ -30,13 +30,15 @@ type ProviderTest struct {
 	editDirs         []EditDir
 	config           map[string]string
 	e2eOptions       []E2eOption
+	skipSdk          map[string][]any
 }
 
 // NewProviderTest creates a new provider test with the initial directory to be tested.
 func NewProviderTest(dir string, opts ...Option) *ProviderTest {
 	pt := &ProviderTest{
-		dir:    dir,
-		config: map[string]string{},
+		dir:     dir,
+		config:  map[string]string{},
+		skipSdk: map[string][]any{},
 	}
 	for _, opt := range opts {
 		opt(pt)
@@ -61,6 +63,12 @@ func WithConfig(key, value string) Option {
 func WithE2eOptions(opts ...E2eOption) Option {
 	return func(pt *ProviderTest) {
 		pt.e2eOptions = append(pt.e2eOptions, opts...)
+	}
+}
+
+func WithSkipSdk(language string, reasonArgs ...any) Option {
+	return func(pt *ProviderTest) {
+		pt.skipSdk[language] = reasonArgs
 	}
 }
 
@@ -114,8 +122,53 @@ func (pt *ProviderTest) Run(t *testing.T) {
 		t.Helper()
 		if flags.SkipE2e() {
 			t.Skip("Skipping e2e tests due to either -provider-skip-e2e or PULUMI_PROVIDER_TEST_MODE=skip-e2e being set")
+			return
 		}
 		pt.RunE2e(t, flags.IsE2e())
+	})
+	t.Run("sdk-csharp", func(t *testing.T) {
+		t.Helper()
+		if reason, skip := pt.skipSdk["csharp"]; skip {
+			t.Skip(reason...)
+		}
+		if !flags.IsSdkCsharp() {
+			t.Skip("Skipping C# SDK tests due to neither -provider-sdk-csharp nor PULUMI_PROVIDER_TEST_MODE=sdk-csharp being set")
+			return
+		}
+		pt.RunSdk(t, "csharp")
+	})
+	t.Run("sdk-go", func(t *testing.T) {
+		t.Helper()
+		if reason, skip := pt.skipSdk["go"]; skip {
+			t.Skip(reason...)
+		}
+		if !flags.IsSdkGo() {
+			t.Skip("Skipping Go SDK tests due to neither -provider-sdk-go nor PULUMI_PROVIDER_TEST_MODE=sdk-go being set")
+			return
+		}
+		pt.RunSdk(t, "go")
+	})
+	t.Run("sdk-python", func(t *testing.T) {
+		t.Helper()
+		if reason, skip := pt.skipSdk["python"]; skip {
+			t.Skip(reason...)
+		}
+		if !flags.IsSdkPython() {
+			t.Skip("Skipping Python SDK tests due to neither -provider-sdk-python nor PULUMI_PROVIDER_TEST_MODE=sdk-python being set")
+			return
+		}
+		pt.RunSdk(t, "python")
+	})
+	t.Run("sdk-typescript", func(t *testing.T) {
+		t.Helper()
+		if reason, skip := pt.skipSdk["typescript"]; skip {
+			t.Skip(reason...)
+		}
+		if !flags.IsSdkPython() {
+			t.Skip("Skipping Typescript SDK tests due to neither -provider-sdk-typescript nor PULUMI_PROVIDER_TEST_MODE=sdk-typescript being set")
+			return
+		}
+		pt.RunSdk(t, "typescript")
 	})
 }
 

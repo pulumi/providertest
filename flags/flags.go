@@ -42,8 +42,8 @@ var (
 	skipE2e       = flag.Bool("provider-skip-e2e", false, "Skip e2e provider tests")
 	e2e           = flag.Bool("provider-e2e", false, "Enable full e2e provider tests, otherwise uses quick mode by default")
 	sdkCsharp     = flag.Bool("provider-sdk-csharp", false, "Enable C# SDK provider tests")
-	sdkPython     = flag.Bool("provider-sdk-python", false, "Enable Python SDK provider tests")
 	sdkGo         = flag.Bool("provider-sdk-go", false, "Enable Go SDK provider tests")
+	sdkPython     = flag.Bool("provider-sdk-python", false, "Enable Python SDK provider tests")
 	sdkTypescript = flag.Bool("provider-sdk-typescript", false, "Enable TypeScript SDK provider tests")
 	snapshot      = flag.Bool("provider-snapshot", false, "Create snapshots for use with quick e2e tests")
 )
@@ -60,12 +60,12 @@ func IsSdkCsharp() bool {
 	return parseFlag("sdk-csharp", sdkCsharp)
 }
 
-func IsSdkPython() bool {
-	return parseFlag("sdk-python", sdkPython)
-}
-
 func IsSdkGo() bool {
 	return parseFlag("sdk-go", sdkGo)
+}
+
+func IsSdkPython() bool {
+	return parseFlag("sdk-python", sdkPython)
 }
 
 func IsSdkTypescript() bool {
