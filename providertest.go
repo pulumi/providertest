@@ -28,6 +28,7 @@ type ProviderTest struct {
 	providerStartups []StartProvider
 	editDirs         []EditDir
 	config           map[string]string
+	e2eOptions       []E2eOption
 }
 
 // NewProviderTest creates a new provider test with the initial directory to be tested.
@@ -53,6 +54,12 @@ func (pt *ProviderTest) Configure(opts ...Option) {
 func WithConfig(key, value string) Option {
 	return func(pt *ProviderTest) {
 		pt.config[key] = value
+	}
+}
+
+func WithE2eOptions(opts ...E2eOption) Option {
+	return func(pt *ProviderTest) {
+		pt.e2eOptions = append(pt.e2eOptions, opts...)
 	}
 }
 

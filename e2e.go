@@ -21,7 +21,7 @@ import (
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
 )
 
-func (pt *ProviderTest) RunE2e(t *testing.T, runFullTest bool) {
+func (pt *ProviderTest) RunE2e(t *testing.T, runFullTest bool, options ...E2eOption) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -41,8 +41,13 @@ func (pt *ProviderTest) RunE2e(t *testing.T, runFullTest bool) {
 		opts.SkipRefresh = true
 		opts.SkipUpdate = true
 	}
+	for _, opt := range options {
+		opt(&opts)
+	}
 	integration.ProgramTest(t, &opts)
 }
+
+type E2eOption func(*integration.ProgramTestOptions)
 
 func buildProgramTestOptions(pt *ProviderTest, runningProviders []*ProviderAttach) integration.ProgramTestOptions {
 	editDirs := make([]integration.EditDir, len(pt.editDirs))
