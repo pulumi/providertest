@@ -24,8 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
@@ -35,6 +33,7 @@ import (
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/cmdutil"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
+	"gopkg.in/yaml.v3"
 )
 
 type UpgradeTestMode int
@@ -70,6 +69,7 @@ type providerUpgradeBuilder struct {
 	name                   string
 	program                string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
+	baselineVersion        string
 }
 
 func (b *providerUpgradeBuilder) Skip(
@@ -78,6 +78,11 @@ func (b *providerUpgradeBuilder) Skip(
 ) *providerUpgradeBuilder {
 	require.NotEmpty(b.tt, reason, "reason cannot be empty")
 	b.modes[m] = reason
+	return b
+}
+
+func (b *providerUpgradeBuilder) WithBaselineVersion(v string) *providerUpgradeBuilder {
+	b.baselineVersion = v
 	return b
 }
 
@@ -105,12 +110,13 @@ func (b *providerUpgradeBuilder) WithResourceProviderServer(
 
 func (b *providerUpgradeBuilder) Run() {
 	require.NotEmptyf(b.tt, b.program, "WithProgram call is required")
+	b.verifyVersion()
 
 	acceptEnvVar := "PULUMI_ACCEPT"
 	accept := cmdutil.IsTruthy(os.Getenv(acceptEnvVar))
 	if accept {
-		b.tt.Logf("Running to ProgramTest re-record baseline behavior as requested by "+
-			"setting %q environment variable", acceptEnvVar)
+		b.tt.Logf("Recording baseline behavior as requested by "+
+			"setting %q env var", acceptEnvVar)
 		b.providerUpgradeRecordBaselines(b.tt)
 	}
 	b.tt.Run("Quick", func(t *testing.T) {
@@ -142,7 +148,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradeQuick(t *testing.T) {
 
 	bytes, err := os.ReadFile(info.grpcFile)
 	require.NoErrorf(t, err,
-		"No pre-recorded gRPC log found, try to run TestProviderUpgradeRecord")
+		"No pre-recorded gRPC log found, try to run with PULUMI_ACCEPT=1 to record")
 
 	eng := &mockPulumiEngine{
 		provider:              b.resourceProviderServer,
@@ -261,59 +267,29 @@ func ignoreStables(t *testing.T, grpcLogEntry string) string {
 }
 
 type providerUpgradeInfo struct {
-	testCaseDir             string
-	recordingDir            string
-	baselineProviderVersion string
-	grpcFile                string
-	stateFile               string
-	opts                    integration.ProgramTestOptions
+	recordingDir string
+	grpcFile     string
+	stateFile    string
 }
 
 func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUpgradeInfo {
 	info := providerUpgradeInfo{}
-	info.testCaseDir = filepath.Join("testdata", "resources")
-	pyaml := filepath.Join(b.program, "Pulumi.yaml")
-	v := parseProviderVersion(t, pyaml)
-	info.baselineProviderVersion = v
-	info.recordingDir = filepath.Join("testdata", "recorded", v, "resources")
+	n := strings.ReplaceAll(t.Name(), "Quick", ".")
+	info.recordingDir = filepath.Join("testdata", "recorded", n, b.baselineVersion)
 	var err error
 	info.grpcFile, err = filepath.Abs(filepath.Join(info.recordingDir, "grpc.json"))
 	require.NoError(t, err)
 	info.stateFile, err = filepath.Abs(filepath.Join(info.recordingDir, "state.json"))
 	require.NoError(t, err)
-	info.opts = integration.ProgramTestOptions{
-		Dir: info.testCaseDir,
-	}
 	return info
-}
-
-func parseProviderVersion(t *testing.T, yamlFile string) string {
-	type model struct {
-		Resources struct {
-			Provider struct {
-				Options struct {
-					Version string `yaml:"version"`
-				} `yaml:"options"`
-			} `yaml:"provider"`
-		} `json:"resources"`
-	}
-	bytes, err := os.ReadFile(yamlFile)
-	require.NoError(t, err)
-	var m model
-	yaml.Unmarshal(bytes, &m)
-	require.NoError(t, err)
-	v := m.Resources.Provider.Options.Version
-	require.NotEmptyf(t, v, "Failed to parse Pulumi.yaml: "+
-		"resources.provider.options.version is empty")
-	return v
 }
 
 func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 	info := b.newProviderUpgradeInfo(t)
-	t.Logf("Baseline provider version: %s", info.baselineProviderVersion)
+	t.Logf("Baseline provider version: %s", b.baselineVersion)
 
 	opts := integration.ProgramTestOptions{
-		Dir: info.testCaseDir,
+		Dir: b.program,
 		Env: []string{},
 
 		// Skips are required by programTestHelper.previewOnlyUpgradeTest
@@ -486,8 +462,9 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 	ensureFolderExists(t, info.recordingDir)
 	deleteFileIfExists(t, info.stateFile)
 	deleteFileIfExists(t, info.grpcFile)
-	test := info.opts.With(integration.ProgramTestOptions{
-		Env: append(info.opts.Env, fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", info.grpcFile)),
+	test := integration.ProgramTestOptions{
+		Dir: b.program,
+		Env: append(os.Environ(), fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", info.grpcFile)),
 		ExportStateValidator: func(t *testing.T, state []byte) {
 			writeFile(t, info.stateFile, state)
 			t.Logf("wrote %s", info.stateFile)
@@ -495,6 +472,41 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 
 		// TODO eks.Cluster fails refresh on 5.42.0
 		SkipRefresh: true,
-	})
+	}
 	integration.ProgramTest(t, &test)
+}
+
+// There are some limitations in factoring out the provider versoin out of the YAML sources.
+//
+// To compensate, this function tries to extract the version for verification.
+//
+// See https://github.com/pulumi/pulumi-yaml/issues/508
+func (b *providerUpgradeBuilder) verifyVersion() {
+	f := filepath.Join(b.program, "Pulumi.yaml")
+	actual := b.parseProviderVersion(f)
+	expected := b.baselineVersion
+	require.Equalf(b.tt, expected, actual,
+		"Please check that %q specifies the %q provider version",
+		f, b.baselineVersion)
+}
+
+func (b *providerUpgradeBuilder) parseProviderVersion(yamlFile string) string {
+	type model struct {
+		Resources struct {
+			Provider struct {
+				Options struct {
+					Version string `yaml:"version"`
+				} `yaml:"options"`
+			} `yaml:"provider"`
+		} `json:"resources"`
+	}
+	bytes, err := os.ReadFile(yamlFile)
+	require.NoError(b.tt, err)
+	var m model
+	yaml.Unmarshal(bytes, &m)
+	require.NoError(b.tt, err)
+	v := m.Resources.Provider.Options.Version
+	require.NotEmptyf(b.tt, v, "Failed to parse Pulumi.yaml: "+
+		"resources.provider.options.version is empty")
+	return v
 }
