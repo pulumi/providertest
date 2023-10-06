@@ -27,7 +27,7 @@ func (pt *ProviderTest) RunE2e(t *testing.T, runFullTest bool, options ...E2eOpt
 	defer cancel()
 
 	t.Logf("starting providers")
-	providers, err := pt.StartProviders(ctx)
+	providers, err := StartProviders(ctx, pt.providerStartups...)
 	if err != nil {
 		t.Errorf("failed to start providers: %v", err)
 		return

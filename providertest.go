@@ -119,9 +119,9 @@ func (pt *ProviderTest) Run(t *testing.T) {
 	})
 }
 
-func (pt *ProviderTest) StartProviders(ctx context.Context) ([]*ProviderAttach, error) {
-	providers := make([]*ProviderAttach, len(pt.providerStartups))
-	for i, start := range pt.providerStartups {
+func StartProviders(ctx context.Context, providerStartups ...StartProvider) ([]*ProviderAttach, error) {
+	providers := make([]*ProviderAttach, len(providerStartups))
+	for i, start := range providerStartups {
 		provider, err := start(ctx)
 		if err != nil {
 			return nil, err
