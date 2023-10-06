@@ -17,6 +17,7 @@ package providertest
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -67,6 +68,9 @@ func WithE2eOptions(opts ...E2eOption) Option {
 // If this is a relative path, it will be resolved relative to the original test directory.
 func WithEditDir(dir string, opts ...EditDir) Option {
 	return func(pt *ProviderTest) {
+		if !filepath.IsAbs(dir) {
+			dir = filepath.Join(pt.dir, dir)
+		}
 		pt.editDirs = append(pt.editDirs, EditDir{dir: dir})
 	}
 }
