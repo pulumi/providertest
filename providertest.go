@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pulumi/providertest/flags"
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
 )
 
@@ -95,6 +96,9 @@ func (pt *ProviderTest) Run(t *testing.T) {
 
 func (pt *ProviderTest) runE2eTest(t *testing.T) {
 	t.Helper()
+	if flags.SkipE2e() {
+		t.Skip("Skipping e2e tests due to either -provider-skip-e2e or PULUMI_PROVIDER_TEST_MODE=skip-e2e being set")
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -105,6 +109,14 @@ func (pt *ProviderTest) runE2eTest(t *testing.T) {
 		return
 	}
 	opts := buildProgramTestOptions(pt, providers)
+	// If we're not running full E2E test, we want to only run the non-effecting steps.
+	if !flags.IsE2e() {
+		// We can't currently do preview only, so this is as close as we can get.
+		opts.SkipEmptyPreviewUpdate = true
+		opts.SkipExportImport = true
+		opts.SkipRefresh = true
+		opts.SkipUpdate = true
+	}
 	integration.ProgramTest(t, &opts)
 }
 
