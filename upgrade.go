@@ -60,6 +60,7 @@ func VerifyUpgrade(t *testing.T) *providerUpgradeBuilder {
 			UpgradeTestMode_Quick:       "",
 			UpgradeTestMode_PreviewOnly: "",
 		},
+		config: map[string]string{},
 	}
 }
 
