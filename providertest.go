@@ -27,7 +27,7 @@ import (
 type ProviderTest struct {
 	dir              string
 	providerStartups []StartProvider
-	editDirs         []EditDir
+	updateSteps      []UpdateStep
 	config           map[string]string
 	e2eOptions       []E2eOption
 	skipSdk          map[string][]any
@@ -73,27 +73,36 @@ func WithSkipSdk(language string, reasonArgs ...any) Option {
 	}
 }
 
-// WithEditDir adds a step to the test which will overwrite the contents of the directory then execute an update.
-// If this is a relative path, it will be resolved relative to the original test directory.
-func WithEditDir(dir string, opts ...EditDir) Option {
+// WithUpdateStep adds a step to the test will be applied before then executing an update.
+func WithUpdateStep(opts ...UpdateStepOption) Option {
 	return func(pt *ProviderTest) {
-		if !filepath.IsAbs(dir) {
-			dir = filepath.Join(pt.dir, dir)
-		}
-		pt.editDirs = append(pt.editDirs, EditDir{dir: dir})
+		pt.updateSteps = append(pt.updateSteps, UpdateStep{pt: pt})
 	}
 }
 
-type EditDir struct {
-	dir   string
+type UpdateStep struct {
+	// A reference to the parent provider test
+	pt    *ProviderTest
+	dir   *string
 	clean bool
 }
 
-type EditDirOption func(*EditDir)
+type UpdateStepOption func(*UpdateStep)
 
-// WithClean will remove files from the directory which are not in the edit directory but were in the original directory.
-func WithClean() EditDirOption {
-	return func(ed *EditDir) {
+// UpdateStepDir fetches files from the dir before performing the update.
+// If dir is a relative path, it will be resolved relative to the original test directory.
+func UpdateStepDir(dir string) UpdateStepOption {
+	return func(us *UpdateStep) {
+		if !filepath.IsAbs(dir) {
+			dir = filepath.Join(us.pt.dir, dir)
+		}
+		us.dir = &dir
+	}
+}
+
+// UpdateStepClean will remove files from the directory which were removed in this step compared to the previous step's directory.
+func UpdateStepClean() UpdateStepOption {
+	return func(ed *UpdateStep) {
 		ed.clean = true
 	}
 }

@@ -36,8 +36,8 @@ func (pt *ProviderTest) RunSdk(t *testing.T, language string) {
 }
 
 type ConvertedProgram struct {
-	Dir      string
-	EditDirs []EditDir
+	Dir         string
+	UpdateSteps []UpdateStep
 }
 
 func (pt *ProviderTest) ConvertProgram(t *testing.T, language string) (*ConvertedProgram, error) {
@@ -53,23 +53,27 @@ func (pt *ProviderTest) ConvertProgram(t *testing.T, language string) (*Converte
 		return nil, fmt.Errorf("failed to convert directory: %s\n%s", err, out)
 	}
 
-	convertedEditDirs := make([]EditDir, len(pt.editDirs))
-	for i, ed := range pt.editDirs {
+	convertedEditDirs := make([]UpdateStep, len(pt.updateSteps))
+	for i, updateStep := range pt.updateSteps {
+		convertedEditDirs[i].pt = pt
+		if updateStep.dir == nil {
+			return nil, fmt.Errorf("update step %d has no changes specified", i+1)
+		}
 		convertedEditDir := t.TempDir()
-		convertedEditDirs[i].dir = convertedEditDir
-		convertedEditDirs[i].clean = ed.clean
+		convertedEditDirs[i].dir = &convertedEditDir
+		convertedEditDirs[i].clean = updateStep.clean
 
 		t.Logf("converting to %s", language)
 		cmd := exec.Command("pulumi", "convert", "--language", language, "--generate-only", "--out", convertedDir)
-		cmd.Dir = ed.dir
+		cmd.Dir = *updateStep.dir
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert edit directory %d: %s\n%s", i+1, err, out)
+			return nil, fmt.Errorf("failed to convert update step %d: %s\n%s", i+1, err, out)
 		}
 	}
 
 	return &ConvertedProgram{
-		Dir:      convertedDir,
-		EditDirs: convertedEditDirs,
+		Dir:         convertedDir,
+		UpdateSteps: convertedEditDirs,
 	}, nil
 }

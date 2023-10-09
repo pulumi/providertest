@@ -32,7 +32,7 @@ func (pt *ProviderTest) RunE2e(t *testing.T, runFullTest bool, options ...E2eOpt
 		t.Errorf("failed to start providers: %v", err)
 		return
 	}
-	opts := buildProgramTestOptions(pt, providers)
+	opts := buildProgramTestOptions(t, pt, providers)
 	// If we're not running full E2E test, we want to only run the non-effecting steps.
 	if !runFullTest {
 		// TODO: We can't currently do preview only, so this is as close as we can get.
@@ -49,11 +49,14 @@ func (pt *ProviderTest) RunE2e(t *testing.T, runFullTest bool, options ...E2eOpt
 
 type E2eOption func(*integration.ProgramTestOptions)
 
-func buildProgramTestOptions(pt *ProviderTest, runningProviders []*ProviderAttach) integration.ProgramTestOptions {
-	editDirs := make([]integration.EditDir, len(pt.editDirs))
-	for i, ed := range pt.editDirs {
+func buildProgramTestOptions(t *testing.T, pt *ProviderTest, runningProviders []*ProviderAttach) integration.ProgramTestOptions {
+	editDirs := make([]integration.EditDir, len(pt.updateSteps))
+	for i, ed := range pt.updateSteps {
+		if ed.dir == nil {
+			t.Errorf("update step %d has no changes specified", i+1)
+		}
 		editDirs[i] = integration.EditDir{
-			Dir:      ed.dir,
+			Dir:      *ed.dir,
 			Additive: !ed.clean,
 		}
 	}
