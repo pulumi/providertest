@@ -134,7 +134,7 @@ func (pt *ProviderTest) Run(t *testing.T) {
 			t.Skip("Skipping e2e tests due to either -provider-skip-e2e or PULUMI_PROVIDER_TEST_MODE=skip-e2e being set")
 			return
 		}
-		pt.RunE2e(t, flags.IsE2e())
+		pt.RunE2e(t, flags.IsE2e(), pt.e2eOptions...)
 	})
 	t.Run("sdk-csharp", func(t *testing.T) {
 		t.Helper()
