@@ -48,10 +48,11 @@ func NewProviderTest(dir string, opts ...Option) *ProviderTest {
 
 type Option func(*ProviderTest)
 
-func (pt *ProviderTest) Configure(opts ...Option) {
+func (pt *ProviderTest) Configure(opts ...Option) *ProviderTest {
 	for _, opt := range opts {
 		opt(pt)
 	}
+	return pt
 }
 
 func WithConfig(key, value string) Option {
