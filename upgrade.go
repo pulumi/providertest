@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -52,6 +53,60 @@ func VerifyUpgrade(t *testing.T, dir string, opts ...Option) {
 		providerUpgradeOpts: pt.upgradeOpts,
 	}
 	b.Run()
+}
+
+// Tracks resource coverage through upgrade tests.
+type UpgradeCoverage struct {
+	resources map[string]struct{}
+}
+
+func (u *UpgradeCoverage) checkStateFile(t *testing.T, stateFile string) {
+	type stack struct {
+		Deployment struct {
+			Resources []struct {
+				Type string `json:"type"`
+			} `json:"resources"`
+		} `json:"deployment"`
+	}
+	b, err := os.ReadFile(stateFile)
+	if err != nil {
+		return // perhaps it did not exist, no matter
+	}
+
+	var st stack
+	require.NoError(t, json.Unmarshal(b, &st))
+
+	if u.resources == nil {
+		u.resources = map[string]struct{}{}
+	}
+
+	for _, r := range st.Deployment.Resources {
+		if strings.Contains(r.Type, "providers") {
+			continue
+		}
+		if strings.Contains(r.Type, "Stack") {
+			continue
+		}
+		u.resources[r.Type] = struct{}{}
+	}
+}
+
+// Not really a test but a helper to diagnose which resources have snapshots providing coverage. Run
+// with -test.v to see the data logged.
+func (u *UpgradeCoverage) Report(t *testing.T) {
+	t.Run("coverage", func(t *testing.T) {
+		covered := u.resources
+		t.Logf("Resources covered: %d", len(covered))
+
+		sorted := []string{}
+		for k := range covered {
+			sorted = append(sorted, k)
+		}
+		sort.Strings(sorted)
+		for _, s := range sorted {
+			t.Logf("- %s", s)
+		}
+	})
 }
 
 // Enumerates various available modes to test provider upgrades. The modes differ in speed vs
@@ -115,11 +170,17 @@ func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 	return func(b *ProviderTest) { b.upgradeOpts.resourceProviderServer = s }
 }
 
+func WithUpgradeCoverage(uc *UpgradeCoverage) Option {
+	contract.Assertf(uc != nil, "UpgradeCoverage cannot be nil")
+	return func(b *ProviderTest) { b.upgradeOpts.upgradeCoverage = uc }
+}
+
 type providerUpgradeOpts struct {
 	baselineVersion        string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	providerName           string
 	resourceProviderServer pulumirpc.ResourceProviderServer
+	upgradeCoverage        *UpgradeCoverage
 }
 
 type providerUpgradeBuilder struct {
@@ -307,6 +368,9 @@ func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUp
 	require.NoError(t, err)
 	info.stateFile, err = filepath.Abs(filepath.Join(info.recordingDir, "state.json"))
 	require.NoError(t, err)
+	if b.upgradeCoverage != nil {
+		b.upgradeCoverage.checkStateFile(t, info.stateFile)
+	}
 	return info
 }
 

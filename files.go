@@ -61,3 +61,15 @@ func ensureFolderExists(t *testing.T, dir string) {
 		require.NoError(t, err)
 	}
 }
+
+func findFiles(t *testing.T, dir string, matches func(string) bool) []string {
+	var files []string
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if matches(path) {
+			files = append(files, path)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	return files
+}
