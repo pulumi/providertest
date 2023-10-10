@@ -31,6 +31,7 @@ type ProviderTest struct {
 	config           map[string]string
 	e2eOptions       []E2eOption
 	skipSdk          map[string][]any
+	upgradeOpts      providerUpgradeOpts
 }
 
 // NewProviderTest creates a new provider test with the initial directory to be tested.

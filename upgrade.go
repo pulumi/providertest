@@ -28,19 +28,52 @@ import (
 	"github.com/stretchr/testify/require"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"gopkg.in/yaml.v3"
 
 	testutils "github.com/pulumi/pulumi-terraform-bridge/testing/x"
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/cmdutil"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
-	"gopkg.in/yaml.v3"
 )
 
+// Verifies that upgrading the provider does not generate any unexpected replacements.
+//
+// Specifically check that for a given Pulumi program located in dir, users can run pulumi up on a
+// baseline provider version, then upgrade the provider to the new version under test, run pulumi up
+// again and observe an empty diff.
+func VerifyUpgrade(t *testing.T, dir string, opts ...Option) {
+	require.NotEmptyf(t, dir, "dir is required")
+	pt := NewProviderTest(dir, opts...)
+	b := &providerUpgradeBuilder{
+		tt:                  t,
+		program:             dir,
+		config:              pt.config,
+		providerUpgradeOpts: pt.upgradeOpts,
+	}
+	b.Run()
+}
+
+// Enumerates various available modes to test provider upgrades. The modes differ in speed vs
+// precision tradeoffs.
 type UpgradeTestMode int
 
 const (
+	// The least precise but fastest mode. Tests are performed in-memory using pre-recorded
+	// snapshots of baseline provider behavior. No cloud credentals are required, no
+	// subprocesses are launched, fully debuggable.
 	UpgradeTestMode_Quick UpgradeTestMode = iota
+
+	// The medium precision/speed mode. Imports Pulumi statefile recorded on a baseline version,
+	// and performs pulumi preview, assrting that the preview results in an empty diff. Cloud
+	// credentials are required, but no infra is actually provisioned, making it quicker to
+	// verify slow-to-provision resources such as databases.
 	UpgradeTestMode_PreviewOnly
+
+	// Full fidelity, slow mode. No pre-recorded snapshots are required. Do a complete pulumi up
+	// on the baseline version, followed by a complete pulumi up on the version under test, and
+	// assert that there are no observable updates or replacements.
+	UpgradeTestMode_Full
 )
 
 func (m UpgradeTestMode) String() string {
@@ -49,76 +82,56 @@ func (m UpgradeTestMode) String() string {
 		return "PreviewOnly"
 	case UpgradeTestMode_Quick:
 		return "Quick"
+	case UpgradeTestMode_Full:
+		return "Full"
 	}
 	return "<unknown>"
 }
 
-func VerifyUpgrade(t *testing.T) *providerUpgradeBuilder {
-	return &providerUpgradeBuilder{
-		tt: t,
-		modes: map[UpgradeTestMode]string{
-			UpgradeTestMode_Quick:       "",
-			UpgradeTestMode_PreviewOnly: "",
-		},
-		config: map[string]string{},
+func WithSkippedUpgradeTestMode(m UpgradeTestMode, reason string) Option {
+	contract.Assertf(reason != "", "reason cannot be empty")
+	contract.Assertf(m.String() != "<unknown>", "unknown UpgradeTestMode")
+	return func(b *ProviderTest) {
+		if b.upgradeOpts.modes == nil {
+			b.upgradeOpts.modes = map[UpgradeTestMode]string{}
+		}
+		b.upgradeOpts.modes[m] = reason
 	}
 }
 
-type providerUpgradeBuilder struct {
-	tt                     *testing.T
-	resourceProviderServer pulumirpc.ResourceProviderServer
-	name                   string
-	program                string
-	modes                  map[UpgradeTestMode]string // skip reason by mode
-	baselineVersion        string
-	config                 map[string]string
+func WithBaselineVersion(v string) Option {
+	contract.Assertf(v != "", "BaselineVersion cannot be empty")
+	return func(b *ProviderTest) { b.upgradeOpts.baselineVersion = v }
 }
 
-func (b *providerUpgradeBuilder) Skip(
-	m UpgradeTestMode,
-	reason string,
-) *providerUpgradeBuilder {
-	require.NotEmpty(b.tt, reason, "reason cannot be empty")
-	b.modes[m] = reason
-	return b
-}
-
-func (b *providerUpgradeBuilder) WithBaselineVersion(v string) *providerUpgradeBuilder {
-	b.baselineVersion = v
-	return b
-}
-
-func (b *providerUpgradeBuilder) WithConfig(key, value string) *providerUpgradeBuilder {
-	b.config[key] = value
-	return b
-}
-
-func (b *providerUpgradeBuilder) WithProgram(dir string) *providerUpgradeBuilder {
-	require.NotEmptyf(b.tt, dir, "dir cannot be empty")
-	require.Truef(b.tt, dirExists(b.tt, dir), "no such directory")
-	b.program = dir
-	return b
-}
-
-func (b *providerUpgradeBuilder) WithProviderName(name string) *providerUpgradeBuilder {
-	require.NotEmptyf(b.tt, name, "name cannot be empty, "+
+func WithProviderName(name string) Option {
+	contract.Assertf(name != "", "ProviderName cannot be empty, "+
 		"expecting a provider name like `gcp` or `aws`")
-	b.name = name
-	return b
+	return func(b *ProviderTest) { b.upgradeOpts.providerName = name }
 }
 
-func (b *providerUpgradeBuilder) WithResourceProviderServer(
-	s pulumirpc.ResourceProviderServer,
-) *providerUpgradeBuilder {
-	require.NotNil(b.tt, s)
-	b.resourceProviderServer = s
-	return b
+func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
+	contract.Assertf(s != nil, "ResourceProviderServer cannot be nil")
+	return func(b *ProviderTest) { b.upgradeOpts.resourceProviderServer = s }
+}
+
+type providerUpgradeOpts struct {
+	baselineVersion        string
+	modes                  map[UpgradeTestMode]string // skip reason by mode
+	providerName           string
+	resourceProviderServer pulumirpc.ResourceProviderServer
+}
+
+type providerUpgradeBuilder struct {
+	tt      *testing.T
+	program string
+	config  map[string]string
+
+	providerUpgradeOpts
 }
 
 func (b *providerUpgradeBuilder) Run() {
-	require.NotEmptyf(b.tt, b.program, "WithProgram call is required")
 	b.verifyVersion()
-
 	acceptEnvVar := "PULUMI_ACCEPT"
 	accept := cmdutil.IsTruthy(os.Getenv(acceptEnvVar))
 	if accept {
@@ -127,13 +140,13 @@ func (b *providerUpgradeBuilder) Run() {
 		b.providerUpgradeRecordBaselines(b.tt)
 	}
 	b.tt.Run("Quick", func(t *testing.T) {
-		if skip := b.modes[UpgradeTestMode_Quick]; skip != "" {
+		if skip, ok := b.modes[UpgradeTestMode_Quick]; ok && skip != "" {
 			t.Skip(skip)
 		}
 		b.checkProviderUpgradeQuick(t)
 	})
 	b.tt.Run("PreviewOnly", func(t *testing.T) {
-		if skip := b.modes[UpgradeTestMode_PreviewOnly]; skip != "" {
+		if skip, ok := b.modes[UpgradeTestMode_PreviewOnly]; ok && skip != "" {
 			t.Skip(skip)
 		}
 		if testing.Short() {
@@ -146,6 +159,12 @@ func (b *providerUpgradeBuilder) Run() {
 		} else {
 			b.checkProviderUpgradePreviewOnly(t)
 		}
+	})
+	b.tt.Run("Full", func(t *testing.T) {
+		if skip, ok := b.modes[UpgradeTestMode_Full]; ok && skip != "" {
+			t.Skip(skip)
+		}
+		t.Skip("Full mode is not supported yet")
 	})
 }
 
@@ -317,7 +336,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 }
 
 func (b *providerUpgradeBuilder) providerBinary() string {
-	return fmt.Sprintf("pulumi-resource-%s", b.name)
+	return fmt.Sprintf("pulumi-resource-%s", b.providerName)
 }
 
 // Preview-only integration test.
