@@ -55,11 +55,11 @@ func (pt *ProviderTest) VerifyUpgrade(t *testing.T, mode UpgradeTestMode) {
 }
 
 // Tracks resource coverage through upgrade tests.
-type UpgradeCoverage struct {
+type upgradeCoverage struct {
 	resources map[string]struct{}
 }
 
-func (u *UpgradeCoverage) checkStateFile(t *testing.T, stateFile string) {
+func (u *upgradeCoverage) checkStateFile(t *testing.T, stateFile string) {
 	type stack struct {
 		Deployment struct {
 			Resources []struct {
@@ -90,22 +90,34 @@ func (u *UpgradeCoverage) checkStateFile(t *testing.T, stateFile string) {
 	}
 }
 
-// Not really a test but a helper to diagnose which resources have snapshots providing coverage. Run
-// with -test.v to see the data logged.
-func (u *UpgradeCoverage) Report(t *testing.T) {
-	t.Run("coverage", func(t *testing.T) {
-		covered := u.resources
-		t.Logf("Resources covered: %d", len(covered))
+// This is a temporary helper method to assess upgrade resource coverage until better methods for
+// tracking coverage are built. Run with -test.v to see the data logged. This finds all recorded
+// GRPC states and traverses them to find the union of all resources used. It does not take into
+// account if the corresponding tests are skipped or passing.
+func ReportUpgradeCoverage(t *testing.T) {
+	t.Helper()
+	u := &upgradeCoverage{}
+	dir := filepath.Join("testdata", "recorded", "TestProviderUpgrade")
 
-		sorted := []string{}
-		for k := range covered {
-			sorted = append(sorted, k)
-		}
-		sort.Strings(sorted)
-		for _, s := range sorted {
-			t.Logf("- %s", s)
-		}
+	states := findFiles(t, dir, func(fn string) bool {
+		return filepath.Base(fn) == "state.json"
 	})
+
+	for _, s := range states {
+		u.checkStateFile(t, s)
+	}
+
+	covered := u.resources
+	t.Logf("Resources covered: %d", len(covered))
+
+	sorted := []string{}
+	for k := range covered {
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+	for _, s := range sorted {
+		t.Logf("- %s", s)
+	}
 }
 
 // Enumerates various available modes to test provider upgrades. The modes differ in speed vs
@@ -177,17 +189,11 @@ func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 	return func(b *ProviderTest) { b.upgradeOpts.resourceProviderServer = s }
 }
 
-func WithUpgradeCoverage(uc *UpgradeCoverage) Option {
-	contract.Assertf(uc != nil, "UpgradeCoverage cannot be nil")
-	return func(b *ProviderTest) { b.upgradeOpts.upgradeCoverage = uc }
-}
-
 type providerUpgradeOpts struct {
 	baselineVersion        string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	providerName           string
 	resourceProviderServer pulumirpc.ResourceProviderServer
-	upgradeCoverage        *UpgradeCoverage
 }
 
 type providerUpgradeBuilder struct {
@@ -374,9 +380,6 @@ func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUp
 	require.NoError(t, err)
 	info.stateFile, err = filepath.Abs(filepath.Join(info.recordingDir, "state.json"))
 	require.NoError(t, err)
-	if b.upgradeCoverage != nil {
-		b.upgradeCoverage.checkStateFile(t, info.stateFile)
-	}
 	return info
 }
 
