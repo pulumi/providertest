@@ -119,7 +119,7 @@ const (
 	UpgradeTestMode_Quick UpgradeTestMode = iota
 
 	// The medium precision/speed mode. Imports Pulumi statefile recorded on a baseline version,
-	// and performs pulumi preview, assrting that the preview results in an empty diff. Cloud
+	// and performs pulumi preview, asserting that the preview results in an empty diff. Cloud
 	// credentials are required, but no infra is actually provisioned, making it quicker to
 	// verify slow-to-provision resources such as databases.
 	UpgradeTestMode_PreviewOnly
