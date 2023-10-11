@@ -31,6 +31,7 @@ type ProviderTest struct {
 	config           map[string]string
 	e2eOptions       []E2eOption
 	skipSdk          map[string][]any
+	upgradeOpts      providerUpgradeOpts
 }
 
 // NewProviderTest creates a new provider test with the initial directory to be tested.
@@ -130,19 +131,19 @@ func (pt *ProviderTest) Run(t *testing.T) {
 	t.Helper()
 	t.Run("e2e", func(t *testing.T) {
 		t.Helper()
-		if flags.SkipE2e() {
-			t.Skip("Skipping e2e tests due to either -provider-skip-e2e or PULUMI_PROVIDER_TEST_MODE=skip-e2e being set")
+		if flags.SkipE2e.IsSet() {
+			t.Skipf("Skipping e2e tests because %s", flags.SkipE2e.WhySet())
 			return
 		}
-		pt.RunE2e(t, flags.IsE2e(), pt.e2eOptions...)
+		pt.RunE2e(t, flags.E2e.IsSet(), pt.e2eOptions...)
 	})
 	t.Run("sdk-csharp", func(t *testing.T) {
 		t.Helper()
 		if reason, skip := pt.skipSdk["csharp"]; skip {
 			t.Skip(reason...)
 		}
-		if !flags.IsSdkCsharp() {
-			t.Skip("Skipping C# SDK tests due to neither -provider-sdk-csharp nor PULUMI_PROVIDER_TEST_MODE=sdk-csharp being set")
+		if !flags.SdkCsharp.IsSet() {
+			t.Skipf("Skipping C# SDK tests because %s", flags.SdkCsharp.WhyNotSet())
 			return
 		}
 		pt.RunSdk(t, "csharp")
@@ -152,8 +153,8 @@ func (pt *ProviderTest) Run(t *testing.T) {
 		if reason, skip := pt.skipSdk["go"]; skip {
 			t.Skip(reason...)
 		}
-		if !flags.IsSdkGo() {
-			t.Skip("Skipping Go SDK tests due to neither -provider-sdk-go nor PULUMI_PROVIDER_TEST_MODE=sdk-go being set")
+		if !flags.SdkGo.IsSet() {
+			t.Skipf("Skipping Go SDK tests because %s", flags.SdkGo.WhyNotSet())
 			return
 		}
 		pt.RunSdk(t, "go")
@@ -163,8 +164,8 @@ func (pt *ProviderTest) Run(t *testing.T) {
 		if reason, skip := pt.skipSdk["python"]; skip {
 			t.Skip(reason...)
 		}
-		if !flags.IsSdkPython() {
-			t.Skip("Skipping Python SDK tests due to neither -provider-sdk-python nor PULUMI_PROVIDER_TEST_MODE=sdk-python being set")
+		if !flags.SdkPython.IsSet() {
+			t.Skipf("Skipping Python SDK tests because %s", flags.SdkPython.WhyNotSet())
 			return
 		}
 		pt.RunSdk(t, "python")
@@ -174,12 +175,18 @@ func (pt *ProviderTest) Run(t *testing.T) {
 		if reason, skip := pt.skipSdk["typescript"]; skip {
 			t.Skip(reason...)
 		}
-		if !flags.IsSdkPython() {
-			t.Skip("Skipping Typescript SDK tests due to neither -provider-sdk-typescript nor PULUMI_PROVIDER_TEST_MODE=sdk-typescript being set")
+		if !flags.SdkTypescript.IsSet() {
+			t.Skipf("Skipping Typescript SDK tests because %s", flags.SdkTypescript.WhyNotSet())
 			return
 		}
 		pt.RunSdk(t, "typescript")
 	})
+	for _, m := range UpgradeTestModes() {
+		t.Run(fmt.Sprintf("upgrade-%s", m), func(t *testing.T) {
+			t.Helper()
+			pt.VerifyUpgrade(t, m)
+		})
+	}
 }
 
 func StartProviders(ctx context.Context, providerStartups ...StartProvider) ([]*ProviderAttach, error) {
