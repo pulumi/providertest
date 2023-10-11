@@ -31,9 +31,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"gopkg.in/yaml.v3"
 
+	"github.com/pulumi/providertest/flags"
 	testutils "github.com/pulumi/pulumi-terraform-bridge/testing/x"
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
-	"github.com/pulumi/pulumi/sdk/v3/go/common/util/cmdutil"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
 )
@@ -200,11 +200,9 @@ type providerUpgradeBuilder struct {
 
 func (b *providerUpgradeBuilder) run(t *testing.T, mode UpgradeTestMode) {
 	b.verifyVersion()
-	acceptEnvVar := "PULUMI_ACCEPT"
-	accept := cmdutil.IsTruthy(os.Getenv(acceptEnvVar))
-	if accept {
-		b.tt.Logf("Recording baseline behavior as requested by "+
-			"setting %q env var", acceptEnvVar)
+
+	if flags.Snapshot.IsSet() {
+		b.tt.Logf("Recording baseline behavior because %s", flags.Snapshot.WhySet())
 		b.providerUpgradeRecordBaselines(b.tt)
 	}
 
@@ -223,7 +221,7 @@ func (b *providerUpgradeBuilder) run(t *testing.T, mode UpgradeTestMode) {
 			return
 		}
 
-		if accept {
+		if flags.Snapshot.IsSet() {
 			t.Skipf("Skipping because baselines were just pre-recorded")
 		} else {
 			b.checkProviderUpgradePreviewOnly(t)
