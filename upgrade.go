@@ -587,8 +587,9 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 			t.Logf("wrote %s", info.stateFile)
 		},
 		Config: b.config,
-
-		// TODO eks.Cluster fails refresh on 5.42.0
+		// We could record Refresh for posterity but it is not strictly needed for upgrade
+		// tests only. It would be needed for tests that try to use snapshots to inform
+		// import or refresh testing.
 		SkipRefresh: true,
 	}
 	integration.ProgramTest(t, &test)
