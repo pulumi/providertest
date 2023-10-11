@@ -43,16 +43,15 @@ import (
 // Specifically check that for a given Pulumi program located in dir, users can run pulumi up on a
 // baseline provider version, then upgrade the provider to the new version under test, run pulumi up
 // again and observe an empty diff.
-func VerifyUpgrade(t *testing.T, dir string, opts ...Option) {
-	require.NotEmptyf(t, dir, "dir is required")
-	pt := NewProviderTest(dir, opts...)
+func (pt *ProviderTest) VerifyUpgrade(t *testing.T, mode UpgradeTestMode) {
+	require.NotEmptyf(t, pt.dir, "dir is required")
 	b := &providerUpgradeBuilder{
 		tt:                  t,
-		program:             dir,
+		program:             pt.dir,
 		config:              pt.config,
 		providerUpgradeOpts: pt.upgradeOpts,
 	}
-	b.Run()
+	b.run(t, mode)
 }
 
 // Tracks resource coverage through upgrade tests.
@@ -134,13 +133,21 @@ const (
 func (m UpgradeTestMode) String() string {
 	switch m {
 	case UpgradeTestMode_PreviewOnly:
-		return "PreviewOnly"
+		return "preview-only"
 	case UpgradeTestMode_Quick:
-		return "Quick"
+		return "quick"
 	case UpgradeTestMode_Full:
-		return "Full"
+		return "full"
 	}
 	return "<unknown>"
+}
+
+func UpgradeTestModes() []UpgradeTestMode {
+	return []UpgradeTestMode{
+		UpgradeTestMode_PreviewOnly,
+		UpgradeTestMode_Quick,
+		UpgradeTestMode_Full,
+	}
 }
 
 func WithSkippedUpgradeTestMode(m UpgradeTestMode, reason string) Option {
@@ -191,7 +198,7 @@ type providerUpgradeBuilder struct {
 	providerUpgradeOpts
 }
 
-func (b *providerUpgradeBuilder) Run() {
+func (b *providerUpgradeBuilder) run(t *testing.T, mode UpgradeTestMode) {
 	b.verifyVersion()
 	acceptEnvVar := "PULUMI_ACCEPT"
 	accept := cmdutil.IsTruthy(os.Getenv(acceptEnvVar))
@@ -200,13 +207,14 @@ func (b *providerUpgradeBuilder) Run() {
 			"setting %q env var", acceptEnvVar)
 		b.providerUpgradeRecordBaselines(b.tt)
 	}
-	b.tt.Run("Quick", func(t *testing.T) {
+
+	switch mode {
+	case UpgradeTestMode_Quick:
 		if skip, ok := b.modes[UpgradeTestMode_Quick]; ok && skip != "" {
 			t.Skip(skip)
 		}
 		b.checkProviderUpgradeQuick(t)
-	})
-	b.tt.Run("PreviewOnly", func(t *testing.T) {
+	case UpgradeTestMode_PreviewOnly:
 		if skip, ok := b.modes[UpgradeTestMode_PreviewOnly]; ok && skip != "" {
 			t.Skip(skip)
 		}
@@ -220,13 +228,12 @@ func (b *providerUpgradeBuilder) Run() {
 		} else {
 			b.checkProviderUpgradePreviewOnly(t)
 		}
-	})
-	b.tt.Run("Full", func(t *testing.T) {
+	case UpgradeTestMode_Full:
 		if skip, ok := b.modes[UpgradeTestMode_Full]; ok && skip != "" {
 			t.Skip(skip)
 		}
 		t.Skip("Full mode is not supported yet")
-	})
+	}
 }
 
 func (b *providerUpgradeBuilder) checkProviderUpgradeQuick(t *testing.T) {
@@ -361,8 +368,9 @@ type providerUpgradeInfo struct {
 
 func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUpgradeInfo {
 	info := providerUpgradeInfo{}
-	n := strings.ReplaceAll(t.Name(), "Quick", ".")
-	info.recordingDir = filepath.Join("testdata", "recorded", n, b.baselineVersion)
+	program := filepath.Base(b.program)
+	info.recordingDir = filepath.Join("testdata", "recorded", "TestProviderUpgrade",
+		program, b.baselineVersion)
 	var err error
 	info.grpcFile, err = filepath.Abs(filepath.Join(info.recordingDir, "grpc.json"))
 	require.NoError(t, err)
@@ -394,7 +402,6 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
 
 	pth := newProgramTestHelper(t, opts)
-	t.Logf("%v", pth)
 	err := pth.previewOnlyUpgradeTest(info.stateFile)
 	require.NoError(t, err)
 }
@@ -428,11 +435,28 @@ func newProgramTestHelper(t *testing.T, opts integration.ProgramTestOptions) *pr
 	}
 }
 
-func (pth *programTestHelper) previewOnlyUpgradeTest(stateFile string) error {
+func (pth *programTestHelper) previewOnlyUpgradeTest(stateFile string) (finalError error) {
 	t := pth.t
 	pt := pth.pt
 	opts := pth.opts
 	return pth.lifecycleInitAndDestroy(func() error {
+		t.Logf("Backing up current stateFile")
+		backupStateFile := filepath.Join(t.TempDir(), "backup-state.json")
+		if err := pt.RunPulumiCommand("stack", "export", "--file",
+			backupStateFile); err != nil {
+			return err
+		}
+
+		defer func() {
+			t.Logf("Restoring original stateFile")
+			if err := pt.RunPulumiCommand("stack", "import", "--file",
+				backupStateFile); err != nil {
+				if finalError != nil {
+					finalError = err
+				}
+			}
+		}()
+
 		t.Logf("Importing pre-recorded stateFile from the baseline provider version")
 		fixedStateFile := pth.fixupStackName(stateFile)
 		if err := pt.RunPulumiCommand("stack", "import",

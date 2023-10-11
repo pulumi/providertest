@@ -181,6 +181,12 @@ func (pt *ProviderTest) Run(t *testing.T) {
 		}
 		pt.RunSdk(t, "typescript")
 	})
+	for _, m := range UpgradeTestModes() {
+		t.Run(fmt.Sprintf("upgrade-%s", m), func(t *testing.T) {
+			t.Helper()
+			pt.VerifyUpgrade(t, m)
+		})
+	}
 }
 
 func StartProviders(ctx context.Context, providerStartups ...StartProvider) ([]*ProviderAttach, error) {
