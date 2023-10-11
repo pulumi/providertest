@@ -184,6 +184,7 @@ func WithProviderName(name string) Option {
 	return func(b *ProviderTest) { b.upgradeOpts.providerName = name }
 }
 
+// TODO[pulumi/providertest#9] make this redundant.
 func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 	contract.Assertf(s != nil, "ResourceProviderServer cannot be nil")
 	return func(b *ProviderTest) { b.upgradeOpts.resourceProviderServer = s }
