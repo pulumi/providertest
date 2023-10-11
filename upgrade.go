@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -441,7 +440,7 @@ func (pth *programTestHelper) previewOnlyUpgradeTest(stateFile string) (finalErr
 	t := pth.t
 	pt := pth.pt
 	opts := pth.opts
-	return pth.lifecycleInitAndDestroy(func() error {
+	return (&programTestWrapper{pth.pt}).lifecycleInitAndDestroy(t, opts, func() error {
 		t.Logf("Backing up current stateFile")
 		backupStateFile := filepath.Join(t.TempDir(), "backup-state.json")
 		if err := pt.RunPulumiCommand("stack", "export", "--file",
@@ -501,48 +500,6 @@ func (pth *programTestHelper) fixupStackName(stateFile string) string {
 	//t.Logf("fixed state: %v", fixedState)
 	writeFile(t, fixedStateFile, []byte(fixedState))
 	return fixedStateFile
-}
-
-// Behaves just like pt.TestLifeCycleInitAndDestroy() but with custom inner test logic. This
-// function was obtained by inlining TestLifeCycleInitAndDestroy implementation and generalizing it.
-func (pth *programTestHelper) lifecycleInitAndDestroy(customTest func() error) error {
-	assert.Falsef(pth.t, pth.opts.RunUpdateTest, "RunUpdateTest is not supported")
-
-	err := pth.pt.TestLifeCyclePrepare()
-	if err != nil {
-		return fmt.Errorf("copying test to temp dir %s: %w", "<tmpdir>", err)
-	}
-
-	pth.pt.TestFinished = false
-	if pth.opts.DestroyOnCleanup {
-		pth.t.Cleanup(pth.pt.TestCleanUp)
-	} else {
-		defer pth.pt.TestCleanUp()
-	}
-
-	err = pth.pt.TestLifeCycleInitialize()
-	if err != nil {
-		return fmt.Errorf("initializing test project: %w", err)
-	}
-
-	destroyStack := func() {
-		destroyErr := pth.pt.TestLifeCycleDestroy()
-		assert.NoError(pth.t, destroyErr)
-	}
-	if pth.opts.DestroyOnCleanup {
-		// Allow other tests to refer to this stack until the test is complete.
-		pth.t.Cleanup(destroyStack)
-	} else {
-		// Ensure that before we exit, we attempt to destroy and remove the stack.
-		defer destroyStack()
-	}
-
-	if err = customTest(); err != nil {
-		return err
-	}
-
-	pth.pt.TestFinished = true
-	return nil
 }
 
 func (pth *programTestHelper) withUpdatedStackName(newStackName string, state string) string {
