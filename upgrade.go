@@ -43,14 +43,21 @@ import (
 // baseline provider version, then upgrade the provider to the new version under test, run pulumi up
 // again and observe an empty diff.
 func (pt *ProviderTest) VerifyUpgrade(t *testing.T, mode UpgradeTestMode) {
+	pt.newProviderUpgradeBuilder(t).run(t, mode)
+}
+
+func (pt *ProviderTest) VerifyUpgradeSnapshot(t *testing.T) {
+	pt.newProviderUpgradeBuilder(t).providerUpgradeRecordBaselines(t)
+}
+
+func (pt *ProviderTest) newProviderUpgradeBuilder(t *testing.T) *providerUpgradeBuilder {
 	require.NotEmptyf(t, pt.dir, "dir is required")
-	b := &providerUpgradeBuilder{
+	return &providerUpgradeBuilder{
 		tt:                  t,
 		program:             pt.dir,
 		config:              pt.config,
 		providerUpgradeOpts: pt.upgradeOpts,
 	}
-	b.run(t, mode)
 }
 
 // Tracks resource coverage through upgrade tests.
@@ -208,8 +215,8 @@ func (b *providerUpgradeBuilder) run(t *testing.T, mode UpgradeTestMode) {
 	b.verifyVersion()
 
 	if flags.Snapshot.IsSet() {
-		b.tt.Logf("Recording baseline behavior because %s", flags.Snapshot.WhySet())
-		b.providerUpgradeRecordBaselines(b.tt)
+		t.Skipf("skipping because snapshot recording is in progress because %s",
+			flags.Snapshot.WhySet())
 	}
 
 	switch mode {
@@ -226,12 +233,7 @@ func (b *providerUpgradeBuilder) run(t *testing.T, mode UpgradeTestMode) {
 			t.Skipf("Skipping in -short mode")
 			return
 		}
-
-		if flags.Snapshot.IsSet() {
-			t.Skipf("Skipping because baselines were just pre-recorded")
-		} else {
-			b.checkProviderUpgradePreviewOnly(t)
-		}
+		b.checkProviderUpgradePreviewOnly(t)
 	case UpgradeTestMode_Full:
 		if skip, ok := b.modes[UpgradeTestMode_Full]; ok && skip != "" {
 			t.Skip(skip)
@@ -246,7 +248,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradeQuick(t *testing.T) {
 
 	bytes, err := os.ReadFile(info.grpcFile)
 	require.NoErrorf(t, err,
-		"No pre-recorded gRPC log found, try to run with PULUMI_ACCEPT=1 to record")
+		"No pre-recorded snapshots found; not recording because %s", flags.Snapshot.WhyNotSet())
 
 	eng := &mockPulumiEngine{
 		provider:              b.resourceProviderServer,

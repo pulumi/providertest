@@ -181,6 +181,17 @@ func (pt *ProviderTest) Run(t *testing.T) {
 		}
 		pt.RunSdk(t, "typescript")
 	})
+
+	t.Run("upgrade-snapshot", func(t *testing.T) {
+		t.Helper()
+		if flags.Snapshot.IsSet() {
+			t.Logf("Recording baseline behavior because %s", flags.Snapshot.WhySet())
+			pt.VerifyUpgradeSnapshot(t)
+		} else {
+			t.Skipf("Skip recording baseline behavior because %s", flags.Snapshot.WhyNotSet())
+		}
+	})
+
 	for _, m := range UpgradeTestModes() {
 		t.Run(fmt.Sprintf("upgrade-%s", m), func(t *testing.T) {
 			t.Helper()
