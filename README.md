@@ -70,13 +70,13 @@ PULUMI_PROVIDER_TEST_MODE=e2e,sdk-python
 
 ### Reference
 
-| Option | CLI flag | Environment | Description |
-|---|---|---|---|
-| Skip E2E | `-provider-skip-e2e` | `skip-e2e` | Skip e2e provider tests |
-| Full E2E | `-provider-e2e` | `e2e` | Enable full e2e provider tests, otherwise uses quick mode by default. |
-| All SDK | `-provider-sdk-all` | `sdk-all` | Enable all SDK tests |
-| C# SDK | `-provider-sdk-csharp` | `sdk-csharp` | Enable C# SDK tests |
-| Python SDK | `-provider-sdk-python` | `sdk-python` | Enable Python SDK tests |
-| Go SDK | `-provider-sdk-go` | `sdk-go` | Enable Go SDK tests |
-| Typescript SDK | `-provider-sdk-typescript` | `sdk-typescript` | Enable TypeScript SDK tests |
-| Snapshot | `-provider-snapshot` | `snapshot` | Create snapshots for use with quick e2e tests |
+| Option         | CLI flag                   | Environment      | Description                                                           |
+|----------------|----------------------------|------------------|-----------------------------------------------------------------------|
+| Skip E2E       | `-provider-skip-e2e`       | `skip-e2e`       | Skip e2e provider tests                                               |
+| Full E2E       | `-provider-e2e`            | `e2e`            | Enable full e2e provider tests, otherwise uses quick mode by default. |
+| All SDK        | `-provider-sdk-all`        | `sdk-all`        | Enable all SDK tests                                                  |
+| C# SDK         | `-provider-sdk-csharp`     | `sdk-csharp`     | Enable C# SDK tests                                                   |
+| Python SDK     | `-provider-sdk-python`     | `sdk-python`     | Enable Python SDK tests                                               |
+| Go SDK         | `-provider-sdk-go`         | `sdk-go`         | Enable Go SDK tests                                                   |
+| Typescript SDK | `-provider-sdk-typescript` | `sdk-typescript` | Enable TypeScript SDK tests                                           |
+| Snapshot       | `-provider-snapshot`       | `snapshot`       | Create snapshots for use with quick e2e tests                         |
