@@ -19,6 +19,19 @@ Purpose: Ensure parity of each supported language's SDK behaviour.
 
 SDK test are therefore split out per-language. Internally, this uses `pulumi convert` to automatically create the language-specific programs before executing them.
 
+### VerifyUpgrade
+
+Purpose: Verifies that upgrading the provider does not generate any unexpected replacements.
+
+What these tests specifically try to verify is that the provider binary release candidate under test
+will not generate any surprises for users attempting to upgrade to it from the baseline released
+version.
+
+There are currently several
+[UpgradeTestMode](https://github.com/search?q=repo%3Apulumi%2Fprovidertest+type+UpgradeTestMode&type=code)
+variations tests can run under, with different speed/accuracy trade-offs.
+
+
 ## Example Usage
 
 ```go
@@ -44,6 +57,33 @@ If you want to run just one of these test modes directly locally, then you can t
 test.RunE2e(t, true /*runFullTest*/)
 test.RunSdk(t, "nodejs" /*language*/)
 ```
+
+### Upgrade Tests
+
+Set these extra options to enable upgrade tests:
+
+```go
+func TestSimple(t *testing.T) {
+  test := NewProviderTest("test/simple",
+    WithProviderName("gcp"),
+    WithBaselineVersion("6.67.0"),
+    WithResourceProviderServer(...))
+  test.Run(t)
+}
+```
+
+These nested tests are added:
+
+- `TestSimple/upgrade-snapshot`
+- `TestSimple/upgrade-preview-only`
+- `TestSimple/upgrade-quick`
+- `TestSimple/upgrade-full`
+
+Note that `upgrade-snapshot` is a utility job rather than a test. `go test --provider-snapshot` runs
+this job to exercise the baseline version of the provider and record its behavior under `testdata`.
+The resulting recorded snapshot files are currently expected to be checked into the repo. They are
+used to inform `upgrade-quick` and `upgrade-preview-only` tests. When updating the baseline version,
+snapshots need to be recorded anew on the new version.
 
 ## Controlling Test Mode
 
