@@ -31,7 +31,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/pulumi/providertest/flags"
-	testutils "github.com/pulumi/pulumi-terraform-bridge/testing/x"
+	"github.com/pulumi/providertest/replay"
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
@@ -306,7 +306,7 @@ func (e *mockPulumiEngine) replayGRPCLog(t *testing.T, jsonLog string) {
 		entry.Request = marshalProto(t, req)
 		b, err := json.Marshal(entry)
 		require.NoError(t, err)
-		testutils.Replay(t, e.provider, string(b))
+		replay.Replay(t, e.provider, string(b))
 		e.verifiedDiffResourceCounter++
 		t.Logf("Replayed Diff on %v", req.Urn)
 	}
