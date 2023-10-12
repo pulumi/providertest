@@ -19,6 +19,19 @@ Purpose: Ensure parity of each supported language's SDK behaviour.
 
 SDK test are therefore split out per-language. Internally, this uses `pulumi convert` to automatically create the language-specific programs before executing them.
 
+### VerifyUpgrade
+
+Purpose: Verifies that upgrading the provider does not generate any unexpected replacements.
+
+What these tests specifically try to verify is that the provider binary release candidate under test
+will not generate any surprises for users attempting to upgrade to it from the baseline released
+version.
+
+There are currently several
+[UpgradeTestMode](https://github.com/search?q=repo%3Apulumi%2Fprovidertest+type+UpgradeTestMode&type=code)
+variations tests can run under, with different speed/accuracy trade-offs.
+
+
 ## Example Usage
 
 ```go
@@ -45,6 +58,33 @@ test.RunE2e(t, true /*runFullTest*/)
 test.RunSdk(t, "nodejs" /*language*/)
 ```
 
+### Upgrade Tests
+
+Set these extra options to enable upgrade tests:
+
+```go
+func TestSimple(t *testing.T) {
+  test := NewProviderTest("test/simple",
+    WithProviderName("gcp"),
+    WithBaselineVersion("6.67.0"),
+    WithResourceProviderServer(...))
+  test.Run(t)
+}
+```
+
+These nested tests are added:
+
+- `TestSimple/upgrade-snapshot`
+- `TestSimple/upgrade-preview-only`
+- `TestSimple/upgrade-quick`
+- `TestSimple/upgrade-full`
+
+Note that `upgrade-snapshot` is a utility job rather than a test. `go test --provider-snapshot` runs
+this job to exercise the baseline version of the provider and record its behavior under `testdata`.
+The resulting recorded snapshot files are currently expected to be checked into the repo. They are
+used to inform `upgrade-quick` and `upgrade-preview-only` tests. When updating the baseline version,
+snapshots need to be recorded anew on the new version.
+
 ## Controlling Test Mode
 
 Which subtests are run, and in which mode (quick/full), are controlled by custom `go test` CLI flags. These can be set in makefiles or CI scripts as required.
@@ -70,13 +110,13 @@ PULUMI_PROVIDER_TEST_MODE=e2e,sdk-python
 
 ### Reference
 
-| Option | CLI flag | Environment | Description |
-|---|---|---|---|
-| Skip E2E | `-provider-skip-e2e` | `skip-e2e` | Skip e2e provider tests |
-| Full E2E | `-provider-e2e` | `e2e` | Enable full e2e provider tests, otherwise uses quick mode by default. |
-| All SDK | `-provider-sdk-all` | `sdk-all` | Enable all SDK tests |
-| C# SDK | `-provider-sdk-csharp` | `sdk-csharp` | Enable C# SDK tests |
-| Python SDK | `-provider-sdk-python` | `sdk-python` | Enable Python SDK tests |
-| Go SDK | `-provider-sdk-go` | `sdk-go` | Enable Go SDK tests |
-| Typescript SDK | `-provider-sdk-typescript` | `sdk-typescript` | Enable TypeScript SDK tests |
-| Snapshot | `-provider-snapshot` | `snapshot` | Create snapshots for use with quick e2e tests |
+| Option         | CLI flag                   | Environment      | Description                                                           |
+|----------------|----------------------------|------------------|-----------------------------------------------------------------------|
+| Skip E2E       | `-provider-skip-e2e`       | `skip-e2e`       | Skip e2e provider tests                                               |
+| Full E2E       | `-provider-e2e`            | `e2e`            | Enable full e2e provider tests, otherwise uses quick mode by default. |
+| All SDK        | `-provider-sdk-all`        | `sdk-all`        | Enable all SDK tests                                                  |
+| C# SDK         | `-provider-sdk-csharp`     | `sdk-csharp`     | Enable C# SDK tests                                                   |
+| Python SDK     | `-provider-sdk-python`     | `sdk-python`     | Enable Python SDK tests                                               |
+| Go SDK         | `-provider-sdk-go`         | `sdk-go`         | Enable Go SDK tests                                                   |
+| Typescript SDK | `-provider-sdk-typescript` | `sdk-typescript` | Enable TypeScript SDK tests                                           |
+| Snapshot       | `-provider-snapshot`       | `snapshot`       | Create snapshots for use with quick e2e tests                         |
