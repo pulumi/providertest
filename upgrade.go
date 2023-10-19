@@ -181,7 +181,7 @@ func WithSkippedUpgradeTestMode(m UpgradeTestMode, reason string) Option {
 // Deprecated: use WithBaselineAmbientPlugins and WithAmbientPlugins.
 func WithBaselineVersion(v string) Option {
 	contract.Assertf(v != "", "BaselineVersion cannot be empty")
-	return func(b *ProviderTest) { b.upgradeOpts.baselineVersion = v }
+	return func(b *ProviderTest) {}
 }
 
 func WithBaselineAmbientPlugins(plugins ...AmbientPlugin) Option {
@@ -205,7 +205,7 @@ func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 }
 
 type providerUpgradeOpts struct {
-	baselineVersion        string
+	//baselineVersion        string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	providerName           string
 	resourceProviderServer pulumirpc.ResourceProviderServer
@@ -380,11 +380,21 @@ type providerUpgradeInfo struct {
 	stateFile    string
 }
 
+func (b *providerUpgradeBuilder) computedBaselineVersion() string {
+	for _, x := range b.baselineAmbientPlugins {
+		if x.Provider == b.providerName {
+			return x.Version
+		}
+	}
+	contract.Assertf(false, "WithBaselineAmbientPlugins contained no entry for %q", b.providerName)
+	return ""
+}
+
 func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUpgradeInfo {
 	info := providerUpgradeInfo{}
 	program := filepath.Base(b.program)
 	info.recordingDir = filepath.Join("testdata", "recorded", "TestProviderUpgrade",
-		program, b.baselineVersion)
+		program, b.computedBaselineVersion())
 	var err error
 	info.grpcFile, err = filepath.Abs(filepath.Join(info.recordingDir, "grpc.json"))
 	require.NoError(t, err)
@@ -395,11 +405,22 @@ func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUp
 
 func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 	info := b.newProviderUpgradeInfo(t)
-	t.Logf("Baseline provider version: %s", b.baselineVersion)
+
+	t.Logf("Ensure that ambient plugins are in PATH")
+	for _, p := range b.ambientPlugins {
+		if p.Version != "" {
+			t.Logf("  %s => %s", p.Provider, p.Version)
+		} else {
+			t.Logf("  %s => %s", p.Provider, p.LocalPath)
+		}
+	}
+
+	path, err := PathWithAmbientPlugins(os.Getenv("PATH"), b.ambientPlugins...)
+	require.NoError(t, err)
 
 	opts := integration.ProgramTestOptions{
 		Dir:    b.program,
-		Env:    []string{},
+		Env:    append(os.Environ(), fmt.Sprintf("PATH=%s", path)),
 		Config: b.config,
 
 		// Skips are required by programTestHelper.previewOnlyUpgradeTest
@@ -413,7 +434,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
 
 	pth := newProgramTestHelper(t, opts)
-	err := pth.previewOnlyUpgradeTest(info.stateFile)
+	err = pth.previewOnlyUpgradeTest(info.stateFile)
 	require.NoError(t, err)
 }
 
@@ -546,9 +567,25 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 	ensureFolderExists(t, info.recordingDir)
 	deleteFileIfExists(t, info.stateFile)
 	deleteFileIfExists(t, info.grpcFile)
+
+	t.Logf("Ensure that baseline ambient plugins are in PATH")
+	for _, p := range b.baselineAmbientPlugins {
+		if p.Version != "" {
+			t.Logf("  %s => %s", p.Provider, p.Version)
+		} else {
+			t.Logf("  %s => %s", p.Provider, p.LocalPath)
+		}
+	}
+
+	path, err := PathWithAmbientPlugins(os.Getenv("PATH"), b.baselineAmbientPlugins...)
+	require.NoError(t, err)
+
 	test := integration.ProgramTestOptions{
 		Dir: b.program,
-		Env: append(os.Environ(), fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", info.grpcFile)),
+		Env: append(os.Environ(),
+			fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", info.grpcFile),
+			fmt.Sprintf("PATH=%s", path),
+		),
 		ExportStateValidator: func(t *testing.T, state []byte) {
 			writeFile(t, info.stateFile, state)
 			t.Logf("wrote %s", info.stateFile)
