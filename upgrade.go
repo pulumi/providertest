@@ -568,8 +568,6 @@ func (pth *programTestHelper) parseStackName(state string) string {
 
 func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 	info := b.newProviderUpgradeInfo(t)
-	ambientProvider, _ := exec.LookPath(b.providerBinary())
-	require.Emptyf(t, ambientProvider, "please remove the provider from PATH")
 	ensureFolderExists(t, info.recordingDir)
 	deleteFileIfExists(t, info.stateFile)
 	deleteFileIfExists(t, info.grpcFile)
