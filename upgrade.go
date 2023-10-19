@@ -650,38 +650,3 @@ func (b *providerUpgradeBuilder) optionsForRecordingNode(t *testing.T) integrati
 		Overrides: overrides,
 	}
 }
-
-// There are some limitations in factoring out the provider versoin out of the YAML sources.
-//
-// To compensate, this function tries to extract the version for verification.
-//
-// See https://github.com/pulumi/pulumi-yaml/issues/508
-// func (b *providerUpgradeBuilder) verifyVersion() {
-// 	f := filepath.Join(b.program, "Pulumi.yaml")
-// 	actual := b.parseProviderVersion(f)
-// 	expected := b.baselineVersion
-// 	require.Equalf(b.tt, expected, actual,
-// 		"Please check that %q specifies the %q provider version",
-// 		f, b.baselineVersion)
-// }
-
-// func (b *providerUpgradeBuilder) parseProviderVersion(yamlFile string) string {
-// 	type model struct {
-// 		Resources struct {
-// 			Provider struct {
-// 				Options struct {
-// 					Version string `yaml:"version"`
-// 				} `yaml:"options"`
-// 			} `yaml:"provider"`
-// 		} `json:"resources"`
-// 	}
-// 	bytes, err := os.ReadFile(yamlFile)
-// 	require.NoError(b.tt, err)
-// 	var m model
-// 	yaml.Unmarshal(bytes, &m)
-// 	require.NoError(b.tt, err)
-// 	v := m.Resources.Provider.Options.Version
-// 	require.NotEmptyf(b.tt, v, "Failed to parse Pulumi.yaml: "+
-// 		"resources.provider.options.version is empty")
-// 	return v
-// }
