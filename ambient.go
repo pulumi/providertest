@@ -32,7 +32,7 @@ import (
 //
 // Manipulating proivder versions in this way is heavy-handed but easy to implement in the framework
 // without placing constrainsts on programs under test.
-type AmbientPlugin struct {
+type ambientPlugin struct {
 	// Short name of the provider, such as "eks" or "aws".
 	Provider string
 
@@ -45,7 +45,7 @@ type AmbientPlugin struct {
 
 // Builds a PATH environment variable value suitable for setting up the environment with the desired
 // ambient plugins. Auto-installed via Pulumi CLI.
-func PathWithAmbientPlugins(originalPATH string, plugins ...AmbientPlugin) (string, error) {
+func pathWithAmbientPlugins(originalPATH string, plugins ...ambientPlugin) (string, error) {
 	_, err := ensurePluginsInstalled(plugins)
 	if err != nil {
 		return "", err
@@ -92,7 +92,7 @@ func pluginPath(info pluginInfo) (string, error) {
 }
 
 // Use pulumi plugin install to ensure all requested plugins are installed, if not already.
-func ensurePluginsInstalled(plugins []AmbientPlugin) ([]pluginInfo, error) {
+func ensurePluginsInstalled(plugins []ambientPlugin) ([]pluginInfo, error) {
 	matched := []pluginInfo{}
 	installed, err := findInstalledPlugins()
 	if err != nil {

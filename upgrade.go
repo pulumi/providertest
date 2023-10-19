@@ -623,18 +623,18 @@ func (b *providerUpgradeBuilder) optionsForRecording(t *testing.T) integration.P
 func (b *providerUpgradeBuilder) optionsForRecordingYAML(t *testing.T) integration.ProgramTestOptions {
 	// There should be an elegant way to do this, but for the moment the code brute-forces the
 	// issue and installs the baseline versions of necessary plugins in PATH as ambient plugins.
-	ambients := []AmbientPlugin{}
-	ambients = append(ambients, AmbientPlugin{
+	ambients := []ambientPlugin{}
+	ambients = append(ambients, ambientPlugin{
 		Provider: b.providerName,
 		Version:  b.baselineVersion,
 	})
 	for p, v := range b.extraBaselineDeps {
-		ambients = append(ambients, AmbientPlugin{
+		ambients = append(ambients, ambientPlugin{
 			Provider: p,
 			Version:  v,
 		})
 	}
-	path, err := PathWithAmbientPlugins(os.Getenv("PATH"), ambients...)
+	path, err := pathWithAmbientPlugins(os.Getenv("PATH"), ambients...)
 	require.NoError(t, err)
 	return integration.ProgramTestOptions{Env: []string{fmt.Sprintf("PATH=%s", path)}}
 }
