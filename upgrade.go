@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"gopkg.in/yaml.v3"
 
 	"github.com/pulumi/providertest/flags"
 	"github.com/pulumi/providertest/replay"
@@ -179,9 +178,18 @@ func WithSkippedUpgradeTestMode(m UpgradeTestMode, reason string) Option {
 	}
 }
 
+// Deprecated: use WithBaselineAmbientPlugins and WithAmbientPlugins.
 func WithBaselineVersion(v string) Option {
 	contract.Assertf(v != "", "BaselineVersion cannot be empty")
 	return func(b *ProviderTest) { b.upgradeOpts.baselineVersion = v }
+}
+
+func WithBaselineAmbientPlugins(plugins ...AmbientPlugin) Option {
+	return func(b *ProviderTest) { b.upgradeOpts.baselineAmbientPlugins = plugins }
+}
+
+func WithAmbientPlugins(plugins ...AmbientPlugin) Option {
+	return func(b *ProviderTest) { b.upgradeOpts.ambientPlugins = plugins }
 }
 
 func WithProviderName(name string) Option {
@@ -201,6 +209,8 @@ type providerUpgradeOpts struct {
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	providerName           string
 	resourceProviderServer pulumirpc.ResourceProviderServer
+	ambientPlugins         []AmbientPlugin
+	baselineAmbientPlugins []AmbientPlugin
 }
 
 type providerUpgradeBuilder struct {
@@ -212,8 +222,6 @@ type providerUpgradeBuilder struct {
 }
 
 func (b *providerUpgradeBuilder) run(t *testing.T, mode UpgradeTestMode) {
-	b.verifyVersion()
-
 	if flags.Snapshot.IsSet() {
 		t.Skipf("skipping because snapshot recording is in progress because %s",
 			flags.Snapshot.WhySet())
@@ -559,32 +567,32 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 // To compensate, this function tries to extract the version for verification.
 //
 // See https://github.com/pulumi/pulumi-yaml/issues/508
-func (b *providerUpgradeBuilder) verifyVersion() {
-	f := filepath.Join(b.program, "Pulumi.yaml")
-	actual := b.parseProviderVersion(f)
-	expected := b.baselineVersion
-	require.Equalf(b.tt, expected, actual,
-		"Please check that %q specifies the %q provider version",
-		f, b.baselineVersion)
-}
+// func (b *providerUpgradeBuilder) verifyVersion() {
+// 	f := filepath.Join(b.program, "Pulumi.yaml")
+// 	actual := b.parseProviderVersion(f)
+// 	expected := b.baselineVersion
+// 	require.Equalf(b.tt, expected, actual,
+// 		"Please check that %q specifies the %q provider version",
+// 		f, b.baselineVersion)
+// }
 
-func (b *providerUpgradeBuilder) parseProviderVersion(yamlFile string) string {
-	type model struct {
-		Resources struct {
-			Provider struct {
-				Options struct {
-					Version string `yaml:"version"`
-				} `yaml:"options"`
-			} `yaml:"provider"`
-		} `json:"resources"`
-	}
-	bytes, err := os.ReadFile(yamlFile)
-	require.NoError(b.tt, err)
-	var m model
-	yaml.Unmarshal(bytes, &m)
-	require.NoError(b.tt, err)
-	v := m.Resources.Provider.Options.Version
-	require.NotEmptyf(b.tt, v, "Failed to parse Pulumi.yaml: "+
-		"resources.provider.options.version is empty")
-	return v
-}
+// func (b *providerUpgradeBuilder) parseProviderVersion(yamlFile string) string {
+// 	type model struct {
+// 		Resources struct {
+// 			Provider struct {
+// 				Options struct {
+// 					Version string `yaml:"version"`
+// 				} `yaml:"options"`
+// 			} `yaml:"provider"`
+// 		} `json:"resources"`
+// 	}
+// 	bytes, err := os.ReadFile(yamlFile)
+// 	require.NoError(b.tt, err)
+// 	var m model
+// 	yaml.Unmarshal(bytes, &m)
+// 	require.NoError(b.tt, err)
+// 	v := m.Resources.Provider.Options.Version
+// 	require.NotEmptyf(b.tt, v, "Failed to parse Pulumi.yaml: "+
+// 		"resources.provider.options.version is empty")
+// 	return v
+// }
