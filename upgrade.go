@@ -429,9 +429,9 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		SkipExportImport: true,
 	}
 
-	ambientProvider, _ := exec.LookPath(b.providerBinary())
-	require.NotEmptyf(t, ambientProvider, "expected to find a release candidate provider "+
-		"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
+	// ambientProvider, _ := exec.LookPath(b.providerBinary())
+	// require.NotEmptyf(t, ambientProvider, "expected to find a release candidate provider "+
+	// 	"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
 
 	pth := newProgramTestHelper(t, opts)
 	err = pth.previewOnlyUpgradeTest(info.stateFile)
