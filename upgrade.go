@@ -26,14 +26,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
+	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/pulumi/providertest/flags"
 	"github.com/pulumi/providertest/replay"
-	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
-	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
-	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
 )
 
 // Verifies that upgrading the provider does not generate any unexpected replacements.
@@ -178,18 +179,17 @@ func WithSkippedUpgradeTestMode(m UpgradeTestMode, reason string) Option {
 	}
 }
 
-// Deprecated: use WithBaselineAmbientPlugins and WithAmbientPlugins.
 func WithBaselineVersion(v string) Option {
 	contract.Assertf(v != "", "BaselineVersion cannot be empty")
-	return func(b *ProviderTest) {}
+	return func(b *ProviderTest) { b.upgradeOpts.baselineVersion = v }
 }
 
-func WithBaselineAmbientPlugins(plugins ...AmbientPlugin) Option {
-	return func(b *ProviderTest) { b.upgradeOpts.baselineAmbientPlugins = plugins }
-}
-
-func WithAmbientPlugins(plugins ...AmbientPlugin) Option {
-	return func(b *ProviderTest) { b.upgradeOpts.ambientPlugins = plugins }
+// When testing upgrades, this option specifies additional baseline dependency versions. For
+// example, when testing pulumi-eks, WithBaselineVersion("1.0.4") will define the baseline version
+// of eks provider itself, where WithExtraBaselineDependencies(map[string]string{"aws": "5.42.0"})
+// will pin the aws dependency.
+func WithExtraBaselineDependencies(deps map[string]string) Option {
+	return func(b *ProviderTest) { b.upgradeOpts.extraBaselineDeps = deps }
 }
 
 func WithProviderName(name string) Option {
@@ -205,12 +205,11 @@ func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 }
 
 type providerUpgradeOpts struct {
-	//baselineVersion        string
+	baselineVersion        string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	providerName           string
 	resourceProviderServer pulumirpc.ResourceProviderServer
-	ambientPlugins         []AmbientPlugin
-	baselineAmbientPlugins []AmbientPlugin
+	extraBaselineDeps      map[string]string
 }
 
 type providerUpgradeBuilder struct {
@@ -380,21 +379,11 @@ type providerUpgradeInfo struct {
 	stateFile    string
 }
 
-func (b *providerUpgradeBuilder) computedBaselineVersion() string {
-	for _, x := range b.baselineAmbientPlugins {
-		if x.Provider == b.providerName {
-			return x.Version
-		}
-	}
-	contract.Assertf(false, "WithBaselineAmbientPlugins contained no entry for %q", b.providerName)
-	return ""
-}
-
 func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUpgradeInfo {
 	info := providerUpgradeInfo{}
 	program := filepath.Base(b.program)
 	info.recordingDir = filepath.Join("testdata", "recorded", "TestProviderUpgrade",
-		program, b.computedBaselineVersion())
+		program, b.baselineVersion)
 	var err error
 	info.grpcFile, err = filepath.Abs(filepath.Join(info.recordingDir, "grpc.json"))
 	require.NoError(t, err)
@@ -406,21 +395,12 @@ func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUp
 func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 	info := b.newProviderUpgradeInfo(t)
 
-	t.Logf("Ensure that ambient plugins are in PATH")
-	for _, p := range b.ambientPlugins {
-		if p.Version != "" {
-			t.Logf("  %s => %s", p.Provider, p.Version)
-		} else {
-			t.Logf("  %s => %s", p.Provider, p.LocalPath)
-		}
-	}
-
-	path, err := PathWithAmbientPlugins(os.Getenv("PATH"), b.ambientPlugins...)
-	require.NoError(t, err)
+	ambientProvider, _ := exec.LookPath(b.providerBinary())
+	require.NotEmptyf(t, ambientProvider, "expected to find a release candidate provider "+
+		"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
 
 	opts := integration.ProgramTestOptions{
 		Dir:    b.program,
-		Env:    append(os.Environ(), fmt.Sprintf("PATH=%s", path)),
 		Config: b.config,
 
 		// Skips are required by programTestHelper.previewOnlyUpgradeTest
@@ -429,13 +409,39 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		SkipExportImport: true,
 	}
 
-	// ambientProvider, _ := exec.LookPath(b.providerBinary())
-	// require.NotEmptyf(t, ambientProvider, "expected to find a release candidate provider "+
-	// 	"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
+	opts = opts.With(b.optionsForPreviewOnly(t))
 
 	pth := newProgramTestHelper(t, opts)
-	err = pth.previewOnlyUpgradeTest(info.stateFile)
+	err := pth.previewOnlyUpgradeTest(info.stateFile)
 	require.NoError(t, err)
+}
+
+func (b *providerUpgradeBuilder) optionsForPreviewOnly(t *testing.T) integration.ProgramTestOptions {
+	projInfo, err := getProjinfo(b.program)
+	require.NoError(t, err)
+	switch rt := projInfo.Proj.Runtime.Name(); rt {
+	case integration.YAMLRuntime:
+		return integration.ProgramTestOptions{}
+	case integration.NodeJSRuntime:
+		return integration.ProgramTestOptions{
+			// This will make ProgramTest issue `yarn link @pulumi/eks` or similar,
+			// which will start testing the locally built Node SDK *if* it was installed
+			// earlier with `yarn install`. Error paths might need some work here, that
+			// is what happens if it is not installed yet.
+			Dependencies: []string{fmt.Sprintf("@pulumi/%s", b.providerName)},
+		}
+	case integration.PythonRuntime:
+		require.NoError(t, fmt.Errorf("PythonRuntime does not yet support upgrade tests"))
+	case integration.DotNetRuntime:
+		require.NoError(t, fmt.Errorf("DotNetRuntime does not yet support upgrade tests"))
+	case integration.GoRuntime:
+		require.NoError(t, fmt.Errorf("GoRuntime does not yet support upgrade tests"))
+	case integration.JavaRuntime:
+		require.NoError(t, fmt.Errorf("JavaRuntime does not yet support upgrade tests"))
+	default:
+		require.NoError(t, fmt.Errorf("Unrecognized project runtime: %s", projInfo.Proj.Runtime.Name()))
+	}
+	return integration.ProgramTestOptions{}
 }
 
 func (b *providerUpgradeBuilder) providerBinary() string {
@@ -568,23 +574,15 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 	deleteFileIfExists(t, info.stateFile)
 	deleteFileIfExists(t, info.grpcFile)
 
-	t.Logf("Ensure that baseline ambient plugins are in PATH")
-	for _, p := range b.baselineAmbientPlugins {
-		if p.Version != "" {
-			t.Logf("  %s => %s", p.Provider, p.Version)
-		} else {
-			t.Logf("  %s => %s", p.Provider, p.LocalPath)
-		}
-	}
-
-	path, err := PathWithAmbientPlugins(os.Getenv("PATH"), b.baselineAmbientPlugins...)
-	require.NoError(t, err)
-
 	test := integration.ProgramTestOptions{
 		Dir: b.program,
 		Env: append(os.Environ(),
+			// Make sure that local provider builds in PATH do not interfere with
+			// recording baseline versions.
+			"PULUMI_IGNORE_AMBIENT_PLUGINS=true",
+
+			// Record gRPC logs.
 			fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", info.grpcFile),
-			fmt.Sprintf("PATH=%s", path),
 		),
 		ExportStateValidator: func(t *testing.T, state []byte) {
 			writeFile(t, info.stateFile, state)
@@ -596,7 +594,63 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 		// import or refresh testing.
 		SkipRefresh: true,
 	}
+	test = test.With(b.optionsForRecording(t))
 	integration.ProgramTest(t, &test)
+}
+
+func (b *providerUpgradeBuilder) optionsForRecording(t *testing.T) integration.ProgramTestOptions {
+	projInfo, err := getProjinfo(b.program)
+	require.NoError(t, err)
+	switch rt := projInfo.Proj.Runtime.Name(); rt {
+	case integration.YAMLRuntime:
+		return b.optionsForRecordingYAML(t)
+	case integration.NodeJSRuntime:
+		return b.optionsForRecordingNode(t)
+	case integration.PythonRuntime:
+		require.NoError(t, fmt.Errorf("PythonRuntime does not yet support upgrade tests"))
+	case integration.DotNetRuntime:
+		require.NoError(t, fmt.Errorf("DotNetRuntime does not yet support upgrade tests"))
+	case integration.GoRuntime:
+		require.NoError(t, fmt.Errorf("GoRuntime does not yet support upgrade tests"))
+	case integration.JavaRuntime:
+		require.NoError(t, fmt.Errorf("JavaRuntime does not yet support upgrade tests"))
+	default:
+		require.NoError(t, fmt.Errorf("Unrecognized project runtime: %s", projInfo.Proj.Runtime.Name()))
+	}
+	return integration.ProgramTestOptions{}
+}
+
+func (b *providerUpgradeBuilder) optionsForRecordingYAML(t *testing.T) integration.ProgramTestOptions {
+	// There should be an elegant way to do this, but for the moment the code brute-forces the
+	// issue and installs the baseline versions of necessary plugins in PATH as ambient plugins.
+	ambients := []AmbientPlugin{}
+	ambients = append(ambients, AmbientPlugin{
+		Provider: b.providerName,
+		Version:  b.baselineVersion,
+	})
+	for p, v := range b.extraBaselineDeps {
+		ambients = append(ambients, AmbientPlugin{
+			Provider: p,
+			Version:  v,
+		})
+	}
+	path, err := PathWithAmbientPlugins(os.Getenv("PATH"), ambients...)
+	require.NoError(t, err)
+	return integration.ProgramTestOptions{Env: []string{fmt.Sprintf("PATH=%s", path)}}
+}
+
+func (b *providerUpgradeBuilder) optionsForRecordingNode(t *testing.T) integration.ProgramTestOptions {
+	// Overrides will make ProgramTest install specific baseline versions of Node SDKs and that
+	// in turn will make Pulumi CLI auto-install matching provider binaries.
+	overrides := map[string]string{
+		fmt.Sprintf("@pulumi/%s", b.providerName): b.baselineVersion,
+	}
+	for k, v := range b.extraBaselineDeps {
+		overrides[fmt.Sprintf("@pulumi/%s", k)] = v
+	}
+	return integration.ProgramTestOptions{
+		Overrides: overrides,
+	}
 }
 
 // There are some limitations in factoring out the provider versoin out of the YAML sources.
