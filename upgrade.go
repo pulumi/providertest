@@ -393,12 +393,8 @@ func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUp
 }
 
 func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
-	t.Logf("Baseline provider version: %s", b.baselineVersion)
 	info := b.newProviderUpgradeInfo(t)
-
-	ambientProvider, _ := exec.LookPath(b.providerBinary())
-	require.NotEmptyf(t, ambientProvider, "expected to find a release candidate provider "+
-		"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
+	t.Logf("Baseline provider version: %s", b.baselineVersion)
 
 	opts := integration.ProgramTestOptions{
 		Dir:    b.program,
@@ -411,6 +407,10 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 	}
 
 	opts = opts.With(b.optionsForPreviewOnly(t))
+
+	ambientProvider, _ := exec.LookPath(b.providerBinary())
+	require.NotEmptyf(t, ambientProvider, "expected to find a release candidate provider "+
+		"binary in PATH, try to call `make provider` and `export PATH=$PWD/bin:$PATH`")
 
 	pth := newProgramTestHelper(t, opts)
 	err := pth.previewOnlyUpgradeTest(info.stateFile)
