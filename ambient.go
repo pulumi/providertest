@@ -32,7 +32,7 @@ import (
 //
 // See also PULUMI_IGNORE_AMBIENT_PLUGINS option in pulumi/pulumi.
 //
-// Manipulating proivder versions in this way is heavy-handed but easy to implement in the framework
+// Manipulating provider versions in this way is heavy-handed but easy to implement in the framework
 // without placing constrainsts on programs under test.
 type ambientPlugin struct {
 	// Short name of the provider, such as "eks" or "aws".
