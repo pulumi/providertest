@@ -393,6 +393,7 @@ func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUp
 }
 
 func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
+	t.Logf("Baseline provider version: %s", b.baselineVersion)
 	info := b.newProviderUpgradeInfo(t)
 
 	ambientProvider, _ := exec.LookPath(b.providerBinary())
