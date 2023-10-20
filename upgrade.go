@@ -576,10 +576,6 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 	test := integration.ProgramTestOptions{
 		Dir: b.program,
 		Env: append(os.Environ(),
-			// Make sure that local provider builds in PATH do not interfere with
-			// recording baseline versions.
-			"PULUMI_IGNORE_AMBIENT_PLUGINS=true",
-
 			// Record gRPC logs.
 			fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", info.grpcFile),
 		),
@@ -633,8 +629,11 @@ func (b *providerUpgradeBuilder) optionsForRecordingYAML(t *testing.T) integrati
 			Version:  v,
 		})
 	}
+
 	path, err := pathWithAmbientPlugins(t, os.Getenv("PATH"), ambients...)
 	require.NoError(t, err)
+	// Cannot set PULUMI_IGNORE_AMBIENT_PLUGINS=true here because ambient plugins is how this
+	// code installs the baseline depdendencies.
 	return integration.ProgramTestOptions{Env: []string{fmt.Sprintf("PATH=%s", path)}}
 }
 
@@ -649,5 +648,9 @@ func (b *providerUpgradeBuilder) optionsForRecordingNode(t *testing.T) integrati
 	}
 	return integration.ProgramTestOptions{
 		Overrides: overrides,
+
+		// Make sure that local provider builds in PATH do not interfere with recording
+		// baseline versions.
+		Env: []string{"PULUMI_IGNORE_AMBIENT_PLUGINS=true"},
 	}
 }
