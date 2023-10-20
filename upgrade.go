@@ -633,7 +633,7 @@ func (b *providerUpgradeBuilder) optionsForRecordingYAML(t *testing.T) integrati
 			Version:  v,
 		})
 	}
-	path, err := pathWithAmbientPlugins(os.Getenv("PATH"), ambients...)
+	path, err := pathWithAmbientPlugins(t, os.Getenv("PATH"), ambients...)
 	require.NoError(t, err)
 	return integration.ProgramTestOptions{Env: []string{fmt.Sprintf("PATH=%s", path)}}
 }

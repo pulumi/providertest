@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"strings"
+	"testing"
+
+	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 )
 
 // Configures ambient plugin setup for provider tests. Ambient plugins are placed in PATH so that
@@ -45,7 +47,7 @@ type ambientPlugin struct {
 
 // Builds a PATH environment variable value suitable for setting up the environment with the desired
 // ambient plugins. Auto-installed via Pulumi CLI.
-func pathWithAmbientPlugins(originalPATH string, plugins ...ambientPlugin) (string, error) {
+func pathWithAmbientPlugins(t *testing.T, originalPATH string, plugins ...ambientPlugin) (string, error) {
 	_, err := ensurePluginsInstalled(plugins)
 	if err != nil {
 		return "", err
@@ -71,6 +73,11 @@ func pathWithAmbientPlugins(originalPATH string, plugins ...ambientPlugin) (stri
 	}
 	oldPaths := strings.Split(originalPATH, string(os.PathListSeparator))
 	allPaths := append(newPaths, oldPaths...)
+
+	for _, np := range newPaths {
+		t.Logf("Adding to PATH: %s\n", np)
+	}
+
 	return strings.Join(allPaths, string(os.PathListSeparator)), nil
 }
 
@@ -82,13 +89,11 @@ type pluginInfo struct {
 
 // Find the locally installed Plugin path.
 func pluginPath(info pluginInfo) (string, error) {
-	usr, err := user.Current()
+	plugins, err := workspace.GetPluginDir()
 	if err != nil {
 		return "", err
 	}
-	p := filepath.Join(usr.HomeDir, ".pulumi", "plugins",
-		fmt.Sprintf("%s-%s-%s", info.Kind, info.Name, info.Version))
-	return p, nil
+	return filepath.Join(plugins, fmt.Sprintf("%s-%s-v%s", info.Kind, info.Name, info.Version)), nil
 }
 
 // Use pulumi plugin install to ensure all requested plugins are installed, if not already.
