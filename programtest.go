@@ -16,11 +16,14 @@ package providertest
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/pulumi/pulumi/pkg/v3/engine"
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 )
 
 // Code in this file is copied from the ProgramTest framework and modified to introduce
@@ -75,4 +78,14 @@ func (wrapper *programTestWrapper) lifecycleInitAndDestroy(
 
 	pt.TestFinished = true
 	return nil
+}
+
+// Utility to load up Pulumi.yaml so we know things like what language the project is.
+func getProjinfo(projectDir string) (*engine.Projinfo, error) {
+	projfile := filepath.Join(projectDir, workspace.ProjectFile+".yaml")
+	proj, err := workspace.LoadProject(projfile)
+	if err != nil {
+		return nil, err
+	}
+	return &engine.Projinfo{Proj: proj, Root: projectDir}, nil
 }
