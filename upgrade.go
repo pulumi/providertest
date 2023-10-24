@@ -231,6 +231,9 @@ func (b *providerUpgradeBuilder) run(t *testing.T, mode UpgradeTestMode) {
 		if skip, ok := b.modes[UpgradeTestMode_Quick]; ok && skip != "" {
 			t.Skip(skip)
 		}
+		if b.resourceProviderServer == nil {
+			t.Skip("WithResourceProviderServer is required for quick mode")
+		}
 		b.checkProviderUpgradeQuick(t)
 	case UpgradeTestMode_PreviewOnly:
 		if skip, ok := b.modes[UpgradeTestMode_PreviewOnly]; ok && skip != "" {
@@ -395,6 +398,12 @@ func (b *providerUpgradeBuilder) newProviderUpgradeInfo(t *testing.T) providerUp
 func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 	info := b.newProviderUpgradeInfo(t)
 	t.Logf("Baseline provider version: %s", b.baselineVersion)
+
+	// Skip if state not yet created
+	if _, err := os.Stat(info.stateFile); os.IsNotExist(err) {
+		t.Skipf("No pre-recorded state found for %s. Run in 'snapshot' mode to capture the current state produced by the current provider version.", b.baselineVersion)
+		return
+	}
 
 	opts := integration.ProgramTestOptions{
 		Dir:    b.program,
