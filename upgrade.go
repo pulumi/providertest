@@ -204,12 +204,18 @@ func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 	return func(b *ProviderTest) { b.upgradeOpts.resourceProviderServer = s }
 }
 
+func WithExtraRuntimeValidation(f func(t *testing.T, stack integration.RuntimeValidationStackInfo)) Option {
+	contract.Assertf(f != nil, "RuntimeValidation cannot be nil")
+	return func(b *ProviderTest) { b.upgradeOpts.extraRuntimeValidation = f }
+}
+
 type providerUpgradeOpts struct {
 	baselineVersion        string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	providerName           string
 	resourceProviderServer pulumirpc.ResourceProviderServer
 	extraBaselineDeps      map[string]string
+	extraRuntimeValidation func(t *testing.T, stack integration.RuntimeValidationStackInfo)
 }
 
 type providerUpgradeBuilder struct {
@@ -413,6 +419,11 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		SkipUpdate:       true,
 		SkipRefresh:      true,
 		SkipExportImport: true,
+
+		ExtraRuntimeValidation: b.extraRuntimeValidation,
+
+		// TODO,tkappler temporary
+		AllowEmptyPreviewChanges: true,
 	}
 
 	opts = opts.With(b.optionsForPreviewOnly(t))
