@@ -230,6 +230,16 @@ func NoChanges() DiffValidation {
 	}
 }
 
+func NoReplacements() DiffValidation {
+	return func(t *testing.T, diffs Diffs) {
+		for _, d := range diffs {
+			if d.HasChanges {
+				assert.Emptyf(t, d.Replaces, "Unexpected replacement plan for %v", d.URN)
+			}
+		}
+	}
+}
+
 type providerUpgradeOpts struct {
 	baselineVersion        string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
