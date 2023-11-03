@@ -25,6 +25,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
@@ -35,6 +36,7 @@ import (
 
 	"github.com/pulumi/providertest/flags"
 	"github.com/pulumi/providertest/replay"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 )
 
 // Verifies that upgrading the provider does not generate any unexpected replacements.
@@ -204,12 +206,37 @@ func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 	return func(b *ProviderTest) { b.upgradeOpts.resourceProviderServer = s }
 }
 
+type Diff struct {
+	URN                 resource.URN
+	HasChanges          bool
+	Diffs               []string
+	Replaces            []string
+	DeleteBeforeReplace bool
+}
+
+type Diffs []Diff
+
+type DiffValidation = func(*testing.T, Diffs)
+
+func WithDiffValidation(valid DiffValidation) Option {
+	return func(b *ProviderTest) { b.upgradeOpts.diffValidation = valid }
+}
+
+func NoChanges() DiffValidation {
+	return func(t *testing.T, diffs Diffs) {
+		for _, d := range diffs {
+			assert.Falsef(t, d.HasChanges, "Expected no changes for %v", d.URN)
+		}
+	}
+}
+
 type providerUpgradeOpts struct {
 	baselineVersion        string
 	modes                  map[UpgradeTestMode]string // skip reason by mode
 	providerName           string
 	resourceProviderServer pulumirpc.ResourceProviderServer
 	extraBaselineDeps      map[string]string
+	diffValidation         DiffValidation
 }
 
 type providerUpgradeBuilder struct {
@@ -405,6 +432,8 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		return
 	}
 
+	previewLogs := filepath.Join(t.TempDir(), "preview-grpc-logs.json")
+
 	opts := integration.ProgramTestOptions{
 		Dir:    b.program,
 		Config: b.config,
@@ -413,6 +442,10 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		SkipUpdate:       true,
 		SkipRefresh:      true,
 		SkipExportImport: true,
+
+		Env: []string{fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", previewLogs)},
+
+		SkipEmptyPreviewUpdate: true,
 	}
 
 	opts = opts.With(b.optionsForPreviewOnly(t))
@@ -424,6 +457,12 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 	pth := newProgramTestHelper(t, opts)
 	err := pth.previewOnlyUpgradeTest(info.stateFile)
 	require.NoError(t, err)
+
+	diffV := NoChanges()
+	if b.diffValidation != nil {
+		diffV = b.diffValidation
+	}
+	verifyChanges(t, previewLogs, diffV)
 }
 
 func (b *providerUpgradeBuilder) optionsForPreviewOnly(t *testing.T) integration.ProgramTestOptions {
@@ -525,8 +564,8 @@ func (pth *programTestHelper) previewOnlyUpgradeTest(stateFile string) (finalErr
 		require.True(t, opts.SkipUpdate, "expecting SkipUpdate: true")
 		require.True(t, opts.SkipRefresh, "expecting SkipRefresh: true")
 		require.True(t, opts.SkipExportImport, "expecting SkipExportImport: true")
-		require.Falsef(t, opts.SkipEmptyPreviewUpdate,
-			"expecting SkipEmptyPreviewUpdate: false")
+		require.Truef(t, opts.SkipEmptyPreviewUpdate,
+			"expecting SkipEmptyPreviewUpdate: true")
 		require.Emptyf(t, opts.EditDirs,
 			"previewOnlyUpgradeTest is incompatible with EditDirs")
 		if err := pt.TestPreviewUpdateAndEdits(); err != nil {
@@ -662,4 +701,53 @@ func (b *providerUpgradeBuilder) optionsForRecordingNode(t *testing.T) integrati
 		// baseline versions.
 		Env: []string{"PULUMI_IGNORE_AMBIENT_PLUGINS=true"},
 	}
+}
+
+func verifyChanges(t *testing.T, grpcLogsFile string, diffV DiffValidation) {
+	bytes, err := os.ReadFile(grpcLogsFile)
+	require.NoError(t, err)
+
+	type req struct {
+		URN string `json:"urn"`
+	}
+
+	type resp struct {
+		Changes             string   `json:"changes"`
+		Diffs               []string `json:"diffs"`
+		Replaces            []string `json:"replaces"`
+		DeleteBeforeReplace bool     `json:"deleteBeforeReplace"`
+	}
+
+	type log struct {
+		Method   string `json:"method"`
+		Request  req    `json:"request"`
+		Repsonse resp   `json:"response"`
+	}
+
+	var diffs Diffs
+
+	for _, s := range strings.Split(string(bytes), "\n") {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		var entry log
+		err = json.Unmarshal([]byte(s), &entry)
+		require.NoError(t, err)
+
+		if entry.Method == "/pulumirpc.ResourceProvider/Diff" {
+			urn, err := resource.ParseURN(entry.Request.URN)
+			require.NoError(t, err)
+
+			diffs = append(diffs, Diff{
+				URN:                 urn,
+				HasChanges:          entry.Repsonse.Changes != "DIFF_NONE",
+				Diffs:               entry.Repsonse.Diffs,
+				Replaces:            entry.Repsonse.Replaces,
+				DeleteBeforeReplace: entry.Repsonse.DeleteBeforeReplace,
+			})
+		}
+	}
+
+	diffV(t, diffs)
 }
