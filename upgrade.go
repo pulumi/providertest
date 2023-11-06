@@ -206,11 +206,26 @@ func WithResourceProviderServer(s pulumirpc.ResourceProviderServer) Option {
 	return func(b *ProviderTest) { b.upgradeOpts.resourceProviderServer = s }
 }
 
+// The structure is mapped directly from Pulumi gRPC DiffResponse structure in the provider protocol
+// and is currently unstable / subject to change.
+//
+// https://github.com/pulumi/pulumi/blob/master/proto/pulumi/provider.proto#L225
+//
+// Need to verify if this is representative of the actual Pulumi plans, since it only considers the
+// decisions made by the provider, not the engine. For example, unclear if replaceOnChanges option
+// https://www.pulumi.com/docs/concepts/options/replaceonchanges/ would surface here.
+//
+// Even with the above caveats, it is reasonable to rely on this for the purposes of testing the
+// provider itself.
 type Diff struct {
-	URN                 resource.URN
-	HasChanges          bool
+	URN        resource.URN
+	HasChanges bool
+
+	// Non-empty Replaces indicates that the plan is a resource replacement and not a simple
+	// in-place update.
+	Replaces []string
+
 	Diffs               []string
-	Replaces            []string
 	DeleteBeforeReplace bool
 }
 
