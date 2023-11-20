@@ -462,7 +462,11 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 		return
 	}
 
-	previewLogs := filepath.Join(t.TempDir(), "preview-grpc-logs.json")
+	previewLogs := os.Getenv("PULUMI_DEBUG_GRPC")
+	if previewLogs == "" {
+		previewLogs = filepath.Join(t.TempDir(), "preview-grpc-logs.json")
+	}
+	t.Logf("Recording preview gRPC logs to %s", previewLogs)
 
 	opts := integration.ProgramTestOptions{
 		Dir:    b.program,
