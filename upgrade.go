@@ -760,7 +760,7 @@ func verifyChanges(t *testing.T, grpcLogsFile string, diffV DiffValidation) {
 		err = json.Unmarshal([]byte(s), &entry)
 		require.NoError(t, err)
 
-		if entry.Method == "/pulumirpc.ResourceProvider/Diff" {
+		if entry.Method == "/pulumirpc.ResourceProvider/Diff" || entry.Method == "/pulumirpc.ResourceProvider/DiffConfig" {
 			urn, err := resource.ParseURN(entry.Request.URN)
 			require.NoError(t, err)
 
