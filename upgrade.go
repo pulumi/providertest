@@ -227,6 +227,11 @@ type Diff struct {
 
 	Diffs               []string
 	DeleteBeforeReplace bool
+
+	// May only be populated if there's a change.
+	Olds map[string]any
+	// May only be populated if there's a change.
+	News map[string]any
 }
 
 type Diffs []Diff
@@ -240,7 +245,7 @@ func WithDiffValidation(valid DiffValidation) Option {
 func NoChanges() DiffValidation {
 	return func(t *testing.T, diffs Diffs) {
 		for _, d := range diffs {
-			assert.Falsef(t, d.HasChanges, "Expected no changes for %v", d.URN)
+			assert.Falsef(t, d.HasChanges, "Expected no changes for %v", d)
 		}
 	}
 }
@@ -249,7 +254,7 @@ func NoReplacements() DiffValidation {
 	return func(t *testing.T, diffs Diffs) {
 		for _, d := range diffs {
 			if d.HasChanges {
-				assert.Emptyf(t, d.Replaces, "Unexpected replacement plan for %v", d.URN)
+				assert.Emptyf(t, d.Replaces, "Unexpected replacement plan for %v", d)
 			}
 		}
 	}
@@ -733,7 +738,9 @@ func verifyChanges(t *testing.T, grpcLogsFile string, diffV DiffValidation) {
 	require.NoError(t, err)
 
 	type req struct {
-		URN string `json:"urn"`
+		URN  string         `json:"urn"`
+		Olds map[string]any `json:"olds"`
+		News map[string]any `json:"news"`
 	}
 
 	type resp struct {
@@ -746,7 +753,7 @@ func verifyChanges(t *testing.T, grpcLogsFile string, diffV DiffValidation) {
 	type log struct {
 		Method   string `json:"method"`
 		Request  req    `json:"request"`
-		Repsonse resp   `json:"response"`
+		Response resp   `json:"response"`
 	}
 
 	var diffs Diffs
@@ -764,13 +771,28 @@ func verifyChanges(t *testing.T, grpcLogsFile string, diffV DiffValidation) {
 			urn, err := resource.ParseURN(entry.Request.URN)
 			require.NoError(t, err)
 
-			diffs = append(diffs, Diff{
+			d := Diff{
 				URN:                 urn,
-				HasChanges:          entry.Repsonse.Changes != "DIFF_NONE",
-				Diffs:               entry.Repsonse.Diffs,
-				Replaces:            entry.Repsonse.Replaces,
-				DeleteBeforeReplace: entry.Repsonse.DeleteBeforeReplace,
-			})
+				HasChanges:          entry.Response.Changes != "" && entry.Response.Changes != "DIFF_NONE",
+				Diffs:               entry.Response.Diffs,
+				Replaces:            entry.Response.Replaces,
+				DeleteBeforeReplace: entry.Response.DeleteBeforeReplace,
+			}
+
+			if d.HasChanges {
+				d.Olds = map[string]any{}
+				d.News = map[string]any{}
+				for _, rep := range d.Replaces {
+					d.Olds[rep] = entry.Request.Olds[rep]
+					d.News[rep] = entry.Request.News[rep]
+				}
+				for _, diffProp := range d.Diffs {
+					d.Olds[diffProp] = entry.Request.Olds[diffProp]
+					d.News[diffProp] = entry.Request.News[diffProp]
+				}
+			}
+
+			diffs = append(diffs, d)
 		}
 	}
 
