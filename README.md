@@ -86,7 +86,7 @@ used to inform `upgrade-quick` and `upgrade-preview-only` tests. When updating t
 snapshots need to be recorded anew on the new version.
 
 ### Fixing failing tests
-If a test fails after changing it then the snapshot files likely need to be re-recorded.  
+If a test fails after the example program it is based on changes then the snapshot files likely need to be re-recorded.  
 The snapshot files are only used for speeding up the tests. The state is not directly compared to the recorded state.  
 If a test is failing because of a difference in the way the provider generates the state, then the right way to fix it would be to use a
 [DiffValidation](https://github.com/pulumi/providertest/blob/5f23c3ec7cee882392ea356a54c0f74f56b0f7d5/upgrade.go#L241) strategy.
