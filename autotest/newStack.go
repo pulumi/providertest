@@ -1,13 +1,11 @@
 package autotest
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
-	"testing"
 
 	"github.com/pulumi/pulumi/sdk/go/common/util/contract"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
@@ -15,21 +13,21 @@ import (
 
 // NewStack creates a new stack, ensure it's cleaned up after the test is done.
 // If no stack name is provided, a random one will be generated.
-func NewStack(t *testing.T, ctx context.Context, dir, stackName string) *auto.Stack {
-	t.Helper()
+func (a *AutoTest) NewStack(stackName string) *auto.Stack {
+	a.t.Helper()
 
 	if stackName == "" {
-		stackName = randomStackName(dir)
+		stackName = randomStackName(a.source)
 	}
-	stack, err := auto.NewStackLocalSource(ctx, stackName, dir)
+	stack, err := auto.NewStackLocalSource(a.ctx, stackName, a.source)
 
 	if err != nil {
-		t.Error(err)
+		a.t.Error(err)
 		return nil
 	}
-	t.Cleanup(func() {
-		stack.Destroy(ctx)
-		stack.Workspace().RemoveStack(ctx, stackName)
+	a.t.Cleanup(func() {
+		stack.Destroy(a.ctx)
+		stack.Workspace().RemoveStack(a.ctx, stackName)
 	})
 	return &stack
 }

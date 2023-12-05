@@ -1,12 +1,18 @@
 package autotest
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewStack(t *testing.T) {
-	stack := NewStack(t, context.Background(), filepath.Join("testdata", "python_program"), "")
+func TestNewStackPreview(t *testing.T) {
+	test := NewAutoTest(t, filepath.Join("testdata", "python_program"))
+	test = test.CopyToTempDir()
+	test.Install()
+	stack := test.NewStack("")
 	t.Log(stack.Name())
+	preview := test.Preview(stack)
+	assert.Equal(t, 1, len(preview.ChangeSummary))
 }

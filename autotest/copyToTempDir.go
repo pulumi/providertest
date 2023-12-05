@@ -6,28 +6,27 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
-	"testing"
 )
 
-func CopyToTempDir(t *testing.T, dir string) string {
-	t.Helper()
+func (a *AutoTest) CopyToTempDir() *AutoTest {
+	a.t.Helper()
 
-	tempDir := t.TempDir()
+	tempDir := a.t.TempDir()
 
 	// Maintain the directory name in the temp dir as this might be used for stack naming.
-	sourceBase := filepath.Base(dir)
-	tempInner := filepath.Join(tempDir, sourceBase)
-	err := os.Mkdir(tempInner, 0755)
+	sourceBase := filepath.Base(a.source)
+	destination := filepath.Join(tempDir, sourceBase)
+	err := os.Mkdir(destination, 0755)
 	if err != nil {
-		t.Fatal(err)
+		a.t.Fatal(err)
 	}
 
-	err = copyDirectory(dir, tempInner)
+	err = copyDirectory(a.source, destination)
 	if err != nil {
-		t.Fatal(err)
+		a.t.Fatal(err)
 	}
 
-	return tempInner
+	return a.WithSource(destination)
 }
 
 func copyDirectory(scrDir, dest string) error {
