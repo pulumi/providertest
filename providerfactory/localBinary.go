@@ -1,4 +1,4 @@
-package autotest
+package providerfactory
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func LocalProviderBinary(name, path string) (ProviderFactory, error) {
+func LocalBinary(name, path string) (ProviderFactory, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err

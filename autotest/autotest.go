@@ -11,7 +11,6 @@ type AutoTest struct {
 	t            *testing.T
 	ctx          context.Context
 	source       string
-	providers    map[string]ProviderFactory
 	envBuilder   *EnvBuilder
 	currentStack *auto.Stack
 }
@@ -30,7 +29,6 @@ func NewAutoTest(t *testing.T, source string) *AutoTest {
 		t:          t,
 		ctx:        ctx,
 		source:     source,
-		providers:  map[string]ProviderFactory{},
 		envBuilder: NewEnvBuilder(t),
 	}
 }

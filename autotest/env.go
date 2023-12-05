@@ -6,30 +6,27 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/pulumi/providertest/providerfactory"
 )
 
 type EnvBuilder struct {
-	t               *testing.T
-	configPassword  string
-	providers       map[string]ProviderFactory
-	useLocalBackend bool
+	t                 *testing.T
+	configPassword    string
+	providers         map[string]providerfactory.ProviderFactory
+	useAmbientBackend bool
 }
 
 func NewEnvBuilder(t *testing.T) *EnvBuilder {
 	return &EnvBuilder{
-		t:               t,
-		configPassword:  defaultConfigPassword,
-		providers:       map[string]ProviderFactory{},
-		useLocalBackend: false,
+		t:                 t,
+		configPassword:    defaultConfigPassword,
+		providers:         map[string]providerfactory.ProviderFactory{},
+		useAmbientBackend: false,
 	}
 }
 
-// ProviderFactory is a function that starts a provider and returns the port it is listening on.
-// The function should return an error if the provider fails to start.
-// When the test is complete, the context will be cancelled and the provider should exit.
-type ProviderFactory func(ctx context.Context) (int, error)
-
-func (e *EnvBuilder) AttachProvider(name string, startProvider ProviderFactory) *EnvBuilder {
+func (e *EnvBuilder) AttachProvider(name string, startProvider providerfactory.ProviderFactory) *EnvBuilder {
 	e.t.Helper()
 	e.providers[name] = startProvider
 	return e
@@ -40,7 +37,7 @@ func (e *EnvBuilder) AttachProvider(name string, startProvider ProviderFactory) 
 // pulumi-resource-<name> in that directory.
 func (e *EnvBuilder) AttachProviderBinary(name, path string) *EnvBuilder {
 	e.t.Helper()
-	startProvider, err := LocalProviderBinary(name, path)
+	startProvider, err := providerfactory.LocalBinary(name, path)
 	if err != nil {
 		e.t.Fatalf("failed to create provider factory for %s: %v", name, err)
 	}
@@ -48,9 +45,28 @@ func (e *EnvBuilder) AttachProviderBinary(name, path string) *EnvBuilder {
 	return e
 }
 
-func (e *EnvBuilder) UseLocalBackend() *EnvBuilder {
+// AttachProviderServer adds a provider to be started and attached for the test run.
+func (e *EnvBuilder) AttachProviderServer(name string, startProvider providerfactory.ResourceProviderServerFactory) *EnvBuilder {
 	e.t.Helper()
-	e.useLocalBackend = true
+	startProviderFactory, err := providerfactory.ResourceProviderFactory(startProvider)
+	if err != nil {
+		e.t.Fatalf("failed to create provider factory for %s: %v", name, err)
+	}
+	e.providers[name] = startProviderFactory
+	return e
+}
+
+// AttachDownloadedPlugin installs the plugin via `pulumi plugin install` and adds it to the test environment.
+func (e *EnvBuilder) AttachDownloadedPlugin(name, version string) *EnvBuilder {
+	e.t.Helper()
+	binaryPath := providerfactory.DownloadPluginBinary(e.t, name, version)
+	return e.AttachProviderBinary(name, binaryPath)
+}
+
+// UseAmbientBackend configures the test to use the ambient backend rather than a local temporary directory.
+func (e *EnvBuilder) UseAmbientBackend() *EnvBuilder {
+	e.t.Helper()
+	e.useAmbientBackend = true
 	return e
 }
 
@@ -63,7 +79,7 @@ func (e *EnvBuilder) GetEnv() map[string]string {
 		"PULUMI_CONFIG_PASSPHRASE": defaultConfigPassword,
 	}
 
-	if e.useLocalBackend {
+	if !e.useAmbientBackend {
 		backendFolder := e.t.TempDir()
 		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
 	}
