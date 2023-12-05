@@ -26,7 +26,7 @@ func (a *AutoTest) CopyToTempDir() *AutoTest {
 		a.t.Fatal(err)
 	}
 
-	return a.WithSource(destination)
+	return NewAutoTest(a.t, destination)
 }
 
 func copyDirectory(scrDir, dest string) error {

@@ -2,13 +2,14 @@ package autotest
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto/optpreview"
 )
 
-func (a *AutoTest) Preview(stack *auto.Stack) auto.PreviewResult {
+func (a *AutoTest) Preview(stack *auto.Stack, opts ...optpreview.Option) auto.PreviewResult {
 	a.t.Helper()
 
 	a.t.Log("previewing update")
-	result, err := stack.Preview(a.ctx)
+	result, err := stack.Preview(a.ctx, opts...)
 	if err != nil {
 		a.t.Fatalf("failed to preview update: %s", err)
 	}

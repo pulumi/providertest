@@ -6,9 +6,11 @@ import (
 )
 
 type AutoTest struct {
-	t      *testing.T
-	ctx    context.Context
-	source string
+	t          *testing.T
+	ctx        context.Context
+	source     string
+	providers  map[string]ProviderFactory
+	envBuilder *EnvBuilder
 }
 
 func NewAutoTest(t *testing.T, source string) *AutoTest {
@@ -19,7 +21,15 @@ func NewAutoTest(t *testing.T, source string) *AutoTest {
 	} else {
 		ctx = context.Background()
 	}
-	return &AutoTest{t: t, ctx: ctx, source: source}
+	ctx, cancel := context.WithCancel(ctx)
+	t.Cleanup(cancel)
+	return &AutoTest{
+		t:          t,
+		ctx:        ctx,
+		source:     source,
+		providers:  map[string]ProviderFactory{},
+		envBuilder: NewEnvBuilder(t),
+	}
 }
 
 func (a *AutoTest) Source() string {
@@ -30,10 +40,16 @@ func (a *AutoTest) T() *testing.T {
 	return a.t
 }
 
-func (a *AutoTest) Ctx() context.Context {
+func (a *AutoTest) Context() context.Context {
 	return a.ctx
 }
 
+func (a *AutoTest) Env() *EnvBuilder {
+	return a.envBuilder
+}
+
 func (a *AutoTest) WithSource(source string) *AutoTest {
-	return &AutoTest{t: a.t, ctx: a.ctx, source: source}
+	a.t.Helper()
+	a.source = source
+	return a
 }

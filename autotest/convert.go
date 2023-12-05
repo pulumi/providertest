@@ -7,7 +7,12 @@ import (
 	"path/filepath"
 )
 
-func (a *AutoTest) Convert(language string) (*AutoTest, string) {
+type ConvertResult struct {
+	AutoTest *AutoTest
+	Output   string
+}
+
+func (a *AutoTest) Convert(language string) ConvertResult {
 	a.t.Helper()
 
 	tempDir := a.t.TempDir()
@@ -26,5 +31,8 @@ func (a *AutoTest) Convert(language string) (*AutoTest, string) {
 		a.t.Fatalf("failed to convert directory: %s\n%s", err, out)
 	}
 
-	return a.WithSource(targetDir), string(out)
+	return ConvertResult{
+		AutoTest: NewAutoTest(a.t, targetDir),
+		Output:   string(out),
+	}
 }
