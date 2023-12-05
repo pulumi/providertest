@@ -30,7 +30,7 @@ func (a *AutoTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption)
 	stack, err := auto.NewStackLocalSource(a.ctx, stackName, a.source, stackOpts...)
 
 	if err != nil {
-		a.t.Error(err)
+		a.t.Fatalf("failed to create stack: %s", err)
 		return nil
 	}
 	a.t.Cleanup(func() {
@@ -43,6 +43,7 @@ func (a *AutoTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption)
 			a.t.Errorf("failed to remove stack: %s", err)
 		}
 	})
+	a.currentStack = &stack
 	return &stack
 }
 

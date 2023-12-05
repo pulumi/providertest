@@ -9,16 +9,18 @@ import (
 )
 
 type EnvBuilder struct {
-	t              *testing.T
-	configPassword string
-	providers      map[string]ProviderFactory
+	t               *testing.T
+	configPassword  string
+	providers       map[string]ProviderFactory
+	useLocalBackend bool
 }
 
 func NewEnvBuilder(t *testing.T) *EnvBuilder {
 	return &EnvBuilder{
-		t:              t,
-		configPassword: defaultConfigPassword,
-		providers:      map[string]ProviderFactory{},
+		t:               t,
+		configPassword:  defaultConfigPassword,
+		providers:       map[string]ProviderFactory{},
+		useLocalBackend: false,
 	}
 }
 
@@ -46,12 +48,24 @@ func (e *EnvBuilder) AttachProviderBinary(name, path string) *EnvBuilder {
 	return e
 }
 
+func (e *EnvBuilder) UseLocalBackend() *EnvBuilder {
+	e.t.Helper()
+	e.useLocalBackend = true
+	return e
+}
+
 var defaultConfigPassword string = "correct horse battery staple"
 
 func (e *EnvBuilder) GetEnv() map[string]string {
 	e.t.Helper()
+
 	env := map[string]string{
 		"PULUMI_CONFIG_PASSPHRASE": defaultConfigPassword,
+	}
+
+	if e.useLocalBackend {
+		backendFolder := e.t.TempDir()
+		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
 	}
 
 	if len(e.providers) > 0 {

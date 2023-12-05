@@ -11,20 +11,26 @@ func TestNewStackPreview(t *testing.T) {
 	sourceTest := NewAutoTest(t, filepath.Join("testdata", "yaml_program"))
 
 	yamlTest := sourceTest.CopyToTempDir()
+	yamlTest.Env().UseLocalBackend()
 	yamlTest.Install()
-	yamlStack := yamlTest.NewStack("")
-	yamlPreview := yamlTest.Preview(yamlStack)
+	stackName := "stack"
+	yamlTest.NewStack(stackName)
+	yamlPreview := yamlTest.Preview()
+	yamlUp := yamlTest.Up()
+	assert.Equal(t, 1, len(*yamlUp.Summary.ResourceChanges))
+
+	yamlStack := yamlTest.ExportStack()
 
 	pythonConvert := sourceTest.Convert("python")
 	pythonTest := pythonConvert.AutoTest
+	pythonTest.Env().UseLocalBackend()
 	pythonTest.Install()
-	pythonStack := pythonTest.NewStack("")
-	pythonPreview := pythonTest.Preview(pythonStack)
+	pythonTest.NewStack(stackName)
+	pythonTest.ImportStack(yamlStack)
 
+	pythonPreview := pythonTest.Preview()
 	assert.Equal(t, yamlPreview.ChangeSummary, pythonPreview.ChangeSummary)
 
-	yamlUp := yamlTest.Up(yamlStack)
-	pythonUp := pythonTest.Up(pythonStack)
-
-	assert.Equal(t, yamlUp.Summary.ResourceChanges, pythonUp.Summary.ResourceChanges)
+	pythonUp := pythonTest.Up()
+	assert.Equal(t, 0, len(*pythonUp.Summary.ResourceChanges))
 }

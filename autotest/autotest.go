@@ -3,14 +3,17 @@ package autotest
 import (
 	"context"
 	"testing"
+
+	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
 
 type AutoTest struct {
-	t          *testing.T
-	ctx        context.Context
-	source     string
-	providers  map[string]ProviderFactory
-	envBuilder *EnvBuilder
+	t            *testing.T
+	ctx          context.Context
+	source       string
+	providers    map[string]ProviderFactory
+	envBuilder   *EnvBuilder
+	currentStack *auto.Stack
 }
 
 func NewAutoTest(t *testing.T, source string) *AutoTest {
@@ -52,4 +55,8 @@ func (a *AutoTest) WithSource(source string) *AutoTest {
 	a.t.Helper()
 	a.source = source
 	return a
+}
+
+func (a *AutoTest) CurrentStack() *auto.Stack {
+	return a.currentStack
 }
