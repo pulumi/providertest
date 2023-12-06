@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/pulumi/providertest/autoassert"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,9 +35,7 @@ func TestDeploy(t *testing.T) {
 	yamlTest.ImportStack(yamlStack)
 
 	yamlPreview2 := yamlTest.Preview()
-	assert.Equal(t,
-		map[apitype.OpType]int{apitype.OpSame: 2},
-		yamlPreview2.ChangeSummary)
+	autoassert.PreviewHasNoChanges(t, yamlPreview2)
 }
 
 func TestConvert(t *testing.T) {
@@ -58,6 +57,8 @@ func TestConvert(t *testing.T) {
 	assert.Equal(t,
 		map[string]int{"create": 2},
 		*pythonUp.Summary.ResourceChanges)
+
+	autoassert.UpHasNoDeletes(t, pythonUp)
 
 	// Show the deploy output.
 	t.Log(pythonUp.StdOut)

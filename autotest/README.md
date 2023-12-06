@@ -107,6 +107,17 @@ program.Destroy()
 > [!NOTE]
 > Stacks created with `Init` or `NewStack` will be automatically destroyed and removed at the end of the test.
 
+## Asserts
+
+In parallel to the `autotest` module, the `autoassert` module contains a selection of functions for asserting on the results of the automation API:
+
+```go
+autoassert.UpHasNoDeletes(t, upResult)
+autoassert.UpHasNoChanges(t, upResult)
+autoassert.PreviewHasNoChanges(t, previewResult)
+autoassert.PreviewHasNoDeletes(t, previewResult)
+```
+
 ## Example
 
 Here's a complete example as a test might look for the gcp provider with a local pre-built binary.
@@ -128,9 +139,7 @@ func TestExample(t *testing.T) {
 
   // Up with assert
   deploy := program.Up()
-  assert.Equal(t,
-    map[string]int{"create": 2},
-    *deploy.Summary.ResourceChanges)
+  autoassert.UpHasNoDeletes(t, deploy)
 
   // Access logs for troubleshooting
   t.Log(deploy.StdOut)
