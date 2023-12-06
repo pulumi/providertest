@@ -8,6 +8,9 @@ import (
 	"syscall"
 )
 
+// CopyToTempDir copies the program to a temporary directory.
+// It returns a new AutoTest instance for the copied program.
+// This is used to avoid temporary files being written to the source directory.
 func (a *AutoTest) CopyToTempDir() *AutoTest {
 	a.t.Helper()
 

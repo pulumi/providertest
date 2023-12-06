@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewStackPreview(t *testing.T) {
+func TestDeploy(t *testing.T) {
 	sourceTest := NewAutoTest(t, filepath.Join("testdata", "yaml_program"))
 
 	// Test copying from the source directory to a temporary directory.
@@ -31,29 +31,55 @@ func TestNewStackPreview(t *testing.T) {
 
 	// Export the stack state.
 	yamlStack := yamlTest.ExportStack()
+	yamlTest.ImportStack(yamlStack)
+
+	yamlPreview2 := yamlTest.Preview()
+	assert.Equal(t,
+		map[apitype.OpType]int{apitype.OpSame: 2},
+		yamlPreview2.ChangeSummary)
+}
+
+func TestConvert(t *testing.T) {
+	sourceTest := NewAutoTest(t, filepath.Join("testdata", "yaml_program"))
 
 	// Convert the original source to Python.
 	pythonTest := sourceTest.Convert("python").AutoTest
 	assert.NotEqual(t, pythonTest.Source(), sourceTest.Source())
-	// Also do a provider attach this time.
-	pythonTest.Env().AttachDownloadedPlugin("gcp", "6.61.0")
 
 	pythonTest.Install()
-	// Use the same stack name as the YAML stack. It won't conflict because our state goes into an isolated temp directory.
-	pythonTest.NewStack(yamlTest.CurrentStack().Name())
-	// Re-import the YAML's deployed stack state.
-	pythonTest.ImportStack(yamlStack)
+	pythonTest.NewStack("test")
 
-	// Test that preview and up shows only sames.
 	pythonPreview := pythonTest.Preview()
 	assert.Equal(t,
-		map[apitype.OpType]int{apitype.OpSame: 2},
+		map[apitype.OpType]int{apitype.OpCreate: 2},
 		pythonPreview.ChangeSummary)
 
 	pythonUp := pythonTest.Up()
 	assert.Equal(t, 1, len(*pythonUp.Summary.ResourceChanges))
 	assert.Equal(t,
-		map[string]int{"same": 2},
+		map[string]int{"create": 2},
 		*pythonUp.Summary.ResourceChanges)
+
+	// Show the deploy output.
 	t.Log(pythonUp.StdOut)
+}
+
+func TestBinaryAttach(t *testing.T) {
+	program := NewAutoTest(t, filepath.Join("testdata", "yaml_gcp")).Init("")
+
+	program.Env().AttachDownloadedPlugin("gcp", "6.61.0")
+	program.SetConfig("gcp:project", "pulumi-development")
+
+	preview := program.Preview()
+	assert.Equal(t,
+		map[apitype.OpType]int{apitype.OpCreate: 2},
+		preview.ChangeSummary)
+
+	deploy := program.Up()
+	assert.Equal(t, 1, len(*deploy.Summary.ResourceChanges))
+	assert.Equal(t,
+		map[string]int{"create": 2},
+		*deploy.Summary.ResourceChanges)
+
+	t.Log(deploy.StdOut)
 }

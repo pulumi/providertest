@@ -8,10 +8,14 @@ import (
 )
 
 type ConvertResult struct {
+	// AutoTest instance for the converted program.
 	AutoTest *AutoTest
-	Output   string
+	// Combined output of the `pulumi convert` command.
+	Output string
 }
 
+// Convert a program to a given language.
+// It returns a new AutoTest instance for the converted program which will be outputted into a temporary directory.
 func (a *AutoTest) Convert(language string) ConvertResult {
 	a.t.Helper()
 

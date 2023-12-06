@@ -12,20 +12,25 @@ import (
 
 type EnvBuilder struct {
 	t                 *testing.T
-	configPassword    string
+	configPassphrase  string
 	providers         map[string]providerfactory.ProviderFactory
 	useAmbientBackend bool
+	custom            map[string]string
 }
+
+var defaultConfigPassphrase string = "correct horse battery staple"
 
 func NewEnvBuilder(t *testing.T) *EnvBuilder {
 	return &EnvBuilder{
 		t:                 t,
-		configPassword:    defaultConfigPassword,
+		configPassphrase:  defaultConfigPassphrase,
 		providers:         map[string]providerfactory.ProviderFactory{},
 		useAmbientBackend: false,
+		custom:            map[string]string{},
 	}
 }
 
+// AttachProvider will start the provider via the specified factory and attach it when running the program under test.
 func (e *EnvBuilder) AttachProvider(name string, startProvider providerfactory.ProviderFactory) *EnvBuilder {
 	e.t.Helper()
 	e.providers[name] = startProvider
@@ -45,7 +50,7 @@ func (e *EnvBuilder) AttachProviderBinary(name, path string) *EnvBuilder {
 	return e
 }
 
-// AttachProviderServer adds a provider to be started and attached for the test run.
+// AttachProviderServer will start the specified and attach for the test run.
 func (e *EnvBuilder) AttachProviderServer(name string, startProvider providerfactory.ResourceProviderServerFactory) *EnvBuilder {
 	e.t.Helper()
 	startProviderFactory, err := providerfactory.ResourceProviderFactory(startProvider)
@@ -56,7 +61,7 @@ func (e *EnvBuilder) AttachProviderServer(name string, startProvider providerfac
 	return e
 }
 
-// AttachDownloadedPlugin installs the plugin via `pulumi plugin install` and adds it to the test environment.
+// AttachDownloadedPlugin installs the plugin via `pulumi plugin install` then will start the provider and attach it for the test run.
 func (e *EnvBuilder) AttachDownloadedPlugin(name, version string) *EnvBuilder {
 	e.t.Helper()
 	binaryPath := providerfactory.DownloadPluginBinary(e.t, name, version)
@@ -70,13 +75,40 @@ func (e *EnvBuilder) UseAmbientBackend() *EnvBuilder {
 	return e
 }
 
-var defaultConfigPassword string = "correct horse battery staple"
+// Set a custom environment variable to use when running the program under test.
+func (e *EnvBuilder) Set(key, value string) *EnvBuilder {
+	e.t.Helper()
+	e.custom[key] = value
+	return e
+}
 
+// Clear all custom environment variables.
+func (e *EnvBuilder) Clear() map[string]string {
+	e.t.Helper()
+	e.custom = map[string]string{}
+	return e.custom
+}
+
+// Delete a custom environment variable.
+func (e *EnvBuilder) Delete(key string) *EnvBuilder {
+	e.t.Helper()
+	delete(e.custom, key)
+	return e
+}
+
+// SetConfigPassword sets the config passphrase to use when running the program under test.
+func (e *EnvBuilder) SetConfigPassword(passphrase string) *EnvBuilder {
+	e.t.Helper()
+	e.configPassphrase = passphrase
+	return e
+}
+
+// GetEnv returns the environment variables to use when running the program under test.
 func (e *EnvBuilder) GetEnv() map[string]string {
 	e.t.Helper()
 
 	env := map[string]string{
-		"PULUMI_CONFIG_PASSPHRASE": defaultConfigPassword,
+		"PULUMI_CONFIG_PASSPHRASE": e.configPassphrase,
 	}
 
 	if !e.useAmbientBackend {

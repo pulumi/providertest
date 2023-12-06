@@ -16,14 +16,13 @@ type AutoTest struct {
 }
 
 func NewAutoTest(t *testing.T, source string) *AutoTest {
-	deadline, ok := t.Deadline()
 	var ctx context.Context
-	if ok {
-		ctx, _ = context.WithDeadline(context.Background(), deadline)
+	var cancel context.CancelFunc
+	if deadline, ok := t.Deadline(); ok {
+		ctx, cancel = context.WithDeadline(context.Background(), deadline)
 	} else {
-		ctx = context.Background()
+		ctx, cancel = context.WithCancel(context.Background())
 	}
-	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 	return &AutoTest{
 		t:          t,

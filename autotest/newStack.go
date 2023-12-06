@@ -34,6 +34,8 @@ func (a *AutoTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption)
 		return nil
 	}
 	a.t.Cleanup(func() {
+		a.t.Helper()
+		a.t.Log("cleaning up stack")
 		_, err := stack.Destroy(a.ctx)
 		if err != nil {
 			a.t.Errorf("failed to destroy stack: %s", err)
