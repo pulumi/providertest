@@ -1,0 +1,13 @@
+name: yaml_gcp
+runtime: yaml
+description: A minimal Google Cloud Pulumi YAML program
+outputs:
+  # Export the DNS name of the bucket
+  bucketName: ${my-bucket.url}
+resources:
+  # Create a GCP resource (Storage Bucket)
+  my-bucket:
+    properties:
+      location: US
+      forceDestroy: true
+    type: gcp:storage:Bucket

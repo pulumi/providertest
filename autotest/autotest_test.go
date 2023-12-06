@@ -55,7 +55,6 @@ func TestConvert(t *testing.T) {
 		pythonPreview.ChangeSummary)
 
 	pythonUp := pythonTest.Up()
-	assert.Equal(t, 1, len(*pythonUp.Summary.ResourceChanges))
 	assert.Equal(t,
 		map[string]int{"create": 2},
 		*pythonUp.Summary.ResourceChanges)
@@ -76,10 +75,13 @@ func TestBinaryAttach(t *testing.T) {
 		preview.ChangeSummary)
 
 	deploy := program.Up()
-	assert.Equal(t, 1, len(*deploy.Summary.ResourceChanges))
 	assert.Equal(t,
 		map[string]int{"create": 2},
 		*deploy.Summary.ResourceChanges)
 
-	t.Log(deploy.StdOut)
+	program.UpdateSource(filepath.Join("testdata", "yaml_gcp_updated"))
+	update := program.Up()
+	assert.Equal(t,
+		map[string]int{"same": 1, "update": 1},
+		*update.Summary.ResourceChanges)
 }
