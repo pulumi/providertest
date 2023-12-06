@@ -1,4 +1,4 @@
-package providerfactory
+package providers
 
 import (
 	"context"
@@ -23,6 +23,7 @@ func LocalBinary(name, path string) (ProviderFactory, error) {
 	factory := func(ctx context.Context) (int, error) {
 		cmd := exec.CommandContext(ctx, path)
 		reader, err := cmd.StdoutPipe()
+		cmd.Stderr = os.Stderr
 		if err != nil {
 			return 0, err
 		}

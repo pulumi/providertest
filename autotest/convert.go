@@ -36,7 +36,12 @@ func (a *AutoTest) Convert(language string) ConvertResult {
 	}
 
 	return ConvertResult{
-		AutoTest: NewAutoTest(a.t, targetDir),
-		Output:   string(out),
+		AutoTest: &AutoTest{
+			t:          a.t,
+			ctx:        a.ctx,
+			source:     targetDir,
+			envBuilder: a.envBuilder.Copy(),
+		},
+		Output: string(out),
 	}
 }

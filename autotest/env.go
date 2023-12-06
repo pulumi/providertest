@@ -2,18 +2,15 @@ package autotest
 
 import (
 	"context"
-	"fmt"
-	"sort"
-	"strings"
 	"testing"
 
-	"github.com/pulumi/providertest/providerfactory"
+	"github.com/pulumi/providertest/providers"
 )
 
 type EnvBuilder struct {
 	t                 *testing.T
 	configPassphrase  string
-	providers         map[string]providerfactory.ProviderFactory
+	providers         map[string]providers.ProviderFactory
 	useAmbientBackend bool
 	custom            map[string]string
 }
@@ -24,14 +21,14 @@ func NewEnvBuilder(t *testing.T) *EnvBuilder {
 	return &EnvBuilder{
 		t:                 t,
 		configPassphrase:  defaultConfigPassphrase,
-		providers:         map[string]providerfactory.ProviderFactory{},
+		providers:         map[string]providers.ProviderFactory{},
 		useAmbientBackend: false,
 		custom:            map[string]string{},
 	}
 }
 
 // AttachProvider will start the provider via the specified factory and attach it when running the program under test.
-func (e *EnvBuilder) AttachProvider(name string, startProvider providerfactory.ProviderFactory) *EnvBuilder {
+func (e *EnvBuilder) AttachProvider(name string, startProvider providers.ProviderFactory) *EnvBuilder {
 	e.t.Helper()
 	e.providers[name] = startProvider
 	return e
@@ -42,7 +39,7 @@ func (e *EnvBuilder) AttachProvider(name string, startProvider providerfactory.P
 // pulumi-resource-<name> in that directory.
 func (e *EnvBuilder) AttachProviderBinary(name, path string) *EnvBuilder {
 	e.t.Helper()
-	startProvider, err := providerfactory.LocalBinary(name, path)
+	startProvider, err := providers.LocalBinary(name, path)
 	if err != nil {
 		e.t.Fatalf("failed to create provider factory for %s: %v", name, err)
 	}
@@ -51,9 +48,9 @@ func (e *EnvBuilder) AttachProviderBinary(name, path string) *EnvBuilder {
 }
 
 // AttachProviderServer will start the specified and attach for the test run.
-func (e *EnvBuilder) AttachProviderServer(name string, startProvider providerfactory.ResourceProviderServerFactory) *EnvBuilder {
+func (e *EnvBuilder) AttachProviderServer(name string, startProvider providers.ResourceProviderServerFactory) *EnvBuilder {
 	e.t.Helper()
-	startProviderFactory, err := providerfactory.ResourceProviderFactory(startProvider)
+	startProviderFactory, err := providers.ResourceProviderFactory(startProvider)
 	if err != nil {
 		e.t.Fatalf("failed to create provider factory for %s: %v", name, err)
 	}
@@ -64,7 +61,7 @@ func (e *EnvBuilder) AttachProviderServer(name string, startProvider providerfac
 // AttachDownloadedPlugin installs the plugin via `pulumi plugin install` then will start the provider and attach it for the test run.
 func (e *EnvBuilder) AttachDownloadedPlugin(name, version string) *EnvBuilder {
 	e.t.Helper()
-	binaryPath := providerfactory.DownloadPluginBinary(e.t, name, version)
+	binaryPath := providers.DownloadPluginBinary(e.t, name, version)
 	return e.AttachProviderBinary(name, binaryPath)
 }
 
@@ -104,7 +101,7 @@ func (e *EnvBuilder) SetConfigPassword(passphrase string) *EnvBuilder {
 }
 
 // GetEnv returns the environment variables to use when running the program under test.
-func (e *EnvBuilder) GetEnv() map[string]string {
+func (e *EnvBuilder) GetEnv(ctx context.Context) map[string]string {
 	e.t.Helper()
 
 	env := map[string]string{
@@ -117,26 +114,29 @@ func (e *EnvBuilder) GetEnv() map[string]string {
 	}
 
 	if len(e.providers) > 0 {
-		providerContext, cancel := context.WithCancel(context.Background())
-		providerNames := make([]string, 0, len(e.providers))
-		for providerName := range e.providers {
-			providerNames = append(providerNames, providerName)
+		e.t.Log("starting providers")
+		providerPorts, cancel, err := providers.StartProviders(ctx, e.providers)
+		if err != nil {
+			e.t.Fatalf("failed to start providers: %v", err)
 		}
-		sort.Strings(providerNames)
-		portMappings := make([]string, 0, len(e.providers))
-		for _, providerName := range providerNames {
-			start := e.providers[providerName]
-			port, err := start(providerContext)
-			if err != nil {
-				e.t.Fatalf("failed to start provider %s: %v", providerName, err)
-			}
-			portMappings = append(portMappings, fmt.Sprintf("%s:%d", providerName, port))
-		}
-		env["PULUMI_DEBUG_PROVIDERS"] = strings.Join(portMappings, ",")
 		e.t.Cleanup(func() {
 			cancel()
 		})
+		env["PULUMI_DEBUG_PROVIDERS"] = providers.GetDebugProvidersEnv(providerPorts)
 	}
 
 	return env
+}
+
+func (e *EnvBuilder) Copy() *EnvBuilder {
+	copy := *e
+	copy.providers = map[string]providers.ProviderFactory{}
+	for k, v := range e.providers {
+		copy.providers[k] = v
+	}
+	copy.custom = map[string]string{}
+	for k, v := range e.custom {
+		copy.custom[k] = v
+	}
+	return &copy
 }

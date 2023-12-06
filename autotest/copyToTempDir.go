@@ -29,7 +29,12 @@ func (a *AutoTest) CopyToTempDir() *AutoTest {
 		a.t.Fatal(err)
 	}
 
-	return NewAutoTest(a.t, destination)
+	return &AutoTest{
+		t:          a.t,
+		ctx:        a.ctx,
+		source:     destination,
+		envBuilder: a.envBuilder.Copy(),
+	}
 }
 
 func copyDirectory(scrDir, dest string) error {

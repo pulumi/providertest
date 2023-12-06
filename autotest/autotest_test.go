@@ -65,24 +65,25 @@ func TestConvert(t *testing.T) {
 }
 
 func TestBinaryAttach(t *testing.T) {
-	program := NewAutoTest(t, filepath.Join("testdata", "yaml_gcp")).Init("")
+	source := NewAutoTest(t, filepath.Join("testdata", "yaml_azure"))
+	source.Env().AttachDownloadedPlugin("azure-native", "2.21.0")
+	program := source.Init("")
 
-	program.Env().AttachDownloadedPlugin("gcp", "6.61.0")
-	program.SetConfig("gcp:project", "pulumi-development")
+	program.SetConfig("azure-native:location", "WestUS2")
 
 	preview := program.Preview()
 	assert.Equal(t,
-		map[apitype.OpType]int{apitype.OpCreate: 2},
+		map[apitype.OpType]int{apitype.OpCreate: 3},
 		preview.ChangeSummary)
 
 	deploy := program.Up()
 	assert.Equal(t,
-		map[string]int{"create": 2},
+		map[string]int{"create": 3},
 		*deploy.Summary.ResourceChanges)
 
-	program.UpdateSource(filepath.Join("testdata", "yaml_gcp_updated"))
+	program.UpdateSource(filepath.Join("testdata", "yaml_azure_updated"))
 	update := program.Up()
 	assert.Equal(t,
-		map[string]int{"same": 1, "update": 1},
+		map[string]int{"same": 2, "update": 1},
 		*update.Summary.ResourceChanges)
 }

@@ -1,4 +1,4 @@
-package providerfactory
+package providers
 
 import (
 	"context"

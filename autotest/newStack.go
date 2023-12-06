@@ -23,7 +23,7 @@ func (a *AutoTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption)
 
 	// Set default stack opts. These can be overridden by the caller.
 	stackOpts := []auto.LocalWorkspaceOption{
-		auto.EnvVars(a.Env().GetEnv()),
+		auto.EnvVars(a.Env().GetEnv(a.ctx)),
 	}
 	stackOpts = append(stackOpts, opts...)
 
