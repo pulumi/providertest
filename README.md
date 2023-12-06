@@ -85,6 +85,17 @@ The resulting recorded snapshot files are currently expected to be checked into 
 used to inform `upgrade-quick` and `upgrade-preview-only` tests. When updating the baseline version,
 snapshots need to be recorded anew on the new version.
 
+### Fixing failing tests
+- If the tests fail by flagging unwanted resource updates or replacements that are actually
+  acceptable, configure or custom
+  [DiffValidation](https://github.com/pulumi/providertest/blob/5f23c3ec7cee882392ea356a54c0f74f56b0f7d5/upgrade.go#L241)
+  setting with more relaxed asserts.
+
+- If the tests flag legitimate upgrade issues, fixes are necessarily specific to the provider and resource being tested. 
+
+- Remember to re-record the test snapshots when making changes to the example program or the
+  baseline provider dependency.
+
 ## Controlling Test Mode
 
 Which subtests are run, and in which mode (quick/full), are controlled by custom `go test` CLI flags. These can be set in makefiles or CI scripts as required.
