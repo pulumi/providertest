@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/providertest/pulumitest/assertpreview"
 	"github.com/pulumi/providertest/pulumitest/assertup"
 	"github.com/pulumi/providertest/pulumitest/opttest"
@@ -18,6 +19,7 @@ func TestDeploy(t *testing.T) {
 	test.Install()
 	// Create a new stack with auto-naming.
 	test.NewStack("")
+
 	// Test a preview.
 	yamlPreview := test.Preview()
 	assert.Equal(t,
@@ -87,4 +89,20 @@ func TestBinaryAttach(t *testing.T) {
 	assert.Equal(t,
 		map[string]int{"same": 2, "update": 1},
 		*update.Summary.ResourceChanges)
+}
+
+func TestBinaryPlugin(t *testing.T) {
+	gcpBinary, err := providers.DownloadPluginBinary("gcp", "7.2.1")
+	assert.NoError(t, err)
+	test := NewPulumiTest(t,
+		filepath.Join("testdata", "yaml_gcp"),
+		opttest.LocalProviderPath("gcp", gcpBinary))
+	test.InstallStack("my-stack")
+
+	test.SetConfig("gcp:project", "pulumi-development")
+
+	preview := test.Preview()
+	assert.Equal(t,
+		map[apitype.OpType]int{apitype.OpCreate: 2},
+		preview.ChangeSummary)
 }

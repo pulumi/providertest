@@ -55,21 +55,27 @@ Pulumi discovers plugins the same as when running Pulumi commands directly.
 
 In a test scenario, we often want to ensure a specific implementation of a provider is used during testing. The most reliable way is to configure use plugin attachment `PULUMI_DEBUG_PROVIDERS=NAME:PORT`. This prevents the Pulumi engine from searching for and starting the provider with the given name. Instead, it will connect to the already-running provider on the specified port. If the provider is not reachable on the given port, Pulumi will throw an error.
 
-These can be specified via the `source.Env()` helpers:
+These can be specified via the `Attach*` options when constructing the test:
 
 ```go
 // Start a provider yourself
-test.Env().AttachProvider("gcp", func(ctx context.Context) (int, error) {
+NewPulumiTest(t, "path", opttest.AttachProvider("gcp", func(ctx context.Context) (int, error) {
   return port, nil // TODO: Actually start a provider.
 })
 // Start a server for testing from a pulumirpc.ResourceProviderServer implementation
-test.Env().AttachProviderServer("gcp", func() (pulumirpc.ResourceProviderServer, error) {
+NewPulumiTest(t, "path", opttest.AttachProviderServer("gcp", func() (pulumirpc.ResourceProviderServer, error) {
   return makeProvider()
 })
 // Specify a local path where the binary lives to be started and attached.
-test.Env().AttachProviderBinary("gcp", filepath.Join("..", "bin"))
+NewPulumiTest(t, "path", opttest.AttachProviderBinary("gcp", filepath.Join("..", "bin"))
 // Use Pulumi to download a specific published version, then start and attach it.
-test.Env().AttachDownloadedPlugin("gcp", "6.61.0")
+NewPulumiTest(t, "path", opttest.AttachDownloadedPlugin("gcp", "6.61.0")
+```
+
+For providers which don't support attaching, we can configure the path to the binary of a specific provider in the `plugins.providers` property in the project settings (Pulumi.yaml) by using the `LocalProviderPath()` option:
+
+```go
+NewPulumiTest(t, "path", opttest.LocalProviderPath("gcp", filepath.Join("..", "bin"))
 ```
 
 ## Pulumi Operations

@@ -1,6 +1,8 @@
 package opttest
 
 import (
+	"path/filepath"
+
 	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
@@ -8,7 +10,7 @@ import (
 // AttachProvider will start the provider via the specified factory and attach it when running the program under test.
 func AttachProvider(name string, startProvider providers.ProviderFactory) Option {
 	return optionFunc(func(o *Options) {
-		o.Providers[name] = startProvider
+		o.ProviderFactories[name] = startProvider
 	})
 }
 
@@ -17,21 +19,29 @@ func AttachProvider(name string, startProvider providers.ProviderFactory) Option
 // pulumi-resource-<name> in that directory.
 func AttachProviderBinary(name, path string) Option {
 	return optionFunc(func(o *Options) {
-		o.Providers[name] = providers.LocalBinary(name, path)
+		o.ProviderFactories[name] = providers.LocalBinary(name, path)
 	})
 }
 
 // AttachProviderServer will start the specified and attach for the test run.
 func AttachProviderServer(name string, startProvider providers.ResourceProviderServerFactory) Option {
 	return optionFunc(func(o *Options) {
-		o.Providers[name] = providers.ResourceProviderFactory(startProvider)
+		o.ProviderFactories[name] = providers.ResourceProviderFactory(startProvider)
 	})
 }
 
 // AttachDownloadedPlugin installs the plugin via `pulumi plugin install` then will start the provider and attach it for the test run.
 func AttachDownloadedPlugin(name, version string) Option {
 	return optionFunc(func(o *Options) {
-		o.Providers[name] = providers.DownloadPluginBinaryFactory(name, version)
+		o.ProviderFactories[name] = providers.DownloadPluginBinaryFactory(name, version)
+	})
+}
+
+// LocalProviderPath sets the path to the local provider binary to use when running the program under test.
+// This sets the `plugins.providers` property in the project settings (Pulumi.yaml).
+func LocalProviderPath(name string, path ...string) Option {
+	return optionFunc(func(o *Options) {
+		o.ProviderPluginPaths[name] = filepath.Join(path...)
 	})
 }
 
@@ -65,7 +75,8 @@ func WorkspaceOptions(opts ...auto.LocalWorkspaceOption) Option {
 
 type Options struct {
 	ConfigPassphrase      string
-	Providers             map[string]providers.ProviderFactory
+	ProviderFactories     map[string]providers.ProviderFactory
+	ProviderPluginPaths   map[string]string
 	UseAmbientBackend     bool
 	CustomEnv             map[string]string
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
@@ -75,9 +86,10 @@ var defaultConfigPassphrase string = "correct horse battery staple"
 
 func NewOptions() *Options {
 	return &Options{
-		ConfigPassphrase: defaultConfigPassphrase,
-		Providers:        make(map[string]providers.ProviderFactory),
-		CustomEnv:        make(map[string]string),
+		ConfigPassphrase:    defaultConfigPassphrase,
+		ProviderFactories:   make(map[string]providers.ProviderFactory),
+		ProviderPluginPaths: make(map[string]string),
+		CustomEnv:           make(map[string]string),
 	}
 }
 

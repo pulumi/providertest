@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/pulumi/providertest/providers"
@@ -12,6 +13,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/go/common/util/contract"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optremove"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 )
 
 // NewStack creates a new stack, ensure it's cleaned up after the test is done.
@@ -40,9 +42,9 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
 	}
 
-	if len(options.Providers) > 0 {
+	if len(options.ProviderFactories) > 0 {
 		pt.t.Log("starting providers")
-		providerPorts, cancel, err := providers.StartProviders(pt.ctx, options.Providers)
+		providerPorts, cancel, err := providers.StartProviders(pt.ctx, options.ProviderFactories)
 		if err != nil {
 			pt.t.Fatalf("failed to start providers: %v", err)
 		}
@@ -59,6 +61,47 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 	stackOpts = append(stackOpts, opts...)
 
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
+
+	if options.ProviderPluginPaths != nil && len(options.ProviderPluginPaths) > 0 {
+		projectSettings, err := stack.Workspace().ProjectSettings(pt.ctx)
+		if err != nil {
+			pt.t.Fatalf("failed to get project settings: %s", err)
+		}
+		var plugins workspace.Plugins
+		if projectSettings.Plugins != nil {
+			plugins = *projectSettings.Plugins
+		}
+		providers := plugins.Providers
+		// Sort the provider plugin paths to ensure a consistent order.
+		providerPluginNames := make([]string, 0, len(options.ProviderPluginPaths))
+		for name := range options.ProviderPluginPaths {
+			providerPluginNames = append(providerPluginNames, name)
+		}
+		sort.Strings(providerPluginNames)
+		for _, name := range providerPluginNames {
+			path := options.ProviderPluginPaths[name]
+			found := false
+			for _, provider := range providers {
+				if provider.Name == name {
+					provider.Path = path
+					found = true
+					break
+				}
+			}
+			if !found {
+				providers = append(providers, workspace.PluginOptions{
+					Name: name,
+					Path: path,
+				})
+			}
+		}
+		plugins.Providers = providers
+		projectSettings.Plugins = &plugins
+		err = stack.Workspace().SaveProjectSettings(pt.ctx, projectSettings)
+		if err != nil {
+			pt.t.Fatalf("failed to save project settings: %s", err)
+		}
+	}
 
 	if err != nil {
 		pt.t.Fatalf("failed to create stack: %s", err)
