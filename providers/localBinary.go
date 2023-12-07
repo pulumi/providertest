@@ -11,29 +11,33 @@ import (
 	"strings"
 )
 
-func LocalBinary(name, path string) (ProviderFactory, error) {
+func LocalBinary(name, path string) ProviderFactory {
+	factory := func(ctx context.Context) (int, error) {
+		return startLocalBinary(ctx, path, name)
+	}
+	return factory
+}
+
+func startLocalBinary(ctx context.Context, path string, name string) (int, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	if stat.IsDir() {
 		binaryName := "pulumi-resource-" + name
 		path = filepath.Join(path, binaryName)
 	}
-	factory := func(ctx context.Context) (int, error) {
-		cmd := exec.CommandContext(ctx, path)
-		reader, err := cmd.StdoutPipe()
-		cmd.Stderr = os.Stderr
-		if err != nil {
-			return 0, err
-		}
-		err = cmd.Start()
-		if err != nil {
-			return 0, err
-		}
-		return readPortNumber(reader)
+	cmd := exec.CommandContext(ctx, path)
+	reader, err := cmd.StdoutPipe()
+	cmd.Stderr = os.Stderr
+	if err != nil {
+		return 0, err
 	}
-	return factory, nil
+	err = cmd.Start()
+	if err != nil {
+		return 0, err
+	}
+	return readPortNumber(reader)
 }
 
 func readPortNumber(reader io.Reader) (int, error) {

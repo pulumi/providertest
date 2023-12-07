@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
 
@@ -11,15 +12,15 @@ type PulumiTest struct {
 	t            *testing.T
 	ctx          context.Context
 	source       string
-	envBuilder   *EnvBuilder
+	options      []opttest.Option
 	currentStack *auto.Stack
 }
 
-func NewPulumiTest(t *testing.T, source string) *PulumiTest {
-	return NewPulumiTestInPlace(t, source).CopyToTempDir()
+func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
+	return NewPulumiTestInPlace(t, source, opts...).CopyToTempDir()
 }
 
-func NewPulumiTestInPlace(t *testing.T, source string) *PulumiTest {
+func NewPulumiTestInPlace(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if deadline, ok := t.Deadline(); ok {
@@ -29,10 +30,10 @@ func NewPulumiTestInPlace(t *testing.T, source string) *PulumiTest {
 	}
 	t.Cleanup(cancel)
 	return &PulumiTest{
-		t:          t,
-		ctx:        ctx,
-		source:     source,
-		envBuilder: NewEnvBuilder(t),
+		t:       t,
+		ctx:     ctx,
+		source:  source,
+		options: opts,
 	}
 }
 
@@ -46,10 +47,6 @@ func (a *PulumiTest) T() *testing.T {
 
 func (a *PulumiTest) Context() context.Context {
 	return a.ctx
-}
-
-func (a *PulumiTest) Env() *EnvBuilder {
-	return a.envBuilder
 }
 
 func (a *PulumiTest) WithSource(source string) *PulumiTest {

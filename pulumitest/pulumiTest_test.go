@@ -6,6 +6,7 @@ import (
 
 	"github.com/pulumi/providertest/pulumitest/assertpreview"
 	"github.com/pulumi/providertest/pulumitest/assertup"
+	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 	"github.com/stretchr/testify/assert"
 )
@@ -64,8 +65,9 @@ func TestConvert(t *testing.T) {
 }
 
 func TestBinaryAttach(t *testing.T) {
-	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_azure"))
-	test.Env().AttachDownloadedPlugin("azure-native", "2.21.0")
+	test := NewPulumiTest(t,
+		filepath.Join("testdata", "yaml_azure"),
+		opttest.AttachDownloadedPlugin("azure-native", "2.21.0"))
 	test.Init("")
 
 	test.SetConfig("azure-native:location", "WestUS2")

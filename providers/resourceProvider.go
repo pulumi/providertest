@@ -13,7 +13,7 @@ type ResourceProviderServerFactory func() (pulumirpc.ResourceProviderServer, err
 
 // startProvider starts the provider in a goProc and returns the port it's listening on.
 // To shut down the provider, cancel the context.
-func ResourceProviderFactory(makeResourceProviderServer ResourceProviderServerFactory) (ProviderFactory, error) {
+func ResourceProviderFactory(makeResourceProviderServer ResourceProviderServerFactory) ProviderFactory {
 	return func(ctx context.Context) (int, error) {
 		cancelChannel := make(chan bool)
 		go func() {
@@ -38,5 +38,5 @@ func ResourceProviderFactory(makeResourceProviderServer ResourceProviderServerFa
 		}
 
 		return handle.Port, nil
-	}, nil
+	}
 }

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pulumi/providertest/providers"
+	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/go/common/util/contract"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optremove"
@@ -14,38 +16,67 @@ import (
 
 // NewStack creates a new stack, ensure it's cleaned up after the test is done.
 // If no stack name is provided, a random one will be generated.
-func (a *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption) *auto.Stack {
-	a.t.Helper()
+func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption) *auto.Stack {
+	pt.t.Helper()
 
 	if stackName == "" {
-		stackName = randomStackName(a.source)
+		stackName = randomStackName(pt.source)
+	}
+
+	options := opttest.NewOptions()
+	for _, o := range pt.options {
+		o.Apply(options)
 	}
 
 	// Set default stack opts. These can be overridden by the caller.
-	stackOpts := []auto.LocalWorkspaceOption{
-		auto.EnvVars(a.Env().GetEnv(a.ctx)),
+	env := map[string]string{}
+
+	if options.ConfigPassphrase != "" {
+		env["PULUMI_CONFIG_PASSPHRASE"] = options.ConfigPassphrase
 	}
+
+	if !options.UseAmbientBackend {
+		backendFolder := pt.t.TempDir()
+		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
+	}
+
+	if len(options.Providers) > 0 {
+		pt.t.Log("starting providers")
+		providerPorts, cancel, err := providers.StartProviders(pt.ctx, options.Providers)
+		if err != nil {
+			pt.t.Fatalf("failed to start providers: %v", err)
+		}
+		pt.t.Cleanup(func() {
+			cancel()
+		})
+		env["PULUMI_DEBUG_PROVIDERS"] = providers.GetDebugProvidersEnv(providerPorts)
+	}
+
+	stackOpts := []auto.LocalWorkspaceOption{
+		auto.EnvVars(env),
+	}
+	stackOpts = append(stackOpts, options.ExtraWorkspaceOptions...)
 	stackOpts = append(stackOpts, opts...)
 
-	stack, err := auto.NewStackLocalSource(a.ctx, stackName, a.source, stackOpts...)
+	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
 
 	if err != nil {
-		a.t.Fatalf("failed to create stack: %s", err)
+		pt.t.Fatalf("failed to create stack: %s", err)
 		return nil
 	}
-	a.t.Cleanup(func() {
-		a.t.Helper()
-		a.t.Log("cleaning up stack")
-		_, err := stack.Destroy(a.ctx)
+	pt.t.Cleanup(func() {
+		pt.t.Helper()
+		pt.t.Log("cleaning up stack")
+		_, err := stack.Destroy(pt.ctx)
 		if err != nil {
-			a.t.Errorf("failed to destroy stack: %s", err)
+			pt.t.Errorf("failed to destroy stack: %s", err)
 		}
-		err = stack.Workspace().RemoveStack(a.ctx, stackName, optremove.Force())
+		err = stack.Workspace().RemoveStack(pt.ctx, stackName, optremove.Force())
 		if err != nil {
-			a.t.Errorf("failed to remove stack: %s", err)
+			pt.t.Errorf("failed to remove stack: %s", err)
 		}
 	})
-	a.currentStack = &stack
+	pt.currentStack = &stack
 	return &stack
 }
 

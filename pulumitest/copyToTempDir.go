@@ -30,10 +30,10 @@ func (a *PulumiTest) CopyToTempDir() *PulumiTest {
 	}
 
 	return &PulumiTest{
-		t:          a.t,
-		ctx:        a.ctx,
-		source:     destination,
-		envBuilder: a.envBuilder.Copy(),
+		t:       a.t,
+		ctx:     a.ctx,
+		source:  destination,
+		options: a.options,
 	}
 }
 

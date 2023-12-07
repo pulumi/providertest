@@ -37,10 +37,10 @@ func (a *PulumiTest) Convert(language string) ConvertResult {
 
 	return ConvertResult{
 		AutoTest: &PulumiTest{
-			t:          a.t,
-			ctx:        a.ctx,
-			source:     targetDir,
-			envBuilder: a.envBuilder.Copy(),
+			t:       a.t,
+			ctx:     a.ctx,
+			source:  targetDir,
+			options: a.options,
 		},
 		Output: string(out),
 	}
