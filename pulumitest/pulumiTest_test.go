@@ -11,50 +11,48 @@ import (
 )
 
 func TestDeploy(t *testing.T) {
-	sourceTest := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
+	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
 
-	// Test copying from the source directory to a temporary directory.
-	yamlTest := sourceTest.CopyToTempDir()
-	assert.NotEqual(t, yamlTest.Source(), sourceTest.Source())
 	// Ensure dependencies are installed.
-	yamlTest.Install()
+	test.Install()
 	// Create a new stack with auto-naming.
-	yamlTest.NewStack("")
+	test.NewStack("")
 	// Test a preview.
-	yamlPreview := yamlTest.Preview()
+	yamlPreview := test.Preview()
 	assert.Equal(t,
 		map[apitype.OpType]int{apitype.OpCreate: 2},
 		yamlPreview.ChangeSummary)
 	// Now do a real deploy.
-	yamlUp := yamlTest.Up()
+	yamlUp := test.Up()
 	assert.Equal(t,
 		map[string]int{"create": 2},
 		*yamlUp.Summary.ResourceChanges)
 
 	// Export the stack state.
-	yamlStack := yamlTest.ExportStack()
-	yamlTest.ImportStack(yamlStack)
+	yamlStack := test.ExportStack()
+	test.ImportStack(yamlStack)
 
-	yamlPreview2 := yamlTest.Preview()
+	yamlPreview2 := test.Preview()
 	assertpreview.HasNoChanges(t, yamlPreview2)
 }
 
 func TestConvert(t *testing.T) {
-	sourceTest := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
+	// No need to copy the source, since we're not going to modify it.
+	source := NewPulumiTestInPlace(t, filepath.Join("testdata", "yaml_program"))
 
 	// Convert the original source to Python.
-	pythonTest := sourceTest.Convert("python").AutoTest
-	assert.NotEqual(t, pythonTest.Source(), sourceTest.Source())
+	converted := source.Convert("python").AutoTest
+	assert.NotEqual(t, converted.Source(), source.Source())
 
-	pythonTest.Install()
-	pythonTest.NewStack("test")
+	converted.Install()
+	converted.NewStack("test")
 
-	pythonPreview := pythonTest.Preview()
+	pythonPreview := converted.Preview()
 	assert.Equal(t,
 		map[apitype.OpType]int{apitype.OpCreate: 2},
 		pythonPreview.ChangeSummary)
 
-	pythonUp := pythonTest.Up()
+	pythonUp := converted.Up()
 	assert.Equal(t,
 		map[string]int{"create": 2},
 		*pythonUp.Summary.ResourceChanges)
@@ -66,24 +64,24 @@ func TestConvert(t *testing.T) {
 }
 
 func TestBinaryAttach(t *testing.T) {
-	source := NewPulumiTest(t, filepath.Join("testdata", "yaml_azure"))
-	source.Env().AttachDownloadedPlugin("azure-native", "2.21.0")
-	program := source.Init("")
+	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_azure"))
+	test.Env().AttachDownloadedPlugin("azure-native", "2.21.0")
+	test.Init("")
 
-	program.SetConfig("azure-native:location", "WestUS2")
+	test.SetConfig("azure-native:location", "WestUS2")
 
-	preview := program.Preview()
+	preview := test.Preview()
 	assert.Equal(t,
 		map[apitype.OpType]int{apitype.OpCreate: 3},
 		preview.ChangeSummary)
 
-	deploy := program.Up()
+	deploy := test.Up()
 	assert.Equal(t,
 		map[string]int{"create": 3},
 		*deploy.Summary.ResourceChanges)
 
-	program.UpdateSource(filepath.Join("testdata", "yaml_azure_updated"))
-	update := program.Up()
+	test.UpdateSource(filepath.Join("testdata", "yaml_azure_updated"))
+	update := test.Up()
 	assert.Equal(t,
 		map[string]int{"same": 2, "update": 1},
 		*update.Summary.ResourceChanges)

@@ -16,6 +16,10 @@ type PulumiTest struct {
 }
 
 func NewPulumiTest(t *testing.T, source string) *PulumiTest {
+	return NewPulumiTestInPlace(t, source).CopyToTempDir()
+}
+
+func NewPulumiTestInPlace(t *testing.T, source string) *PulumiTest {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if deadline, ok := t.Deadline(); ok {

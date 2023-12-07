@@ -2,12 +2,11 @@ package pulumitest
 
 import "github.com/pulumi/pulumi/sdk/v3/go/auto"
 
-// Init copies the program to a temporary directory, restores packages, and creates a new stack.
-func (a *PulumiTest) Init(stackName string, opts ...auto.LocalWorkspaceOption) *PulumiTest {
-	a.t.Helper()
+// Init restores packages, and creates a new stack.
+func (pt *PulumiTest) Init(stackName string, opts ...auto.LocalWorkspaceOption) *PulumiTest {
+	pt.t.Helper()
 
-	copy := a.CopyToTempDir()
-	copy.Install()
-	copy.NewStack(stackName, opts...)
-	return copy
+	pt.Install()
+	pt.NewStack(stackName, opts...)
+	return pt
 }
