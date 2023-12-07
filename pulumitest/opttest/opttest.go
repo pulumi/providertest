@@ -45,6 +45,22 @@ func LocalProviderPath(name string, path ...string) Option {
 	})
 }
 
+// YarnLink specifies packages which are linked via `yarn link` and should be used when running the program under test.
+// Each package is called with `yarn link <package>` on stack creation.
+func YarnLink(packages ...string) Option {
+	return optionFunc(func(o *Options) {
+		o.YarnLinks = append(o.YarnLinks, filepath.Join(packages...))
+	})
+}
+
+// GoModReplacement specifies replacements to be add to the go.mod file when running the program under test.
+// Each replacement is added to the go.mod file with `go mod edit -replace <replacement>` on stack creation.
+func GoModReplacement(packageSpecifier string, replacementPathElem ...string) Option {
+	return optionFunc(func(o *Options) {
+		o.GoModReplacements[packageSpecifier] = filepath.Join(replacementPathElem...)
+	})
+}
+
 // UseAmbientBackend configures the test to use the ambient backend rather than a local temporary directory.
 func UseAmbientBackend() Option {
 	return optionFunc(func(o *Options) {
@@ -78,6 +94,8 @@ type Options struct {
 	ProviderFactories     map[string]providers.ProviderFactory
 	ProviderPluginPaths   map[string]string
 	UseAmbientBackend     bool
+	YarnLinks             []string
+	GoModReplacements     map[string]string
 	CustomEnv             map[string]string
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
 }
@@ -89,6 +107,7 @@ func NewOptions() *Options {
 		ConfigPassphrase:    defaultConfigPassphrase,
 		ProviderFactories:   make(map[string]providers.ProviderFactory),
 		ProviderPluginPaths: make(map[string]string),
+		GoModReplacements:   make(map[string]string),
 		CustomEnv:           make(map[string]string),
 	}
 }

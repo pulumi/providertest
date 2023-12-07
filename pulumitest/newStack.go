@@ -3,7 +3,9 @@ package pulumitest
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -100,6 +102,41 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		err = stack.Workspace().SaveProjectSettings(pt.ctx, projectSettings)
 		if err != nil {
 			pt.t.Fatalf("failed to save project settings: %s", err)
+		}
+	}
+
+	if options.YarnLinks != nil && len(options.YarnLinks) > 0 {
+		for _, pkg := range options.YarnLinks {
+			cmd := exec.Command("yarn", "link", pkg)
+			cmd.Dir = pt.source
+			pt.t.Logf("linking yarn package: %s", cmd)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				pt.t.Fatalf("failed to link yarn package %s: %s\n%s", pkg, err, out)
+			}
+		}
+	}
+
+	if options.GoModReplacements != nil && len(options.GoModReplacements) > 0 {
+		orderedReplacements := make([]string, 0, len(options.GoModReplacements))
+		for old := range options.GoModReplacements {
+			orderedReplacements = append(orderedReplacements, old)
+		}
+		sort.Strings(orderedReplacements)
+		for _, old := range orderedReplacements {
+			relPath := options.GoModReplacements[old]
+			absPath, err := filepath.Abs(relPath)
+			if err != nil {
+				pt.t.Fatalf("failed to get absolute path for %s: %s", relPath, err)
+			}
+			replacement := fmt.Sprintf("%s=%s", old, absPath)
+			cmd := exec.Command("go", "mod", "edit", "-replace", replacement)
+			cmd.Dir = pt.source
+			pt.t.Logf("adding go.mod replacement: %s", cmd)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				pt.t.Fatalf("failed to add go.mod replacement %s: %s\n%s", replacement, err, out)
+			}
 		}
 	}
 

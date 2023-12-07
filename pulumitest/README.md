@@ -92,6 +92,31 @@ test.Destroy()
 > [!NOTE]
 > Stacks created with `InstallStack` or `NewStack` will be automatically destroyed and removed at the end of the test.
 
+## Using Local SDKs
+
+When running tests via SDKs that haven't yet been published, we need to configure the program under test to use our local build of the SDK instead of installing a version from their package registry.
+
+### Node.js (Yarn Link)
+
+For Node.js, we support using a [locally linked](https://classic.yarnpkg.com/lang/en/docs/cli/link/) version of the NPM package. Before running your test, you must run `yarn link` in the directory of the built Node.js SDK (normally in `sdk/nodejs/bin`).
+
+Once the local link is configured, you can configure your test to use the linked package by using the `YarnLink` test option:
+
+```go
+NewPulumiTest(t, "test_dir", opttest.YarnLink("@pulumi/azure-native"))
+```
+
+### Go - Module Replacement
+
+In Go, we support adding a replacement to the go.mod of the program under test. This is implemented by calling [`go mod edit -replace`](https://pkg.go.dev/cmd/go#hdr-Edit_go_mod_from_tools_or_scripts) with the user-specified replacement.
+
+The replacement can be specified using the `GoModReplacement` test option:
+
+```go
+NewPulumiTest(t, "test_dir",
+  opttest.GoModReplacement("github.com/pulumi/pulumi-my-provider/sdk/v3", "..", "sdk"))
+```
+
 ## Additional Operations
 
 ### Update Source
