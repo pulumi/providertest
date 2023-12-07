@@ -1,11 +1,11 @@
-package autotest
+package pulumitest
 
 import (
 	"os/exec"
 )
 
 // Install installs packages and plugins for a given directory by running `pulumi install`.
-func (a *AutoTest) Install() string {
+func (a *PulumiTest) Install() string {
 	a.t.Helper()
 
 	a.t.Log("installing packages and plugins")

@@ -1,11 +1,11 @@
-package autotest
+package pulumitest
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 )
 
 // ExportStack exports the current stack state.
-func (a *AutoTest) ExportStack() apitype.UntypedDeployment {
+func (a *PulumiTest) ExportStack() apitype.UntypedDeployment {
 	a.t.Helper()
 
 	a.t.Log("exporting stack")

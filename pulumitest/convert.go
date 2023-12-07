@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"fmt"
@@ -9,14 +9,14 @@ import (
 
 type ConvertResult struct {
 	// AutoTest instance for the converted program.
-	AutoTest *AutoTest
+	AutoTest *PulumiTest
 	// Combined output of the `pulumi convert` command.
 	Output string
 }
 
 // Convert a program to a given language.
 // It returns a new AutoTest instance for the converted program which will be outputted into a temporary directory.
-func (a *AutoTest) Convert(language string) ConvertResult {
+func (a *PulumiTest) Convert(language string) ConvertResult {
 	a.t.Helper()
 
 	tempDir := a.t.TempDir()
@@ -36,7 +36,7 @@ func (a *AutoTest) Convert(language string) ConvertResult {
 	}
 
 	return ConvertResult{
-		AutoTest: &AutoTest{
+		AutoTest: &PulumiTest{
 			t:          a.t,
 			ctx:        a.ctx,
 			source:     targetDir,

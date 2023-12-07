@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"context"

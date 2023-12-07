@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
@@ -6,7 +6,7 @@ import (
 )
 
 // Up deploys the current stack.
-func (a *AutoTest) Destroy(opts ...optdestroy.Option) auto.DestroyResult {
+func (a *PulumiTest) Destroy(opts ...optdestroy.Option) auto.DestroyResult {
 	a.t.Helper()
 
 	a.t.Log("destroying")

@@ -1,11 +1,11 @@
-package autotest
+package pulumitest
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 )
 
 // ImportStack imports the given stack state into the test's current stack.
-func (a *AutoTest) ImportStack(source apitype.UntypedDeployment) {
+func (a *PulumiTest) ImportStack(source apitype.UntypedDeployment) {
 	a.t.Helper()
 
 	a.t.Log("importing stack")

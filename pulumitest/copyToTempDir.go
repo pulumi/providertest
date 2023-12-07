@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 // CopyToTempDir copies the program to a temporary directory.
 // It returns a new AutoTest instance for the copied program.
 // This is used to avoid temporary files being written to the source directory.
-func (a *AutoTest) CopyToTempDir() *AutoTest {
+func (a *PulumiTest) CopyToTempDir() *PulumiTest {
 	a.t.Helper()
 
 	tempDir := a.t.TempDir()
@@ -29,7 +29,7 @@ func (a *AutoTest) CopyToTempDir() *AutoTest {
 		a.t.Fatal(err)
 	}
 
-	return &AutoTest{
+	return &PulumiTest{
 		t:          a.t,
 		ctx:        a.ctx,
 		source:     destination,

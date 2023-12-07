@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
 
-type AutoTest struct {
+type PulumiTest struct {
 	t            *testing.T
 	ctx          context.Context
 	source       string
@@ -15,7 +15,7 @@ type AutoTest struct {
 	currentStack *auto.Stack
 }
 
-func NewAutoTest(t *testing.T, source string) *AutoTest {
+func NewPulumiTest(t *testing.T, source string) *PulumiTest {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if deadline, ok := t.Deadline(); ok {
@@ -24,7 +24,7 @@ func NewAutoTest(t *testing.T, source string) *AutoTest {
 		ctx, cancel = context.WithCancel(context.Background())
 	}
 	t.Cleanup(cancel)
-	return &AutoTest{
+	return &PulumiTest{
 		t:          t,
 		ctx:        ctx,
 		source:     source,
@@ -32,28 +32,28 @@ func NewAutoTest(t *testing.T, source string) *AutoTest {
 	}
 }
 
-func (a *AutoTest) Source() string {
+func (a *PulumiTest) Source() string {
 	return a.source
 }
 
-func (a *AutoTest) T() *testing.T {
+func (a *PulumiTest) T() *testing.T {
 	return a.t
 }
 
-func (a *AutoTest) Context() context.Context {
+func (a *PulumiTest) Context() context.Context {
 	return a.ctx
 }
 
-func (a *AutoTest) Env() *EnvBuilder {
+func (a *PulumiTest) Env() *EnvBuilder {
 	return a.envBuilder
 }
 
-func (a *AutoTest) WithSource(source string) *AutoTest {
+func (a *PulumiTest) WithSource(source string) *PulumiTest {
 	a.t.Helper()
 	a.source = source
 	return a
 }
 
-func (a *AutoTest) CurrentStack() *auto.Stack {
+func (a *PulumiTest) CurrentStack() *auto.Stack {
 	return a.currentStack
 }

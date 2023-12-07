@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"crypto/rand"
@@ -14,7 +14,7 @@ import (
 
 // NewStack creates a new stack, ensure it's cleaned up after the test is done.
 // If no stack name is provided, a random one will be generated.
-func (a *AutoTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption) *auto.Stack {
+func (a *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption) *auto.Stack {
 	a.t.Helper()
 
 	if stackName == "" {

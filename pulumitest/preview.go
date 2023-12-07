@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
@@ -6,7 +6,7 @@ import (
 )
 
 // Preview previews an update to the current stack.
-func (a *AutoTest) Preview(opts ...optpreview.Option) auto.PreviewResult {
+func (a *PulumiTest) Preview(opts ...optpreview.Option) auto.PreviewResult {
 	a.t.Helper()
 
 	a.t.Log("previewing update")

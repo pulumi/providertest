@@ -1,8 +1,8 @@
-package autotest
+package pulumitest
 
 import "github.com/pulumi/pulumi/sdk/v3/go/auto"
 
-func (a *AutoTest) SetConfig(key, value string) {
+func (a *PulumiTest) SetConfig(key, value string) {
 	a.t.Helper()
 
 	if a.currentStack == nil {

@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
@@ -6,7 +6,7 @@ import (
 )
 
 // Up deploys the current stack.
-func (a *AutoTest) Up(opts ...optup.Option) auto.UpResult {
+func (a *PulumiTest) Up(opts ...optup.Option) auto.UpResult {
 	a.t.Helper()
 
 	a.t.Log("deploying")

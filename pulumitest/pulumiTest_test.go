@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"path/filepath"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestDeploy(t *testing.T) {
-	sourceTest := NewAutoTest(t, filepath.Join("testdata", "yaml_program"))
+	sourceTest := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
 
 	// Test copying from the source directory to a temporary directory.
 	yamlTest := sourceTest.CopyToTempDir()
@@ -39,7 +39,7 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestConvert(t *testing.T) {
-	sourceTest := NewAutoTest(t, filepath.Join("testdata", "yaml_program"))
+	sourceTest := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
 
 	// Convert the original source to Python.
 	pythonTest := sourceTest.Convert("python").AutoTest
@@ -65,7 +65,7 @@ func TestConvert(t *testing.T) {
 }
 
 func TestBinaryAttach(t *testing.T) {
-	source := NewAutoTest(t, filepath.Join("testdata", "yaml_azure"))
+	source := NewPulumiTest(t, filepath.Join("testdata", "yaml_azure"))
 	source.Env().AttachDownloadedPlugin("azure-native", "2.21.0")
 	program := source.Init("")
 

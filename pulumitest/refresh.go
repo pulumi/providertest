@@ -1,4 +1,4 @@
-package autotest
+package pulumitest
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
@@ -6,7 +6,7 @@ import (
 )
 
 // Refresh refreshes the current stack.
-func (a *AutoTest) Refresh(opts ...optrefresh.Option) auto.RefreshResult {
+func (a *PulumiTest) Refresh(opts ...optrefresh.Option) auto.RefreshResult {
 	a.t.Helper()
 
 	a.t.Log("refreshing")
