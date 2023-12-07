@@ -44,7 +44,7 @@ func TestConvert(t *testing.T) {
 	source := NewPulumiTestInPlace(t, filepath.Join("testdata", "yaml_program"))
 
 	// Convert the original source to Python.
-	converted := source.Convert("python").AutoTest
+	converted := source.Convert("python").PulumiTest
 	assert.NotEqual(t, converted.Source(), source.Source())
 
 	converted.Install()

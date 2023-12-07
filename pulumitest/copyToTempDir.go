@@ -9,7 +9,7 @@ import (
 )
 
 // CopyToTempDir copies the program to a temporary directory.
-// It returns a new AutoTest instance for the copied program.
+// It returns a new PulumiTest instance for the copied program.
 // This is used to avoid temporary files being written to the source directory.
 func (a *PulumiTest) CopyToTempDir() *PulumiTest {
 	a.t.Helper()

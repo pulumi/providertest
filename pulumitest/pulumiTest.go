@@ -58,3 +58,9 @@ func (a *PulumiTest) WithSource(source string) *PulumiTest {
 func (a *PulumiTest) CurrentStack() *auto.Stack {
 	return a.currentStack
 }
+
+func (a *PulumiTest) WithOptions(opts ...opttest.Option) *PulumiTest {
+	a.t.Helper()
+	a.options = append(a.options, opts...)
+	return a
+}

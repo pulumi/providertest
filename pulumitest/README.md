@@ -6,7 +6,7 @@ The Automation API is just a thin wrapper around the calling the Pulumi CLI (`pu
 
 ## Getting Started
 
-The starting point to testing a program is to create a new AutoTest pointing at some existing test.
+The starting point to testing a program is to create a new PulumiTest pointing at some existing test.
 
 ```go
 func TestPulumiProgram(t *testing.T) {
@@ -18,11 +18,11 @@ func TestPulumiProgram(t *testing.T) {
 By default run your program is copied to a temporary directory before running to avoid cluttering your working directory with temporary or ephemeral files. To disable this behaviour, use `NewPulumiTestInPlace`. You can also do a copy of a test manually by calling `CopyToTempDir()`:
 
 ```go
-source := NewAutoTestInPlace(t, ...)
+source := NewPulumiTestInPlace(t, ...)
 copy := source.CopyToTempDir()
 ```
 
-The `source` variable is still pointing to the original path, but the `copy` is pointing to a new AutoTest in temporary directory which will automatically get removed at the end of the test.
+The `source` variable is still pointing to the original path, but the `copy` is pointing to a new PulumiTest in temporary directory which will automatically get removed at the end of the test.
 
 Before we can preview or deploy a program we need to install dependencies and create a stack:
 
@@ -38,14 +38,14 @@ These two steps can also be done together by calling `InstallStack()`:
 test.InstallStack("my-stack")
 ```
 
-The created stack is returned but is also set as the current stack on the AutoTest object. All methods such as `source.Preview()` or `source.Up()` will use this current stack.
+The created stack is returned but is also set as the current stack on the PulumiTest object. All methods such as `source.Preview()` or `source.Up()` will use this current stack.
 
 > [!NOTE]
 > The new stack will be automatically destroyed and removed at the end of the test.
 
 ## Default Settings
 
-`PULUMI_BACKEND_URL` is set to a temporary directory. This improves test performance and doesn't rely on the user already being authenticated to a specific backend account. This also isolates stacks so the same stack name can be re-used for several tests at once without risking conflicts and avoiding stack name randomisation which breaks importing & exporting between test runs. This can be overridden by setting `autoTest.Env().UseAmbientBackend()` or by setting `PULUMI_BACKEND_URL` yourself in the stack initialization options.
+`PULUMI_BACKEND_URL` is set to a temporary directory. This improves test performance and doesn't rely on the user already being authenticated to a specific backend account. This also isolates stacks so the same stack name can be re-used for several tests at once without risking conflicts and avoiding stack name randomisation which breaks importing & exporting between test runs. This can be overridden by the option `opttest.UseAmbientBackend()` or by setting `PULUMI_BACKEND_URL` yourself in the stack initialization options.
 
 `PULUMI_CONFIG_PASSPHRASE` is set by default to "correct horse battery staple" (an arbitrary phrase) so that encrypted values are not tied to an external secret store that the user might not have access to. This can be overridden by setting `PULUMI_CONFIG_PASSPHRASE` in the stack initialization options.
 
@@ -112,7 +112,7 @@ test.SetConfig("gcp:project", "pulumi-development")
 
 ## Asserts
 
-In parallel to the `autotest` module, the `autoassert` module contains a selection of functions for asserting on the results of the automation API:
+The `assertup` and `assertpreview` modules contain a selection of functions for asserting on the results of the automation API:
 
 ```go
 assertup.HasNoDeletes(t, upResult)
@@ -128,7 +128,7 @@ Here's a complete example as a test might look for the gcp provider with a local
 ```go
 func TestExample(t *testing.T) {
   // Copy test_dir to temp directory, install deps and create "my-stack"
-  test := NewAutoTest(t, "test_dir", opttest.AttachProviderBinary("gcp", "../bin"))
+  test := NewPulumiTest(t, "test_dir", opttest.AttachProviderBinary("gcp", "../bin"))
   test.InstallStack("my-stack")
 
   // Configure the test environment & project
