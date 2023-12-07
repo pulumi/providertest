@@ -68,7 +68,7 @@ func TestBinaryAttach(t *testing.T) {
 	test := NewPulumiTest(t,
 		filepath.Join("testdata", "yaml_azure"),
 		opttest.AttachDownloadedPlugin("azure-native", "2.21.0"))
-	test.Init("")
+	test.InstallStack("my-stack")
 
 	test.SetConfig("azure-native:location", "WestUS2")
 
@@ -82,7 +82,7 @@ func TestBinaryAttach(t *testing.T) {
 		map[string]int{"create": 3},
 		*deploy.Summary.ResourceChanges)
 
-	test.UpdateSource(filepath.Join("testdata", "yaml_azure_updated"))
+	test.UpdateSource("testdata", "yaml_azure_updated")
 	update := test.Up()
 	assert.Equal(t,
 		map[string]int{"same": 2, "update": 1},

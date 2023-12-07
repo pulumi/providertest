@@ -1,25 +1,25 @@
-# AutoTest
+# Pulumi Testing Library
 
-AutoTest is a thin(ish) wrapper over the Automation API, making it easier to use within test scenarios.
+Pulumi Test is a thin(ish) wrapper over the Automation API, making it easier to use within test scenarios.
 
 The Automation API is just a thin wrapper around the calling the Pulumi CLI (`pulumi ...`). Some additional commands which are not yet supported by the Automation API are also added for convenience.
 
 ## Getting Started
 
-The starting point to testing a program is to create a new AutoTest pointing at some existing program.
+The starting point to testing a program is to create a new AutoTest pointing at some existing test.
 
 ```go
-func TestAProgram(t *testing.T) {
-  source := NewAutoTest(t, filepath.Join("path", "to", "program"))
+func TestPulumiProgram(t *testing.T) {
+  test := NewPulumiTest(t, filepath.Join("path", "to", "program"))
   //...
 }
 ```
 
-It's normally a good idea to run your program from a temporary directory to avoid cluttering your working directory with temporary or ephemeral files.
+By default run your program is copied to a temporary directory before running to avoid cluttering your working directory with temporary or ephemeral files. To disable this behaviour, use `NewPulumiTestInPlace`. You can also do a copy of a test manually by calling `CopyToTempDir()`:
 
 ```go
-source := NewAutoTest(t, ...)
-program := source.CopyToTempDir()
+source := NewAutoTestInPlace(t, ...)
+copy := source.CopyToTempDir()
 ```
 
 The `source` variable is still pointing to the original path, but the `copy` is pointing to a new AutoTest in temporary directory which will automatically get removed at the end of the test.
@@ -27,10 +27,15 @@ The `source` variable is still pointing to the original path, but the `copy` is 
 Before we can preview or deploy a program we need to install dependencies and create a stack:
 
 ```go
-var source *AutoTest
 //...
-program.Install() // Runs `pulumi install` to restore all dependencies
-program.NewStack("my-stack") // Creates a new stack and returns it.
+test.Install() // Runs `pulumi install` to restore all dependencies
+test.NewStack("my-stack") // Creates a new stack and returns it.
+```
+
+These two steps can also be done together by calling `InstallStack()`:
+
+```go
+test.InstallStack("my-stack")
 ```
 
 The created stack is returned but is also set as the current stack on the AutoTest object. All methods such as `source.Preview()` or `source.Up()` will use this current stack.
@@ -54,35 +59,41 @@ These can be specified via the `source.Env()` helpers:
 
 ```go
 // Start a provider yourself
-program.Env().AttachProvider("gcp", func(ctx context.Context) (int, error) {
+test.Env().AttachProvider("gcp", func(ctx context.Context) (int, error) {
   return port, nil // TODO: Actually start a provider.
 })
 // Start a server for testing from a pulumirpc.ResourceProviderServer implementation
-program.Env().AttachProviderServer("gcp", func() (pulumirpc.ResourceProviderServer, error) {
+test.Env().AttachProviderServer("gcp", func() (pulumirpc.ResourceProviderServer, error) {
   return makeProvider()
 })
 // Specify a local path where the binary lives to be started and attached.
-program.Env().AttachProviderBinary("gcp", filepath.Join("..", "bin"))
+test.Env().AttachProviderBinary("gcp", filepath.Join("..", "bin"))
 // Use Pulumi to download a specific published version, then start and attach it.
-program.Env().AttachDownloadedPlugin("gcp", "6.61.0")
+test.Env().AttachDownloadedPlugin("gcp", "6.61.0")
 ```
 
-## Common Operations
+## Pulumi Operations
 
-### Init
-
-Copy the source to a temp directory, install dependencies and create a new stack:
+Preview, Up, Refresh and Destroy can be run directly from the test context:
 
 ```go
-program := source.Init("my-stack")
+test.Preview()
+test.Up()
+test.Refresh()
+test.Destroy()
 ```
+
+> [!NOTE]
+> Stacks created with `InstallStack` or `NewStack` will be automatically destroyed and removed at the end of the test.
+
+## Additional Operations
 
 ### Update Source
 
 Update source files for a subsequent step in the test:
 
 ```go
-program.UpdateSource("folder_with_updates")
+test.UpdateSource("folder_with_updates")
 ```
 
 ### Set Config
@@ -90,32 +101,18 @@ program.UpdateSource("folder_with_updates")
 Set a variable in the stack's config:
 
 ```go
-program.SetConfig("gcp:project", "pulumi-development")
+test.SetConfig("gcp:project", "pulumi-development")
 ```
-
-### Pulumi Operations
-
-Preview, Up, Refresh and Destroy:
-
-```go
-program.Preview()
-program.Up()
-program.Refresh()
-program.Destroy()
-```
-
-> [!NOTE]
-> Stacks created with `Init` or `NewStack` will be automatically destroyed and removed at the end of the test.
 
 ## Asserts
 
 In parallel to the `autotest` module, the `autoassert` module contains a selection of functions for asserting on the results of the automation API:
 
 ```go
-autoassert.UpHasNoDeletes(t, upResult)
-autoassert.UpHasNoChanges(t, upResult)
-autoassert.PreviewHasNoChanges(t, previewResult)
-autoassert.PreviewHasNoDeletes(t, previewResult)
+assertup.HasNoDeletes(t, upResult)
+assertup.HasNoChanges(t, upResult)
+assertpreview.HasNoChanges(t, previewResult)
+assertpreview.HasNoDeletes(t, previewResult)
 ```
 
 ## Example
@@ -125,23 +122,55 @@ Here's a complete example as a test might look for the gcp provider with a local
 ```go
 func TestExample(t *testing.T) {
   // Copy test_dir to temp directory, install deps and create "my-stack"
-  program := NewAutoTest(t, "test_dir").Init("my-stack")
+  test := NewAutoTest(t, "test_dir", opttest.AttachProviderBinary("gcp", "../bin"))
+  test.InstallStack("my-stack")
 
   // Configure the test environment & project
-  program.Env().AttachProviderBinary("gcp", "../bin")
-  program.SetConfig("gcp:project", "pulumi-development")
+  test.SetConfig("gcp:project", "pulumi-development")
 
-  // Preview with assert
-  preview := program.Preview()
-  assert.Equal(t,
-    map[apitype.OpType]int{apitype.OpCreate: 2},
-    preview.ChangeSummary)
+  // Preview, Deploy, Refresh, 
+  preview := test.Preview()
+  t.Log(preview.StdOut)
 
-  // Up with assert
-  deploy := program.Up()
-  autoassert.UpHasNoDeletes(t, deploy)
-
-  // Access logs for troubleshooting
+  deploy := test.Up()
   t.Log(deploy.StdOut)
+  assertpreview.HasNoChanges(t, test.Preview())
+
+  // Export import
+  test.ImportStack(test.ExportStack())
+  assertpreview.HasNoChanges(t, test.Preview())
+
+  test.UpdateSource(filepath.Join("testdata", "step2"))
+  update := test.Up()
+  t.Log(update.StdOut)
+}
+```
+
+Comparative ProgramTest example:
+
+```go
+func TestExample(t *testing.T) {
+  test := integration.ProgramTestOptions{
+    Dir: testDir(t, "test_dir"),
+    Dependencies: []string{filepath.Join("..", "sdk", "python", "bin")},
+    ExpectRefreshChanges: true,
+    Config: map[string]string{
+      "gcp:project": "pulumi-development",
+    },
+    LocalProviders: []integration.LocalDependency{
+      {
+        Package: "gcp",
+        Path:    "../bin",
+      },
+    },
+    EditDirs: []integration.EditDir{
+      {
+        Dir:      testDir(t, "test_dir", "step2"),
+        Additive: true,
+      },
+    },
+  }
+
+  integration.ProgramTest(t, &test)
 }
 ```
