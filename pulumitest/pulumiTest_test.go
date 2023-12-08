@@ -79,17 +79,6 @@ func TestBinaryAttach(t *testing.T) {
 	assert.Equal(t,
 		map[apitype.OpType]int{apitype.OpCreate: 3},
 		preview.ChangeSummary)
-
-	deploy := test.Up()
-	assert.Equal(t,
-		map[string]int{"create": 3},
-		*deploy.Summary.ResourceChanges)
-
-	test.UpdateSource("testdata", "yaml_azure_updated")
-	update := test.Up()
-	assert.Equal(t,
-		map[string]int{"same": 2, "update": 1},
-		*update.Summary.ResourceChanges)
 }
 
 func TestBinaryPlugin(t *testing.T) {
@@ -106,4 +95,15 @@ func TestBinaryPlugin(t *testing.T) {
 	assert.Equal(t,
 		map[apitype.OpType]int{apitype.OpCreate: 2},
 		preview.ChangeSummary)
+
+	deploy1 := test.Up()
+	assert.Equal(t,
+		map[string]int{"create": 2},
+		*deploy1.Summary.ResourceChanges)
+
+	test.UpdateSource("testdata", "yaml_gcp_updated")
+	deploy2 := test.Up()
+	assert.Equal(t,
+		map[string]int{"same": 1, "update": 1},
+		*deploy2.Summary.ResourceChanges)
 }

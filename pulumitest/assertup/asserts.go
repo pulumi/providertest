@@ -1,10 +1,9 @@
 package assertup
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/pulumi/providertest/pulumitest/asserthelpers"
+	"github.com/pulumi/providertest/pulumitest/changesummary"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 )
@@ -13,10 +12,11 @@ import (
 func HasNoChanges(t *testing.T, up auto.UpResult) {
 	t.Helper()
 
-	unexpectedOps := asserthelpers.FindUnexpectedOps(*up.Summary.ResourceChanges, apitype.OpSame)
+	summary := changesummary.FromStringIntMap(*up.Summary.ResourceChanges)
+	unexpectedOps := summary.WhereOpNotEquals(apitype.OpSame)
 
-	if len(unexpectedOps) > 0 {
-		t.Errorf("expected no changes, got %s", strings.Join(unexpectedOps, ", "))
+	if len(*unexpectedOps) > 0 {
+		t.Errorf("expected no changes, got %s", unexpectedOps)
 	}
 }
 
@@ -24,9 +24,10 @@ func HasNoChanges(t *testing.T, up auto.UpResult) {
 func HasNoDeletes(t *testing.T, up auto.UpResult) {
 	t.Helper()
 
-	unexpectedOps := asserthelpers.FindMatchingOps(*up.Summary.ResourceChanges, apitype.OpDelete, apitype.OpDeleteReplaced, apitype.OpReplace)
+	summary := changesummary.FromStringIntMap(*up.Summary.ResourceChanges)
+	unexpectedOps := summary.WhereOpEquals(apitype.OpDelete, apitype.OpDeleteReplaced, apitype.OpReplace)
 
-	if len(unexpectedOps) > 0 {
-		t.Errorf("expected no changes, got %s", strings.Join(unexpectedOps, ", "))
+	if len(*unexpectedOps) > 0 {
+		t.Errorf("expected no changes, got %s", unexpectedOps)
 	}
 }
