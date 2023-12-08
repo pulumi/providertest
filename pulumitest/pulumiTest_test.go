@@ -10,6 +10,7 @@ import (
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDeploy(t *testing.T) {
@@ -41,7 +42,7 @@ func TestDeploy(t *testing.T) {
 
 func TestConvert(t *testing.T) {
 	// No need to copy the source, since we're not going to modify it.
-	source := NewPulumiTestInPlace(t, filepath.Join("testdata", "yaml_program"))
+	source := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"), opttest.TestInPlace())
 
 	// Convert the original source to Python.
 	converted := source.Convert("python").PulumiTest
@@ -93,7 +94,7 @@ func TestBinaryAttach(t *testing.T) {
 
 func TestBinaryPlugin(t *testing.T) {
 	gcpBinary, err := providers.DownloadPluginBinary("gcp", "7.2.1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	test := NewPulumiTest(t,
 		filepath.Join("testdata", "yaml_gcp"),
 		opttest.LocalProviderPath("gcp", gcpBinary))

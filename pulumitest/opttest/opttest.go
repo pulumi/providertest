@@ -7,6 +7,13 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
 
+// TestInPlace will run the program under test from its current location, rather than firstly copying to a temporary directory.
+func TestInPlace() Option {
+	return optionFunc(func(o *Options) {
+		o.TestInPlace = true
+	})
+}
+
 // AttachProvider will start the provider via the specified factory and attach it when running the program under test.
 func AttachProvider(name string, startProvider providers.ProviderFactory) Option {
 	return optionFunc(func(o *Options) {
@@ -90,6 +97,7 @@ func WorkspaceOptions(opts ...auto.LocalWorkspaceOption) Option {
 }
 
 type Options struct {
+	TestInPlace           bool
 	ConfigPassphrase      string
 	ProviderFactories     map[string]providers.ProviderFactory
 	ProviderPluginPaths   map[string]string
@@ -102,7 +110,7 @@ type Options struct {
 
 var defaultConfigPassphrase string = "correct horse battery staple"
 
-func NewOptions() *Options {
+func DefaultOptions() *Options {
 	return &Options{
 		ConfigPassphrase:    defaultConfigPassphrase,
 		ProviderFactories:   make(map[string]providers.ProviderFactory),

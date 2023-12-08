@@ -12,15 +12,11 @@ type PulumiTest struct {
 	t            *testing.T
 	ctx          context.Context
 	source       string
-	options      []opttest.Option
+	options      *opttest.Options
 	currentStack *auto.Stack
 }
 
 func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
-	return NewPulumiTestInPlace(t, source, opts...).CopyToTempDir()
-}
-
-func NewPulumiTestInPlace(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if deadline, ok := t.Deadline(); ok {
@@ -29,12 +25,20 @@ func NewPulumiTestInPlace(t *testing.T, source string, opts ...opttest.Option) *
 		ctx, cancel = context.WithCancel(context.Background())
 	}
 	t.Cleanup(cancel)
-	return &PulumiTest{
+	options := opttest.DefaultOptions()
+	for _, opt := range opts {
+		opt.Apply(options)
+	}
+	pt := &PulumiTest{
 		t:       t,
 		ctx:     ctx,
 		source:  source,
-		options: opts,
+		options: options,
 	}
+	if !options.TestInPlace {
+		return pt.CopyToTempDir()
+	}
+	return pt
 }
 
 func (a *PulumiTest) Source() string {
@@ -61,6 +65,8 @@ func (a *PulumiTest) CurrentStack() *auto.Stack {
 
 func (a *PulumiTest) WithOptions(opts ...opttest.Option) *PulumiTest {
 	a.t.Helper()
-	a.options = append(a.options, opts...)
+	for _, opt := range opts {
+		opt.Apply(a.options)
+	}
 	return a
 }

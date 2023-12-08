@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/pulumi/providertest/providers"
-	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optremove"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
@@ -27,10 +26,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		stackName = randomStackName(pt.source)
 	}
 
-	options := opttest.NewOptions()
-	for _, o := range pt.options {
-		o.Apply(options)
-	}
+	options := pt.options
 
 	// Set default stack opts. These can be overridden by the caller.
 	env := map[string]string{}
