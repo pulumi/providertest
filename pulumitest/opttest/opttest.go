@@ -17,7 +17,7 @@ func TestInPlace() Option {
 // AttachProvider will start the provider via the specified factory and attach it when running the program under test.
 func AttachProvider(name string, startProvider providers.ProviderFactory) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[name] = startProvider
+		o.ProviderFactories[providers.ProviderName(name)] = startProvider
 	})
 }
 
@@ -26,21 +26,21 @@ func AttachProvider(name string, startProvider providers.ProviderFactory) Option
 // pulumi-resource-<name> in that directory.
 func AttachProviderBinary(name, path string) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[name] = providers.LocalBinary(name, path)
+		o.ProviderFactories[providers.ProviderName(name)] = providers.LocalBinary(name, path)
 	})
 }
 
 // AttachProviderServer will start the specified and attach for the test run.
 func AttachProviderServer(name string, startProvider providers.ResourceProviderServerFactory) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[name] = providers.ResourceProviderFactory(startProvider)
+		o.ProviderFactories[providers.ProviderName(name)] = providers.ResourceProviderFactory(startProvider)
 	})
 }
 
 // AttachDownloadedPlugin installs the plugin via `pulumi plugin install` then will start the provider and attach it for the test run.
 func AttachDownloadedPlugin(name, version string) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[name] = providers.DownloadPluginBinaryFactory(name, version)
+		o.ProviderFactories[providers.ProviderName(name)] = providers.DownloadPluginBinaryFactory(name, version)
 	})
 }
 
@@ -99,7 +99,7 @@ func WorkspaceOptions(opts ...auto.LocalWorkspaceOption) Option {
 type Options struct {
 	TestInPlace           bool
 	ConfigPassphrase      string
-	ProviderFactories     map[string]providers.ProviderFactory
+	ProviderFactories     map[providers.ProviderName]providers.ProviderFactory
 	ProviderPluginPaths   map[string]string
 	UseAmbientBackend     bool
 	YarnLinks             []string
@@ -113,7 +113,7 @@ var defaultConfigPassphrase string = "correct horse battery staple"
 func DefaultOptions() *Options {
 	return &Options{
 		ConfigPassphrase:    defaultConfigPassphrase,
-		ProviderFactories:   make(map[string]providers.ProviderFactory),
+		ProviderFactories:   make(map[providers.ProviderName]providers.ProviderFactory),
 		ProviderPluginPaths: make(map[string]string),
 		GoModReplacements:   make(map[string]string),
 		CustomEnv:           make(map[string]string),

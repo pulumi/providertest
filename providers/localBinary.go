@@ -12,13 +12,13 @@ import (
 )
 
 func LocalBinary(name, path string) ProviderFactory {
-	factory := func(ctx context.Context) (int, error) {
+	factory := func(ctx context.Context) (Port, error) {
 		return startLocalBinary(ctx, path, name)
 	}
 	return factory
 }
 
-func startLocalBinary(ctx context.Context, path string, name string) (int, error) {
+func startLocalBinary(ctx context.Context, path string, name string) (Port, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return 0, err
@@ -40,7 +40,7 @@ func startLocalBinary(ctx context.Context, path string, name string) (int, error
 	return readPortNumber(reader)
 }
 
-func readPortNumber(reader io.Reader) (int, error) {
+func readPortNumber(reader io.Reader) (Port, error) {
 	// Now that we have a process, we expect it to write a single line to STDOUT: the port it's listening on.  We only
 	// read a byte at a time so that STDOUT contains everything after the first newline.
 	var portString string
@@ -64,5 +64,5 @@ func readPortNumber(reader io.Reader) (int, error) {
 	if port, err = strconv.Atoi(portString); err != nil {
 		return 0, fmt.Errorf("failed to parse port number from provider: %v", err)
 	}
-	return port, nil
+	return Port(port), nil
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func DownloadPluginBinaryFactory(name, version string) ProviderFactory {
-	factory := func(ctx context.Context) (int, error) {
+	factory := func(ctx context.Context) (Port, error) {
 		binaryPath, err := DownloadPluginBinary(name, version)
 		if err != nil {
 			return 0, err
