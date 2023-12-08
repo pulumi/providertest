@@ -68,7 +68,8 @@ func GoModReplacement(packageSpecifier string, replacementPathElem ...string) Op
 	})
 }
 
-// UseAmbientBackend configures the test to use the ambient backend rather than a local temporary directory.
+// UseAmbientBackend skips setting `PULUMI_BACKEND_URL` to a local temporary directory which overrides any backend configuration which might have been done on the local environment via `pulumi login`.
+// Using this option will cause the program under test to use whatever backend configuration has been set via `pulumi login` or an existing `PULUMI_BACKEND_URL` value.
 func UseAmbientBackend() Option {
 	return optionFunc(func(o *Options) {
 		o.UseAmbientBackend = true
