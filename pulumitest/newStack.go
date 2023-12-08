@@ -1,6 +1,7 @@
 package pulumitest
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -42,13 +43,16 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 
 	if len(options.ProviderFactories) > 0 {
 		pt.t.Log("starting providers")
-		providerPorts, cancel, err := providers.StartProviders(pt.ctx, options.ProviderFactories)
+		providerContext, cancelProviders := context.WithCancel(pt.ctx)
+		providerPorts, err := providers.StartProviders(providerContext, options.ProviderFactories)
 		if err != nil {
+			cancelProviders()
 			pt.t.Fatalf("failed to start providers: %v", err)
+		} else {
+			pt.t.Cleanup(func() {
+				cancelProviders()
+			})
 		}
-		pt.t.Cleanup(func() {
-			cancel()
-		})
 		env["PULUMI_DEBUG_PROVIDERS"] = providers.GetDebugProvidersEnv(providerPorts)
 	}
 

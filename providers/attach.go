@@ -7,12 +7,13 @@ import (
 	"strings"
 )
 
-func StartProviders(ctx context.Context, factories map[ProviderName]ProviderFactory) (map[ProviderName]Port, context.CancelFunc, error) {
+// StartProviders starts each of the given providers and returns a map of provider names to the ports they are listening on.
+// The context should be cancelled when the test is complete to shut down the providers.
+func StartProviders(ctx context.Context, factories map[ProviderName]ProviderFactory) (map[ProviderName]Port, error) {
 	if len(factories) == 0 {
-		return nil, nil, nil
+		return nil, nil
 	}
 
-	providerContext, cancel := context.WithCancel(context.Background())
 	providerNames := make([]ProviderName, 0, len(factories))
 	for providerName := range factories {
 		providerNames = append(providerNames, providerName)
@@ -23,16 +24,17 @@ func StartProviders(ctx context.Context, factories map[ProviderName]ProviderFact
 	portMappings := map[ProviderName]Port{}
 	for _, providerName := range providerNames {
 		factory := factories[providerName]
-		port, err := factory(providerContext)
+		port, err := factory(ctx)
 		if err != nil {
-			cancel() // Cancel the context if any provider fails to start.
-			return nil, nil, fmt.Errorf("failed to start provider %s: %v", providerName, err)
+			return nil, fmt.Errorf("failed to start provider %s: %v", providerName, err)
 		}
 		portMappings[providerName] = port
 	}
-	return portMappings, cancel, nil
+	return portMappings, nil
 }
 
+// GetDebugProvidersEnv returns a comma-separated list of provider names and ports in the format expected by the
+// PULUMI_DEBUG_PROVIDERS environment variable.
 func GetDebugProvidersEnv(runningProviders map[ProviderName]Port) string {
 	// Sort the provider names so that the order is deterministic.
 	providerNames := make([]ProviderName, 0, len(runningProviders))
