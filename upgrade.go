@@ -458,6 +458,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 
 	// Skip if state not yet created
 	if _, err := os.Stat(info.stateFile); os.IsNotExist(err) {
+		t.Logf("No pre-recorded state found for %s, recording baseline behaviour.", b.baselineVersion)
 		b.providerUpgradeRecordBaselines(t)
 	}
 
