@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSimpleUpgradePreviewTest(t *testing.T) {
+func TestPreviewUpgradeCached(t *testing.T) {
 	cacheDir := t.TempDir()
 	source := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_program"), opttest.TestInPlace())
 	baselineProviderConfig := providertest.ProviderConfiguration{
@@ -29,6 +29,18 @@ func TestSimpleUpgradePreviewTest(t *testing.T) {
 		CacheDir: cacheDir,
 	})
 	assertpreview.HasNoChanges(t, cachedPreviewResult)
+}
+
+func TestPreviewUpgradeNoTest(t *testing.T) {
+	source := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_program"), opttest.TestInPlace())
+	baselineProviderConfig := providertest.ProviderConfiguration{
+		Name:                  "random",
+		DownloadBinaryVersion: "4.15.0",
+		DisableAttach:         true,
+	}
+
+	uncachedPreviewResult := providertest.PreviewUpgrade(source, baselineProviderConfig, providertest.UpgradePreviewOpts{})
+	assertpreview.HasNoChanges(t, uncachedPreviewResult)
 }
 
 func TestRecordSnapshot(t *testing.T) {

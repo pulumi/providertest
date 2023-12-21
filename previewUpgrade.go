@@ -15,12 +15,11 @@ import (
 )
 
 type UpgradePreviewOpts struct {
-	// Where the recording cache is located containing previous deployment state and gRPC logs.
-	// The variable {baselineVersion} which will be replaced with the baseline version.
-	// The variable {programDir} which will be replaced with the program's directory name.
-	// If empty, this will default to "testdata/recorded/TestProviderUpgrade/{programDir}/{baselineVersion}"
+	// Where the recording cache is located containing previous deployment state (stack.json) and gRPC log (grpc.log).
+	// If empty, this will not cache the snapshot. Specify "." to use the current working directory.
 	CacheDir string
 
+	// The provider configuration to use when executing the initial deployment.
 	BaselineProviderConfig ProviderConfiguration
 }
 
@@ -38,13 +37,19 @@ type Snapshot struct {
 // PreviewUpdate
 func PreviewUpgrade(pulumiTest *pulumitest.PulumiTest, baselineProviderConfig ProviderConfiguration, opts UpgradePreviewOpts) auto.PreviewResult {
 	pulumiTest.T().Helper()
-	snapshot, hasSnapshot := TryReadSnapshot(pulumiTest.T(), opts.CacheDir)
-	if !hasSnapshot {
-		pulumiTest.T().Logf("no snapshot cache found at %s, creating one", opts.CacheDir)
+	var snapshot *Snapshot
+	if opts.CacheDir == "" {
 		snapshot = SnapshotUp(pulumiTest, baselineProviderConfig)
-		err := WriteSnapshot(opts.CacheDir, snapshot)
-		if err != nil {
-			pulumiTest.T().Fatalf("failed to write snapshot to %s: %v", opts.CacheDir, err)
+	} else {
+		var hasSnapshot bool
+		snapshot, hasSnapshot = TryReadSnapshot(pulumiTest.T(), opts.CacheDir)
+		if !hasSnapshot {
+			pulumiTest.T().Logf("no snapshot cache found at %s, creating one", opts.CacheDir)
+			snapshot = SnapshotUp(pulumiTest, baselineProviderConfig)
+			err := WriteSnapshot(opts.CacheDir, snapshot)
+			if err != nil {
+				pulumiTest.T().Fatalf("failed to write snapshot to %s: %v", opts.CacheDir, err)
+			}
 		}
 	}
 	return PreviewUpdateFromSnapshot(pulumiTest, snapshot)
