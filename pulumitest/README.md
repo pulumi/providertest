@@ -15,10 +15,10 @@ func TestPulumiProgram(t *testing.T) {
 }
 ```
 
-By default run your program is copied to a temporary directory before running to avoid cluttering your working directory with temporary or ephemeral files. To disable this behaviour, use `NewPulumiTestInPlace`. You can also do a copy of a test manually by calling `CopyToTempDir()`:
+By default run your program is copied to a temporary directory before running to avoid cluttering your working directory with temporary or ephemeral files. To disable this behaviour, use `opttest.TestInPlace()`. You can also do a copy of a test manually by calling `CopyToTempDir()`:
 
 ```go
-source := NewPulumiTestInPlace(t, ...)
+source := NewPulumiTest(t, opttest.TestInPlace())
 copy := source.CopyToTempDir()
 ```
 

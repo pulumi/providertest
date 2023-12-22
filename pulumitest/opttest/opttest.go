@@ -109,16 +109,54 @@ type Options struct {
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
 }
 
+// Copy creates a deep copy of the current options.
+func (o *Options) Copy() *Options {
+	newOptions := *o
+	newOptions.ProviderFactories = make(map[providers.ProviderName]providers.ProviderFactory)
+	for k, v := range o.ProviderFactories {
+		newOptions.ProviderFactories[k] = v
+	}
+	newOptions.ProviderPluginPaths = make(map[string]string)
+	for k, v := range o.ProviderPluginPaths {
+		newOptions.ProviderPluginPaths[k] = v
+	}
+	newOptions.YarnLinks = make([]string, len(o.YarnLinks))
+	copy(newOptions.YarnLinks, o.YarnLinks)
+	newOptions.GoModReplacements = make(map[string]string)
+	for k, v := range o.GoModReplacements {
+		newOptions.GoModReplacements[k] = v
+	}
+	newOptions.CustomEnv = make(map[string]string)
+	for k, v := range o.CustomEnv {
+		newOptions.CustomEnv[k] = v
+	}
+	newOptions.ExtraWorkspaceOptions = make([]auto.LocalWorkspaceOption, len(o.ExtraWorkspaceOptions))
+	copy(newOptions.ExtraWorkspaceOptions, o.ExtraWorkspaceOptions)
+	return &newOptions
+}
+
 var defaultConfigPassphrase string = "correct horse battery staple"
 
+// Defaults sets all options back to their defaults.
+// This can be useful when using CopyToTempDir or Convert but not wanting to inherit any options from the previous PulumiTest.
+func Defaults() Option {
+	return optionFunc(func(o *Options) {
+		o.TestInPlace = false
+		o.ConfigPassphrase = defaultConfigPassphrase
+		o.ProviderFactories = make(map[providers.ProviderName]providers.ProviderFactory)
+		o.ProviderPluginPaths = make(map[string]string)
+		o.UseAmbientBackend = false
+		o.YarnLinks = []string{}
+		o.GoModReplacements = make(map[string]string)
+		o.CustomEnv = make(map[string]string)
+		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
+	})
+}
+
 func DefaultOptions() *Options {
-	return &Options{
-		ConfigPassphrase:    defaultConfigPassphrase,
-		ProviderFactories:   make(map[providers.ProviderName]providers.ProviderFactory),
-		ProviderPluginPaths: make(map[string]string),
-		GoModReplacements:   make(map[string]string),
-		CustomEnv:           make(map[string]string),
-	}
+	o := &Options{}
+	Defaults().Apply(o)
+	return o
 }
 
 type Option interface {

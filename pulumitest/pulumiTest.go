@@ -53,20 +53,6 @@ func (a *PulumiTest) Context() context.Context {
 	return a.ctx
 }
 
-func (a *PulumiTest) WithSource(source string) *PulumiTest {
-	a.t.Helper()
-	a.source = source
-	return a
-}
-
 func (a *PulumiTest) CurrentStack() *auto.Stack {
 	return a.currentStack
-}
-
-func (a *PulumiTest) WithOptions(opts ...opttest.Option) *PulumiTest {
-	a.t.Helper()
-	for _, opt := range opts {
-		opt.Apply(a.options)
-	}
-	return a
 }
