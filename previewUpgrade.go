@@ -34,7 +34,7 @@ type Snapshot struct {
 	GrpcLog     []byte
 }
 
-// PreviewUpdate
+// PreviewUpgrade
 func PreviewUpgrade(pulumiTest *pulumitest.PulumiTest, baselineProviderConfig ProviderConfiguration, opts UpgradePreviewOpts) auto.PreviewResult {
 	pulumiTest.T().Helper()
 	var snapshot *Snapshot
@@ -64,20 +64,20 @@ func PreviewUpdateFromSnapshot(pulumiTest *pulumitest.PulumiTest, snapshot *Snap
 
 func SnapshotUp(pulumiTest *pulumitest.PulumiTest, provider ProviderConfiguration, extraOpts ...opttest.Option) *Snapshot {
 	pulumiTest.T().Helper()
-	recording := pulumiTest.CopyToTempDir()
+	recordingDir := pulumiTest.T().TempDir()
 	// Copy options
 	opts := append([]opttest.Option{}, extraOpts...)
 	// Set up gRPC recording
-	grpcLogPath := filepath.Join(recording.Source(), "grpc.log")
+	grpcLogPath := filepath.Join(recordingDir, "grpc.log")
 	opts = append(opts, opttest.Env("PULUMI_DEBUG_GRPC", grpcLogPath))
 	providerOpt, err := provider.BuildOpt()
 	if err != nil {
 		pulumiTest.T().Fatalf("failed to build provider options: %v", err)
 	}
 	opts = append(opts, providerOpt)
-	recording.WithOptions(opts...)
+	recording := pulumiTest.CopyTo(recordingDir, opts...)
 
-	recording.InstallStack("test") // TODO: configure
+	recording.InstallStack("test")
 	recording.Up()
 	stackExport := recording.ExportStack()
 	grpcLogBytes, err := os.ReadFile(grpcLogPath)
