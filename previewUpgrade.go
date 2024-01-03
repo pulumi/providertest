@@ -7,21 +7,20 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/providertest/pulumitest"
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 )
 
-type UpgradePreviewOpts struct {
-	// Where the recording cache is located containing previous deployment state (stack.json) and gRPC log (grpc.log).
-	// If empty, this will not cache the snapshot. Specify "." to use the current working directory.
-	CacheDir string
+// type UpgradePreviewOpts struct {
+// 	// Where the recording cache is located containing previous deployment state (stack.json) and gRPC log (grpc.log).
+// 	// If empty, this will not cache the snapshot. Specify "." to use the current working directory.
+// 	CacheDir string
 
-	// The provider configuration to use when executing the initial deployment.
-	BaselineProviderConfig ProviderConfiguration
-}
+// 	// The provider configuration to use when executing the initial deployment.
+// 	BaselineProviderConfig providertest.ProviderConfiguration
+// }
 
 type UpgradePreviewResult struct {
 	auto.PreviewResult
@@ -34,55 +33,95 @@ type Snapshot struct {
 	GrpcLog     []byte
 }
 
-// PreviewUpgrade
-func PreviewUpgrade(pulumiTest *pulumitest.PulumiTest, baselineProviderConfig ProviderConfiguration, opts UpgradePreviewOpts) auto.PreviewResult {
+// // PreviewUpgrade
+// func PreviewUpgrade(pulumiTest *pulumitest.PulumiTest, baselineProviderConfig ProviderConfiguration, opts UpgradePreviewOpts) auto.PreviewResult {
+// 	pulumiTest.T().Helper()
+// 	var snapshot *Snapshot
+// 	if opts.CacheDir == "" {
+// 		snapshot = SnapshotUp(pulumiTest, baselineProviderConfig)
+// 	} else {
+// 		var hasSnapshot bool
+// 		snapshot, hasSnapshot = TryReadSnapshot(pulumiTest.T(), opts.CacheDir)
+// 		if !hasSnapshot {
+// 			pulumiTest.T().Logf("no snapshot cache found at %s, creating one", opts.CacheDir)
+// 			snapshot = SnapshotUp(pulumiTest, baselineProviderConfig)
+// 			err := WriteSnapshot(opts.CacheDir, snapshot)
+// 			if err != nil {
+// 				pulumiTest.T().Fatalf("failed to write snapshot to %s: %v", opts.CacheDir, err)
+// 			}
+// 		}
+// 	}
+// 	return PreviewUpdateFromSnapshot(pulumiTest, snapshot)
+// }
+
+// Setup is run in a separate temp folder. Uses the same stack name as the original test, if set.
+func CachedSnapshot(pulumiTest *pulumitest.PulumiTest, cacheDir string, setup func(test *pulumitest.PulumiTest), setupOpts ...opttest.Option) *Snapshot {
 	pulumiTest.T().Helper()
 	var snapshot *Snapshot
-	if opts.CacheDir == "" {
-		snapshot = SnapshotUp(pulumiTest, baselineProviderConfig)
-	} else {
-		var hasSnapshot bool
-		snapshot, hasSnapshot = TryReadSnapshot(pulumiTest.T(), opts.CacheDir)
-		if !hasSnapshot {
-			pulumiTest.T().Logf("no snapshot cache found at %s, creating one", opts.CacheDir)
-			snapshot = SnapshotUp(pulumiTest, baselineProviderConfig)
-			err := WriteSnapshot(opts.CacheDir, snapshot)
-			if err != nil {
-				pulumiTest.T().Fatalf("failed to write snapshot to %s: %v", opts.CacheDir, err)
-			}
-		}
+	if cacheDir == "" {
+		pulumiTest.T().Fatal("CacheDir is required. Use \".\" to use the current working directory.")
 	}
-	return PreviewUpdateFromSnapshot(pulumiTest, snapshot)
+	// Maintain current stack name
+	currentStack := pulumiTest.CurrentStack()
+	stackName := ""
+	if currentStack != nil {
+		stackName = currentStack.Name()
+	} else {
+		pulumiTest.T().Logf("warning: no current stack found, stack name will be randomised every run. Initialise a stack before calling CachedSnapshot to avoid this.")
+	}
+
+	var hasSnapshot bool
+	snapshot, hasSnapshot = TryReadSnapshot(pulumiTest.T(), cacheDir)
+	if hasSnapshot {
+		return snapshot
+	}
+	pulumiTest.T().Logf("no snapshot cache found at %s, creating one", cacheDir)
+	setupCopy := pulumiTest.CopyToTempDir(setupOpts...)
+	setupCopy.InstallStack(stackName)
+	snapshot = CaptureSnapshot(setupCopy, setup)
+	err := WriteSnapshot(cacheDir, snapshot)
+	if err != nil {
+		pulumiTest.T().Fatalf("failed to write snapshot to %s: %v", cacheDir, err)
+	}
+	return snapshot
 }
 
+// PreviewUpdateFromSnapshot runs `pulumi preview` with a specific provider config and captures the resulting snapshot.
 func PreviewUpdateFromSnapshot(pulumiTest *pulumitest.PulumiTest, snapshot *Snapshot) auto.PreviewResult {
+	pulumiTest.T().Helper()
 	previewCopy := pulumiTest.CopyToTempDir()
 	previewCopy.InstallStack("test")
 	previewCopy.ImportStack(snapshot.StackExport)
 	return previewCopy.Preview()
 }
 
-func SnapshotUp(pulumiTest *pulumitest.PulumiTest, provider ProviderConfiguration, extraOpts ...opttest.Option) *Snapshot {
-	pulumiTest.T().Helper()
-	recordingDir := pulumiTest.T().TempDir()
+// // SnapshotUp runs `pulumi up` with a specific provider config and captures the resulting snapshot.
+// // Deprecated: use CachedSnapshot instead.
+// func SnapshotUp(pulumiTest *pulumitest.PulumiTest, opts ...opttest.Option) *Snapshot {
+// 	pulumiTest.T().Helper()
+
+// 	return CaptureSnapshot(pulumiTest, func(test *pulumitest.PulumiTest) {
+// 		test.Up()
+// 	}, opts...)
+// }
+
+// CaptureSnapshot runs the given steps and captures the resulting stack state and gRPC log.
+func CaptureSnapshot(source *pulumitest.PulumiTest, executeSteps func(test *pulumitest.PulumiTest), extraOpts ...opttest.Option) *Snapshot {
+	source.T().Helper()
+	recordingDir := source.T().TempDir()
 	// Copy options
 	opts := append([]opttest.Option{}, extraOpts...)
 	// Set up gRPC recording
 	grpcLogPath := filepath.Join(recordingDir, "grpc.log")
 	opts = append(opts, opttest.Env("PULUMI_DEBUG_GRPC", grpcLogPath))
-	providerOpt, err := provider.BuildOpt()
-	if err != nil {
-		pulumiTest.T().Fatalf("failed to build provider options: %v", err)
-	}
-	opts = append(opts, providerOpt)
-	recording := pulumiTest.CopyTo(recordingDir, opts...)
+	recording := source.CopyTo(recordingDir, opts...)
 
 	recording.InstallStack("test")
-	recording.Up()
+	executeSteps(recording)
 	stackExport := recording.ExportStack()
 	grpcLogBytes, err := os.ReadFile(grpcLogPath)
 	if err != nil && !os.IsNotExist(err) {
-		pulumiTest.T().Fatalf("failed to read grpc log for %s: %v", recording.Source(), err)
+		source.T().Fatalf("failed to read grpc log for %s: %v", recording.Source(), err)
 	}
 
 	return &Snapshot{
@@ -92,6 +131,9 @@ func SnapshotUp(pulumiTest *pulumitest.PulumiTest, provider ProviderConfiguratio
 }
 
 func WriteSnapshot(dir string, snapshot *Snapshot) error {
+	if snapshot == nil {
+		return fmt.Errorf("snapshot must not be nil")
+	}
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return err
@@ -104,6 +146,7 @@ func WriteSnapshot(dir string, snapshot *Snapshot) error {
 	if err != nil {
 		return err
 	}
+
 	err = os.WriteFile(filepath.Join(dir, "grpc.log"), snapshot.GrpcLog, 0644)
 	return err
 }
@@ -140,50 +183,4 @@ func TryReadSnapshot(t *testing.T, path string) (*Snapshot, bool) {
 		StackExport: stackExport,
 		GrpcLog:     grpcLogBytes,
 	}, true
-}
-
-// ProviderConfiguration is the name plus a discriminated union of the different way to configure the provider.
-// Only one of Attach, LocalBinary, or DownloadBinary should be set.
-type ProviderConfiguration struct {
-	// The name of the provider without the "pulumi-" prefix.
-	Name string
-	// The factory to use to start the provider then attach when executing operations.
-	Attach providers.ProviderFactory
-	// The path to a local binary to use when executing operations.
-	LocalBinaryPath string
-	// The version of the provider to download and install.
-	DownloadBinaryVersion string
-	// Disable attaching the provider to the program under test.
-	// Just set the path the to provider binary in the program's Pulumi.yaml.
-	// This cannot be used with the Attach option.
-	DisableAttach bool
-}
-
-func (p ProviderConfiguration) BuildOpt() (opttest.Option, error) {
-	if p.Name == "" {
-		return nil, fmt.Errorf("provider name must be set")
-	}
-	if p.Attach != nil {
-		if p.DisableAttach {
-			return nil, fmt.Errorf("cannot Attach when DisableAttach set")
-		}
-		return opttest.AttachProvider(p.Name, p.Attach), nil
-	}
-	if p.LocalBinaryPath != "" {
-		if p.DisableAttach {
-			return opttest.LocalProviderPath(p.Name, p.LocalBinaryPath), nil
-		}
-		return opttest.AttachProviderBinary(p.Name, p.LocalBinaryPath), nil
-	}
-	if p.DownloadBinaryVersion != "" {
-		if p.DisableAttach {
-			path, err := providers.DownloadPluginBinary(p.Name, p.DownloadBinaryVersion)
-			if err != nil {
-				return nil, err
-			}
-			return opttest.LocalProviderPath(p.Name, path), nil
-		}
-		return opttest.AttachDownloadedPlugin(p.Name, p.DownloadBinaryVersion), nil
-	}
-	return nil, fmt.Errorf("provider configuration must have one of Attach, LocalBinaryPath, or DownloadBinaryVersion set")
 }
