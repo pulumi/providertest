@@ -179,6 +179,8 @@ func Defaults() Option {
 	return optionFunc(func(o *Options) {
 		o.StackName = defaultStackName
 		o.TestInPlace = false
+		o.SkipInstall = false
+		o.SkipStackCreate = false
 		o.ConfigPassphrase = defaultConfigPassphrase
 		o.ProviderFactories = make(map[providers.ProviderName]providers.ProviderFactory)
 		o.ProviderPluginPaths = make(map[string]string)
