@@ -15,7 +15,7 @@ func HasNoChanges(t *testing.T, preview auto.PreviewResult) {
 	unexpectedOps := convertedMap.WhereOpNotEquals(apitype.OpSame)
 
 	if len(*unexpectedOps) > 0 {
-		t.Errorf("expected no changes, got %s", unexpectedOps)
+		t.Errorf("expected no changes, got %s\n%s", unexpectedOps, preview.StdOut)
 	}
 }
 
@@ -26,6 +26,6 @@ func HasNoDeletes(t *testing.T, preview auto.PreviewResult) {
 	unexpectedOps := convertedMap.WhereOpEquals(apitype.OpDelete, apitype.OpDeleteReplaced, apitype.OpReplace)
 
 	if len(*unexpectedOps) > 0 {
-		t.Errorf("expected no changes, got %s", unexpectedOps)
+		t.Errorf("expected no changes, got %s\n%s", unexpectedOps, preview.StdOut)
 	}
 }
