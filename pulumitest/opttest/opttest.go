@@ -52,6 +52,16 @@ func LocalProviderPath(name string, path ...string) Option {
 	})
 }
 
+func DownloadProviderVersion(name, version string) Option {
+	return optionFunc(func(o *Options) {
+		binaryPath, err := providers.DownloadPluginBinary(name, version)
+		if err != nil {
+			panic(err)
+		}
+		o.ProviderPluginPaths[name] = binaryPath
+	})
+}
+
 // YarnLink specifies packages which are linked via `yarn link` and should be used when running the program under test.
 // Each package is called with `yarn link <package>` on stack creation.
 func YarnLink(packages ...string) Option {
