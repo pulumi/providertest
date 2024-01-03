@@ -5,7 +5,30 @@ import (
 
 	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/util/deepcopy"
 )
+
+// StackName sets the default stack name to use when running the program under test.
+func StackName(name string) Option {
+	return optionFunc(func(o *Options) {
+		o.StackName = name
+	})
+}
+
+// SkipInstall skips running `pulumi install` before running the program under test.
+func SkipInstall() Option {
+	return optionFunc(func(o *Options) {
+		o.SkipInstall = true
+	})
+}
+
+// SkipStackCreate skips creating the stack before running the program under test.
+// A stack will have to be created manually before running the program under test.
+func SkipStackCreate() Option {
+	return optionFunc(func(o *Options) {
+		o.SkipStackCreate = true
+	})
+}
 
 // TestInPlace will run the program under test from its current location, rather than firstly copying to a temporary directory.
 func TestInPlace() Option {
@@ -49,6 +72,16 @@ func AttachDownloadedPlugin(name, version string) Option {
 func LocalProviderPath(name string, path ...string) Option {
 	return optionFunc(func(o *Options) {
 		o.ProviderPluginPaths[name] = filepath.Join(path...)
+	})
+}
+
+func DownloadProviderVersion(name, version string) Option {
+	return optionFunc(func(o *Options) {
+		binaryPath, err := providers.DownloadPluginBinary(name, version)
+		if err != nil {
+			panic(err)
+		}
+		o.ProviderPluginPaths[name] = binaryPath
 	})
 }
 
@@ -98,6 +131,9 @@ func WorkspaceOptions(opts ...auto.LocalWorkspaceOption) Option {
 }
 
 type Options struct {
+	StackName             string
+	SkipInstall           bool
+	SkipStackCreate       bool
 	TestInPlace           bool
 	ConfigPassphrase      string
 	ProviderFactories     map[providers.ProviderName]providers.ProviderFactory
@@ -109,16 +145,38 @@ type Options struct {
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
 }
 
+// Copy creates a deep copy of the current options.
+func (o *Options) Copy() *Options {
+	newOptions := deepcopy.Copy(*o).(Options)
+	return &newOptions
+}
+
 var defaultConfigPassphrase string = "correct horse battery staple"
+var defaultStackName string = "test"
+
+// Defaults sets all options back to their defaults.
+// This can be useful when using CopyToTempDir or Convert but not wanting to inherit any options from the previous PulumiTest.
+func Defaults() Option {
+	return optionFunc(func(o *Options) {
+		o.StackName = defaultStackName
+		o.TestInPlace = false
+		o.SkipInstall = false
+		o.SkipStackCreate = false
+		o.ConfigPassphrase = defaultConfigPassphrase
+		o.ProviderFactories = make(map[providers.ProviderName]providers.ProviderFactory)
+		o.ProviderPluginPaths = make(map[string]string)
+		o.UseAmbientBackend = false
+		o.YarnLinks = []string{}
+		o.GoModReplacements = make(map[string]string)
+		o.CustomEnv = make(map[string]string)
+		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
+	})
+}
 
 func DefaultOptions() *Options {
-	return &Options{
-		ConfigPassphrase:    defaultConfigPassphrase,
-		ProviderFactories:   make(map[providers.ProviderName]providers.ProviderFactory),
-		ProviderPluginPaths: make(map[string]string),
-		GoModReplacements:   make(map[string]string),
-		CustomEnv:           make(map[string]string),
-	}
+	o := &Options{}
+	Defaults().Apply(o)
+	return o
 }
 
 type Option interface {

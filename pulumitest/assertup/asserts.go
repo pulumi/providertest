@@ -16,7 +16,7 @@ func HasNoChanges(t *testing.T, up auto.UpResult) {
 	unexpectedOps := summary.WhereOpNotEquals(apitype.OpSame)
 
 	if len(*unexpectedOps) > 0 {
-		t.Errorf("expected no changes, got %s", unexpectedOps)
+		t.Errorf("expected no changes, got %s\n%s", unexpectedOps, up.StdOut)
 	}
 }
 
@@ -28,6 +28,6 @@ func HasNoDeletes(t *testing.T, up auto.UpResult) {
 	unexpectedOps := summary.WhereOpEquals(apitype.OpDelete, apitype.OpDeleteReplaced, apitype.OpReplace)
 
 	if len(*unexpectedOps) > 0 {
-		t.Errorf("expected no changes, got %s", unexpectedOps)
+		t.Errorf("expected no changes, got %s\n%s", unexpectedOps, up.StdOut)
 	}
 }

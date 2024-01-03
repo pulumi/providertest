@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/pulumi/providertest/pulumitest/opttest"
 )
 
 type ConvertResult struct {
@@ -16,7 +18,7 @@ type ConvertResult struct {
 
 // Convert a program to a given language.
 // It returns a new PulumiTest instance for the converted program which will be outputted into a temporary directory.
-func (a *PulumiTest) Convert(language string) ConvertResult {
+func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertResult {
 	a.t.Helper()
 
 	tempDir := a.t.TempDir()
@@ -35,12 +37,17 @@ func (a *PulumiTest) Convert(language string) ConvertResult {
 		a.t.Fatalf("failed to convert directory: %s\n%s", err, out)
 	}
 
+	options := a.options.Copy()
+	for _, opt := range opts {
+		opt.Apply(options)
+	}
+
 	return ConvertResult{
 		PulumiTest: &PulumiTest{
 			t:       a.t,
 			ctx:     a.ctx,
 			source:  targetDir,
-			options: a.options,
+			options: options,
 		},
 		Output: string(out),
 	}

@@ -56,6 +56,11 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		env["PULUMI_DEBUG_PROVIDERS"] = providers.GetDebugProvidersEnv(providerPorts)
 	}
 
+	// Apply custom env last to allow overriding any of the above.
+	for k, v := range options.CustomEnv {
+		env[k] = v
+	}
+
 	stackOpts := []auto.LocalWorkspaceOption{
 		auto.EnvVars(env),
 	}
