@@ -5,6 +5,7 @@ import (
 
 	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/util/deepcopy"
 )
 
 // StackName sets the default stack name to use when running the program under test.
@@ -146,27 +147,7 @@ type Options struct {
 
 // Copy creates a deep copy of the current options.
 func (o *Options) Copy() *Options {
-	newOptions := *o
-	newOptions.ProviderFactories = make(map[providers.ProviderName]providers.ProviderFactory)
-	for k, v := range o.ProviderFactories {
-		newOptions.ProviderFactories[k] = v
-	}
-	newOptions.ProviderPluginPaths = make(map[string]string)
-	for k, v := range o.ProviderPluginPaths {
-		newOptions.ProviderPluginPaths[k] = v
-	}
-	newOptions.YarnLinks = make([]string, len(o.YarnLinks))
-	copy(newOptions.YarnLinks, o.YarnLinks)
-	newOptions.GoModReplacements = make(map[string]string)
-	for k, v := range o.GoModReplacements {
-		newOptions.GoModReplacements[k] = v
-	}
-	newOptions.CustomEnv = make(map[string]string)
-	for k, v := range o.CustomEnv {
-		newOptions.CustomEnv[k] = v
-	}
-	newOptions.ExtraWorkspaceOptions = make([]auto.LocalWorkspaceOption, len(o.ExtraWorkspaceOptions))
-	copy(newOptions.ExtraWorkspaceOptions, o.ExtraWorkspaceOptions)
+	newOptions := deepcopy.Copy(*o).(Options)
 	return &newOptions
 }
 
