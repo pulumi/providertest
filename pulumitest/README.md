@@ -15,7 +15,7 @@ func TestPulumiProgram(t *testing.T) {
 }
 ```
 
-By default run your program is copied to a temporary directory before running to avoid cluttering your working directory with temporary or ephemeral files. To disable this behaviour, use `opttest.TestInPlace()`. You can also do a copy of a test manually by calling `CopyToTempDir()`:
+By default your program is copied to a temporary directory before running to avoid cluttering your working directory with temporary or ephemeral files. To disable this behaviour, use `opttest.TestInPlace()`. You can also do a copy of a test manually by calling `CopyToTempDir()`:
 
 ```go
 source := NewPulumiTest(t, opttest.TestInPlace())
@@ -24,18 +24,24 @@ copy := source.CopyToTempDir()
 
 The `source` variable is still pointing to the original path, but the `copy` is pointing to a new PulumiTest in temporary directory which will automatically get removed at the end of the test.
 
-Before we can preview or deploy a program we need to install dependencies and create a stack:
+The default behaviour is also to install dependencies and create a new stack called "test".
+
+- The default stack name can be customised by using `opttest.StackName("my-stack")`.
+- To prevent the automatic install of dependencies use `opttest.SkipInstall()`.
+- To prevent automatically creating a stack use `opttest.SkipStackCreate()`
+
+The following program is equivalent to the default test setup:
 
 ```go
-//...
+test := NewPulumiTest(t, opttest.SkipInstall(), opttest.SkipStackCreate())
 test.Install() // Runs `pulumi install` to restore all dependencies
-test.NewStack("my-stack") // Creates a new stack and returns it.
+test.NewStack("test") // Creates a new stack and returns it.
 ```
 
-These two steps can also be done together by calling `InstallStack()`:
+The `Install` and `NewStack` steps can also be done together by calling `InstallStack()`:
 
 ```go
-test.InstallStack("my-stack")
+test.InstallStack("test")
 ```
 
 The created stack is returned but is also set as the current stack on the PulumiTest object. All methods such as `source.Preview()` or `source.Up()` will use this current stack.
