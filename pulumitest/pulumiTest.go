@@ -41,7 +41,7 @@ func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiT
 		options: options,
 	}
 	if !options.TestInPlace {
-		return pt.CopyToTempDir()
+		pt = pt.CopyToTempDir()
 	}
 	if !options.SkipInstall {
 		pt.Install()
