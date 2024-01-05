@@ -40,7 +40,7 @@ func TestInPlace() Option {
 // AttachProvider will start the provider via the specified factory and attach it when running the program under test.
 func AttachProvider(name string, startProvider providers.ProviderFactory) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[providers.ProviderName(name)] = startProvider
+		o.Providers[providers.ProviderName(name)] = ProviderConfigUnion{Factory: startProvider}
 	})
 }
 
@@ -49,21 +49,21 @@ func AttachProvider(name string, startProvider providers.ProviderFactory) Option
 // pulumi-resource-<name> in that directory.
 func AttachProviderBinary(name, path string) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[providers.ProviderName(name)] = providers.LocalBinary(name, path)
+		o.Providers[providers.ProviderName(name)] = ProviderConfigUnion{Factory: providers.LocalBinary(name, path)}
 	})
 }
 
 // AttachProviderServer will start the specified and attach for the test run.
 func AttachProviderServer(name string, startProvider providers.ResourceProviderServerFactory) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[providers.ProviderName(name)] = providers.ResourceProviderFactory(startProvider)
+		o.Providers[providers.ProviderName(name)] = ProviderConfigUnion{Factory: providers.ResourceProviderFactory(startProvider)}
 	})
 }
 
 // AttachDownloadedPlugin installs the plugin via `pulumi plugin install` then will start the provider and attach it for the test run.
 func AttachDownloadedPlugin(name, version string) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderFactories[providers.ProviderName(name)] = providers.DownloadPluginBinaryFactory(name, version)
+		o.Providers[providers.ProviderName(name)] = ProviderConfigUnion{Factory: providers.DownloadPluginBinaryFactory(name, version)}
 	})
 }
 
@@ -71,7 +71,7 @@ func AttachDownloadedPlugin(name, version string) Option {
 // This sets the `plugins.providers` property in the project settings (Pulumi.yaml).
 func LocalProviderPath(name string, path ...string) Option {
 	return optionFunc(func(o *Options) {
-		o.ProviderPluginPaths[name] = filepath.Join(path...)
+		o.Providers[providers.ProviderName(name)] = ProviderConfigUnion{Path: filepath.Join(path...)}
 	})
 }
 
@@ -81,7 +81,7 @@ func DownloadProviderVersion(name, version string) Option {
 		if err != nil {
 			panic(err)
 		}
-		o.ProviderPluginPaths[name] = binaryPath
+		o.Providers[providers.ProviderName(name)] = ProviderConfigUnion{Path: binaryPath}
 	})
 }
 
@@ -143,14 +143,20 @@ type Options struct {
 	SkipStackCreate       bool
 	TestInPlace           bool
 	ConfigPassphrase      string
-	ProviderFactories     map[providers.ProviderName]providers.ProviderFactory
-	ProviderPluginPaths   map[string]string
+	Providers             map[providers.ProviderName]ProviderConfigUnion
 	UseAmbientBackend     bool
 	YarnLinks             []string
 	GoModReplacements     map[string]string
 	CustomEnv             map[string]string
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
 	DisableGrpcLog        bool
+}
+
+// ProviderConfigUnion is a union type for specifying a provider configuration.
+// Only one of Factory or Path should be set.
+type ProviderConfigUnion struct {
+	Factory providers.ProviderFactory
+	Path    string
 }
 
 // Copy creates a deep copy of the current options.
@@ -171,8 +177,7 @@ func Defaults() Option {
 		o.SkipInstall = false
 		o.SkipStackCreate = false
 		o.ConfigPassphrase = defaultConfigPassphrase
-		o.ProviderFactories = make(map[providers.ProviderName]providers.ProviderFactory)
-		o.ProviderPluginPaths = make(map[string]string)
+		o.Providers = make(map[providers.ProviderName]ProviderConfigUnion)
 		o.UseAmbientBackend = false
 		o.YarnLinks = []string{}
 		o.GoModReplacements = make(map[string]string)
@@ -196,4 +201,24 @@ type optionFunc func(*Options)
 
 func (o optionFunc) Apply(opts *Options) {
 	o(opts)
+}
+
+func (o *Options) ProviderFactories() map[providers.ProviderName]providers.ProviderFactory {
+	providerFactories := make(map[providers.ProviderName]providers.ProviderFactory)
+	for providerName, providerConfig := range o.Providers {
+		if providerConfig.Factory != nil {
+			providerFactories[providerName] = providerConfig.Factory
+		}
+	}
+	return providerFactories
+}
+
+func (o *Options) ProviderPluginPaths() map[providers.ProviderName]string {
+	providerPluginPaths := make(map[providers.ProviderName]string)
+	for providerName, providerConfig := range o.Providers {
+		if providerConfig.Path != "" {
+			providerPluginPaths[providerName] = providerConfig.Path
+		}
+	}
+	return providerPluginPaths
 }
