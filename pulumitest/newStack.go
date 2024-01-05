@@ -41,6 +41,11 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
 	}
 
+	if !options.DisableGrpcLog {
+		grpcLogDir := pt.t.TempDir()
+		env["PULUMI_DEBUG_GRPC"] = filepath.Join(grpcLogDir, "grpc.json")
+	}
+
 	if len(options.ProviderFactories) > 0 {
 		pt.t.Log("starting providers")
 		providerContext, cancelProviders := context.WithCancel(pt.ctx)
@@ -67,6 +72,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 	stackOpts = append(stackOpts, options.ExtraWorkspaceOptions...)
 	stackOpts = append(stackOpts, opts...)
 
+	pt.T().Logf("creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
 
 	if options.ProviderPluginPaths != nil && len(options.ProviderPluginPaths) > 0 {
