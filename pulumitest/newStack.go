@@ -46,10 +46,11 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		env["PULUMI_DEBUG_GRPC"] = filepath.Join(grpcLogDir, "grpc.json")
 	}
 
-	if len(options.ProviderFactories) > 0 {
+	providerFactories := options.ProviderFactories()
+	if len(providerFactories) > 0 {
 		pt.t.Log("starting providers")
 		providerContext, cancelProviders := context.WithCancel(pt.ctx)
-		providerPorts, err := providers.StartProviders(providerContext, options.ProviderFactories)
+		providerPorts, err := providers.StartProviders(providerContext, providerFactories)
 		if err != nil {
 			cancelProviders()
 			pt.t.Fatalf("failed to start providers: %v", err)
@@ -75,7 +76,8 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 	pt.T().Logf("creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
 
-	if options.ProviderPluginPaths != nil && len(options.ProviderPluginPaths) > 0 {
+	providerPluginPaths := options.ProviderPluginPaths()
+	if len(providerPluginPaths) > 0 {
 		projectSettings, err := stack.Workspace().ProjectSettings(pt.ctx)
 		if err != nil {
 			pt.t.Fatalf("failed to get project settings: %s", err)
@@ -84,17 +86,17 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		if projectSettings.Plugins != nil {
 			plugins = *projectSettings.Plugins
 		}
-		providers := plugins.Providers
+		providerPlugins := plugins.Providers
 		// Sort the provider plugin paths to ensure a consistent order.
-		providerPluginNames := make([]string, 0, len(options.ProviderPluginPaths))
-		for name := range options.ProviderPluginPaths {
-			providerPluginNames = append(providerPluginNames, name)
+		providerPluginNames := make([]string, 0, len(providerPluginPaths))
+		for name := range providerPluginPaths {
+			providerPluginNames = append(providerPluginNames, string(name))
 		}
 		sort.Strings(providerPluginNames)
 		for _, name := range providerPluginNames {
-			path := options.ProviderPluginPaths[name]
+			path := providerPluginPaths[providers.ProviderName(name)]
 			found := false
-			for _, provider := range providers {
+			for _, provider := range providerPlugins {
 				if provider.Name == name {
 					provider.Path = path
 					found = true
@@ -102,13 +104,13 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 				}
 			}
 			if !found {
-				providers = append(providers, workspace.PluginOptions{
+				providerPlugins = append(providerPlugins, workspace.PluginOptions{
 					Name: name,
 					Path: path,
 				})
 			}
 		}
-		plugins.Providers = providers
+		plugins.Providers = providerPlugins
 		projectSettings.Plugins = &plugins
 		err = stack.Workspace().SaveProjectSettings(pt.ctx, projectSettings)
 		if err != nil {
