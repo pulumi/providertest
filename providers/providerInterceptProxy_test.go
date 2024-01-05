@@ -14,7 +14,8 @@ import (
 )
 
 func TestProviderInterceptProxy(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	didAttach := false
 	gcpProviderFactory := providers.DownloadPluginBinaryFactory("azure-native", "2.21.0")
 	interceptedFactory := providers.ProviderInterceptFactory(ctx, gcpProviderFactory, providers.ProviderInterceptors{
