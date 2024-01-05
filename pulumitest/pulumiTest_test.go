@@ -14,7 +14,7 @@ import (
 )
 
 func TestDeploy(t *testing.T) {
-	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
+	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"), opttest.SkipInstall(), opttest.SkipStackCreate())
 
 	// Ensure dependencies are installed.
 	test.Install()
@@ -106,4 +106,12 @@ func TestBinaryPlugin(t *testing.T) {
 	assert.Equal(t,
 		map[string]int{"same": 1, "update": 1},
 		*deploy2.Summary.ResourceChanges)
+}
+
+func TestGrpcLog(t *testing.T) {
+	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
+	test.Preview()
+	grpcLog := test.GrpcLog()
+	creates, _ := grpcLog.Creates()
+	assert.Equal(t, 1, len(creates))
 }
