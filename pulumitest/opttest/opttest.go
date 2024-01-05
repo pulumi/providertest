@@ -109,6 +109,13 @@ func UseAmbientBackend() Option {
 	})
 }
 
+// DisableGrpcLog disables the gRPC log which is written to grpc.log in the current working directory.
+func DisableGrpcLog() Option {
+	return optionFunc(func(o *Options) {
+		o.DisableGrpcLog = true
+	})
+}
+
 // Set a custom environment variable to use when running the program under test.
 func Env(key, value string) Option {
 	return optionFunc(func(o *Options) {
@@ -143,6 +150,7 @@ type Options struct {
 	GoModReplacements     map[string]string
 	CustomEnv             map[string]string
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
+	DisableGrpcLog        bool
 }
 
 // Copy creates a deep copy of the current options.
@@ -170,6 +178,7 @@ func Defaults() Option {
 		o.GoModReplacements = make(map[string]string)
 		o.CustomEnv = make(map[string]string)
 		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
+		o.DisableGrpcLog = false
 	})
 }
 

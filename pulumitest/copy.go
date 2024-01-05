@@ -42,12 +42,19 @@ func (a *PulumiTest) CopyTo(dir string, opts ...opttest.Option) *PulumiTest {
 	for _, opt := range opts {
 		opt.Apply(options)
 	}
-	return &PulumiTest{
+	newTest := &PulumiTest{
 		t:       a.t,
 		ctx:     a.ctx,
 		source:  dir,
 		options: options,
 	}
+	if !options.SkipInstall {
+		newTest.Install()
+	}
+	if !options.SkipStackCreate {
+		newTest.NewStack(options.StackName)
+	}
+	return newTest
 }
 
 func copyDirectory(scrDir, dest string) error {
