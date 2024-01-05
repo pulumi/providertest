@@ -42,13 +42,20 @@ func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertRes
 		opt.Apply(options)
 	}
 
+	convertedTest := &PulumiTest{
+		t:       a.t,
+		ctx:     a.ctx,
+		source:  targetDir,
+		options: options,
+	}
+	if !options.SkipInstall {
+		convertedTest.Install()
+	}
+	if !options.SkipStackCreate {
+		convertedTest.NewStack(options.StackName)
+	}
 	return ConvertResult{
-		PulumiTest: &PulumiTest{
-			t:       a.t,
-			ctx:     a.ctx,
-			source:  targetDir,
-			options: options,
-		},
-		Output: string(out),
+		PulumiTest: convertedTest,
+		Output:     string(out),
 	}
 }
