@@ -357,21 +357,25 @@ func LoadLog(path string) (*GrpcLog, error) {
 	if err != nil {
 		return nil, err
 	}
-	lines := strings.Split(string(file), "\n")
-	var log GrpcLog
+	return ParseLog(file)
+}
+
+func ParseLog(log []byte) (*GrpcLog, error) {
+	var parsed GrpcLog
+	lines := strings.Split(string(log), "\n")
 	for _, line := range lines {
 		// Skip empty lines.
 		if line == "" {
 			continue
 		}
 		var entry GrpcLogEntry
-		err = json.Unmarshal([]byte(line), &entry)
+		err := json.Unmarshal([]byte(line), &entry)
 		if err != nil {
 			return nil, err
 		}
-		log.Entries = append(log.Entries, entry)
+		parsed.Entries = append(parsed.Entries, entry)
 	}
-	return &log, nil
+	return &parsed, nil
 }
 
 func (l *GrpcLog) WhereMethod(method Method) []GrpcLogEntry {
