@@ -3,6 +3,7 @@ package grpclog
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 
 	rpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
@@ -386,4 +387,34 @@ func (l *GrpcLog) WhereMethod(method Method) []GrpcLogEntry {
 		}
 	}
 	return matching
+}
+
+// WriteTo writes the log to the given path.
+// Creates any directories needed.
+func (l *GrpcLog) WriteTo(path string) error {
+	bytes, err := l.Marshal()
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(path)
+	err = os.MkdirAll(dir, 0755)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, bytes, 0644)
+}
+
+func (l *GrpcLog) Marshal() ([]byte, error) {
+	var bytes []byte
+	for i, entry := range l.Entries {
+		entryBytes, err := json.Marshal(entry)
+		if err != nil {
+			return nil, err
+		}
+		bytes = append(bytes, entryBytes...)
+		if i < len(l.Entries)-1 {
+			bytes = append(bytes, '\n')
+		}
+	}
+	return bytes, nil
 }
