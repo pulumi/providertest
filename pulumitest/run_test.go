@@ -53,4 +53,23 @@ func TestRunInIsolation(t *testing.T) {
 		assert.Equal(t, 1, cacheCalls, "expected cached method to be called exactly once")
 		assert.Equal(t, preview1.ChangeSummary, preview2.ChangeSummary, "expected uncached and cached preview to be the same")
 	})
+
+	t.Run("fix cached stack name", func(t *testing.T) {
+		cacheDir := t.TempDir()
+		cachePath := filepath.Join(cacheDir, "stack.yaml")
+
+		test1 := pulumitest.NewPulumiTest(t, filepath.Join("testdata", "yaml_program"), opttest.StackName("stack-1"))
+		test1.Run(func(test *pulumitest.PulumiTest) {
+			test.Up()
+		}, optrun.WithCache(cachePath))
+		preview1 := test1.Preview()
+		assertpreview.HasNoChanges(t, preview1)
+
+		test2 := pulumitest.NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
+		test2.Run(func(test *pulumitest.PulumiTest) {
+			test.Up()
+		}, optrun.WithCache(cachePath))
+		preview2 := test2.Preview()
+		assertpreview.HasNoChanges(t, preview2)
+	})
 }
