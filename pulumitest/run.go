@@ -24,7 +24,7 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 	var stackExport *apitype.UntypedDeployment
 	var err error
 	if options.EnableCache {
-		stackExport, err = TryReadStackExport(options.CachePath)
+		stackExport, err = tryReadStackExport(options.CachePath)
 		if err != nil {
 			pulumiTest.T().Fatalf("failed to read stack export: %v", err)
 		}
@@ -41,7 +41,7 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 		isolatedTest.T().Logf("writing stack state to %s", options.CachePath)
 		exportedStack := isolatedTest.ExportStack()
 		if options.EnableCache {
-			err = WriteStackExport(options.CachePath, &exportedStack)
+			err = writeStackExport(options.CachePath, &exportedStack)
 			if err != nil {
 				isolatedTest.T().Fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
 			}
@@ -52,8 +52,8 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 	return pulumiTest
 }
 
-// WriteStackExport writes the stack export to the given path creating any directories needed.
-func WriteStackExport(path string, snapshot *apitype.UntypedDeployment) error {
+// writeStackExport writes the stack export to the given path creating any directories needed.
+func writeStackExport(path string, snapshot *apitype.UntypedDeployment) error {
 	if snapshot == nil {
 		return fmt.Errorf("stack export must not be nil")
 	}
@@ -69,9 +69,9 @@ func WriteStackExport(path string, snapshot *apitype.UntypedDeployment) error {
 	return os.WriteFile(path, stackBytes, 0644)
 }
 
-// TryReadStackExport reads a stack export from the given file path.
+// tryReadStackExport reads a stack export from the given file path.
 // If the file does not exist, returns nil, nil.
-func TryReadStackExport(path string) (*apitype.UntypedDeployment, error) {
+func tryReadStackExport(path string) (*apitype.UntypedDeployment, error) {
 	stackBytes, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
