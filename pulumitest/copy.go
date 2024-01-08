@@ -25,7 +25,7 @@ func (a *PulumiTest) CopyToTempDir(opts ...opttest.Option) *PulumiTest {
 		a.t.Fatal(err)
 	}
 
-	return a.CopyTo(destination)
+	return a.CopyTo(destination, opts...)
 }
 
 // CopyTo copies the program to the specified directory.
