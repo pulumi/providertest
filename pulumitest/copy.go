@@ -136,16 +136,23 @@ func copy(srcFile, dstFile string) error {
 	return nil
 }
 
-func exists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
+func exists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+	switch {
+	case err == nil:
+		return true, nil
+	case !os.IsNotExist(err):
+		return false, err
 	}
-
-	return true
+	return false, nil
 }
 
 func createIfNotExists(dir string, perm os.FileMode) error {
-	if exists(dir) {
+	exists, err := exists(dir)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return nil
 	}
 

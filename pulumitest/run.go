@@ -41,7 +41,7 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 		isolatedTest.T().Logf("writing stack state to %s", options.CachePath)
 		exportedStack := isolatedTest.ExportStack()
 		if options.EnableCache {
-			err = writeStackExport(options.CachePath, &exportedStack)
+			err = writeStackExport(options.CachePath, &exportedStack, false /* overwrite */)
 			if err != nil {
 				isolatedTest.T().Fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
 			}
@@ -53,7 +53,7 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 }
 
 // writeStackExport writes the stack export to the given path creating any directories needed.
-func writeStackExport(path string, snapshot *apitype.UntypedDeployment) error {
+func writeStackExport(path string, snapshot *apitype.UntypedDeployment, overwrite bool) error {
 	if snapshot == nil {
 		return fmt.Errorf("stack export must not be nil")
 	}
@@ -65,6 +65,13 @@ func writeStackExport(path string, snapshot *apitype.UntypedDeployment) error {
 	stackBytes, err := json.MarshalIndent(snapshot, "", "  ")
 	if err != nil {
 		return err
+	}
+	pathExists, err := exists(path)
+	if err != nil {
+		return err
+	}
+	if pathExists && !overwrite {
+		return fmt.Errorf("stack export already exists at %s", path)
 	}
 	return os.WriteFile(path, stackBytes, 0644)
 }
