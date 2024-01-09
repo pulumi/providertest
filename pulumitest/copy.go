@@ -25,7 +25,7 @@ func (a *PulumiTest) CopyToTempDir(opts ...opttest.Option) *PulumiTest {
 		a.t.Fatal(err)
 	}
 
-	return a.CopyTo(destination)
+	return a.CopyTo(destination, opts...)
 }
 
 // CopyTo copies the program to the specified directory.
@@ -42,12 +42,19 @@ func (a *PulumiTest) CopyTo(dir string, opts ...opttest.Option) *PulumiTest {
 	for _, opt := range opts {
 		opt.Apply(options)
 	}
-	return &PulumiTest{
+	newTest := &PulumiTest{
 		t:       a.t,
 		ctx:     a.ctx,
 		source:  dir,
 		options: options,
 	}
+	if !options.SkipInstall {
+		newTest.Install()
+	}
+	if !options.SkipStackCreate {
+		newTest.NewStack(options.StackName)
+	}
+	return newTest
 }
 
 func copyDirectory(scrDir, dest string) error {
@@ -129,16 +136,23 @@ func copy(srcFile, dstFile string) error {
 	return nil
 }
 
-func exists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
+func exists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+	switch {
+	case err == nil:
+		return true, nil
+	case !os.IsNotExist(err):
+		return false, err
 	}
-
-	return true
+	return false, nil
 }
 
 func createIfNotExists(dir string, perm os.FileMode) error {
-	if exists(dir) {
+	exists, err := exists(dir)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return nil
 	}
 
