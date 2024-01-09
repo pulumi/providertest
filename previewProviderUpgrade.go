@@ -14,7 +14,7 @@ import (
 // Uses a default cache directory of "testdata/recorded/TestProviderUpgrade/{programName}/{baselineVersion}".
 func PreviewProviderUpgrade(pulumiTest *pulumitest.PulumiTest, providerName string, baselineVersion string, opts ...optproviderupgrade.PreviewProviderUpgradeOpt) auto.PreviewResult {
 	pulumiTest.T().Helper()
-	options := optproviderupgrade.PreviewProviderUpgradeOptions{}
+	options := optproviderupgrade.Defaults()
 	for _, opt := range opts {
 		opt.Apply(&options)
 	}
@@ -35,15 +35,12 @@ func PreviewProviderUpgrade(pulumiTest *pulumitest.PulumiTest, providerName stri
 }
 
 func getCacheDir(options optproviderupgrade.PreviewProviderUpgradeOptions, programName string, baselineVersion string) string {
-	if len(options.CacheDirTemplate) == 0 {
-		options.CacheDirTemplate = []string{"testdata", "recorded", "TestProviderUpgrade", "{programName}", "{baselineVersion}"}
-	}
 	var cacheDir string
 	for _, pathTemplateElement := range options.CacheDirTemplate {
 		switch pathTemplateElement {
-		case "{programName}":
+		case optproviderupgrade.ProgramName:
 			cacheDir = filepath.Join(cacheDir, programName)
-		case "{baselineVersion}":
+		case optproviderupgrade.BaselineVersion:
 			cacheDir = filepath.Join(cacheDir, baselineVersion)
 		default:
 			cacheDir = filepath.Join(cacheDir, pathTemplateElement)

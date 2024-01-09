@@ -140,6 +140,7 @@ func parseStackName(state *apitype.UntypedDeployment) (string, error) {
 	for _, r := range deployment.Resources {
 		if r.Type == "pulumi:pulumi:Stack" {
 			stackUrn = r.URN
+			break
 		}
 	}
 	return strings.Split(stackUrn, ":")[2], nil

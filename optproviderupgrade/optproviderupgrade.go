@@ -11,6 +11,12 @@ func DisableAttach() PreviewProviderUpgradeOpt {
 	})
 }
 
+// ProgramName is replaced with the name of the program under test based on the program's directory name.
+var ProgramName string = "{programName}"
+
+// BaselineVersion is replaced with the version of the provider used for the baseline.
+var BaselineVersion string = "{baselineVersion}"
+
 // BaselineOptions sets the options to use when creating the baseline stack.
 func BaselineOpts(opts ...opttest.Option) PreviewProviderUpgradeOpt {
 	return optionFunc(func(o *PreviewProviderUpgradeOptions) {
@@ -19,16 +25,16 @@ func BaselineOpts(opts ...opttest.Option) PreviewProviderUpgradeOpt {
 }
 
 // CacheDir sets the path to the directory to use for caching the stack state and grpc log.
-// Use "." to use the current working directory.
 // The path can contain the following placeholders:
+//
 // - {programName}: the name of the program under test based on the program's directory name
+//
 // - {baselineVersion}: the version of the provider used for the baseline
-func CacheDir(pathTemplate ...string) PreviewProviderUpgradeOpt {
-	if len(pathTemplate) == 0 {
-		panic("CacheDir requires a path template")
-	}
+//
+// Calculated path elements are joined with filepath.Join.
+func CacheDir(elem ...string) PreviewProviderUpgradeOpt {
 	return optionFunc(func(o *PreviewProviderUpgradeOptions) {
-		o.CacheDirTemplate = pathTemplate
+		o.CacheDirTemplate = elem
 	})
 }
 
@@ -40,6 +46,12 @@ type PreviewProviderUpgradeOptions struct {
 
 type PreviewProviderUpgradeOpt interface {
 	Apply(*PreviewProviderUpgradeOptions)
+}
+
+func Defaults() PreviewProviderUpgradeOptions {
+	return PreviewProviderUpgradeOptions{
+		CacheDirTemplate: []string{"testdata", "recorded", "TestProviderUpgrade", ProgramName, BaselineVersion},
+	}
 }
 
 type optionFunc func(*PreviewProviderUpgradeOptions)
