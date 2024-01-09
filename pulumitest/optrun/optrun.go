@@ -7,7 +7,9 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/deepcopy"
 )
 
-// StackName sets the default stack name to use when running the program under test.
+// WithCache enables caching of the stack state to the given path.
+// If the path already exists, the cached stack state will be used instead of executing the run.
+// If the path does not exist, the stack state will be written to the cache path after executing the run.
 func WithCache(path ...string) Option {
 	return optionFunc(func(o *Options) {
 		o.CachePath = filepath.Join(path...)
@@ -15,6 +17,7 @@ func WithCache(path ...string) Option {
 	})
 }
 
+// WithOpts adds additional test options for the context of the run.
 func WithOpts(opts ...opttest.Option) Option {
 	return optionFunc(func(o *Options) {
 		o.OptTest = append(o.OptTest, opts...)

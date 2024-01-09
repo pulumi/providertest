@@ -38,9 +38,9 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 	if stackExport == nil {
 		isolatedTest := pulumiTest.CopyToTempDir(options.OptTest...)
 		execute(isolatedTest)
-		isolatedTest.T().Logf("writing stack state to %s", options.CachePath)
 		exportedStack := isolatedTest.ExportStack()
 		if options.EnableCache {
+			isolatedTest.T().Logf("writing stack state to %s", options.CachePath)
 			err = writeStackExport(options.CachePath, &exportedStack, false /* overwrite */)
 			if err != nil {
 				isolatedTest.T().Fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
