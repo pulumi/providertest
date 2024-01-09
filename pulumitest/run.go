@@ -1,10 +1,12 @@
 package pulumitest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pulumi/providertest/pulumitest/optrun"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
@@ -47,6 +49,20 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 			}
 		}
 		stackExport = &exportedStack
+	}
+	// Workaround: Previously recorded stack exports may contain randomised stack names which we need to fix before importing.
+	// This can be removed once all old snapshots have been regenerated.
+	stackName := pulumiTest.CurrentStack().Name()
+	fixedStack, err := fixupStackName(stackExport, stackName)
+	if err != nil {
+		pulumiTest.T().Fatalf("failed to fixup stack name: %v", err)
+	}
+	if fixedStack != stackExport {
+		pulumiTest.T().Logf("updating snapshot with fixed stack name: %s", stackName)
+		err = writeStackExport(options.CachePath, fixedStack, true /* overwrite */)
+		if err != nil {
+			pulumiTest.T().Fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
+		}
 	}
 	pulumiTest.ImportStack(*stackExport)
 	return pulumiTest
@@ -92,4 +108,40 @@ func tryReadStackExport(path string) (*apitype.UntypedDeployment, error) {
 		return nil, fmt.Errorf("failed to unmarshal stack export at %s: %v", path, err)
 	}
 	return &stackExport, nil
+}
+
+func fixupStackName(stateFile *apitype.UntypedDeployment, newStackName string) (*apitype.UntypedDeployment, error) {
+	oldStackName, err := parseStackName(stateFile)
+	if err != nil {
+		return nil, err
+	}
+	if oldStackName == newStackName {
+		return stateFile, nil
+	}
+	newDeployment := bytes.ReplaceAll([]byte(stateFile.Deployment), []byte(oldStackName), []byte(newStackName))
+	newStateFile := *stateFile
+	newStateFile.Deployment = json.RawMessage(newDeployment)
+	return &newStateFile, nil
+}
+
+func parseStackName(state *apitype.UntypedDeployment) (string, error) {
+	type Deployment struct {
+		Resources []struct {
+			URN  string `json:"urn"`
+			Type string `json:"type"`
+		} `json:"resources"`
+	}
+	var deployment Deployment
+	err := json.Unmarshal([]byte(state.Deployment), &deployment)
+	if err != nil {
+		return "", err
+	}
+	var stackUrn string
+	for _, r := range deployment.Resources {
+		if r.Type == "pulumi:pulumi:Stack" {
+			stackUrn = r.URN
+			break
+		}
+	}
+	return strings.Split(stackUrn, ":")[2], nil
 }

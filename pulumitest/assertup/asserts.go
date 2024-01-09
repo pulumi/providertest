@@ -31,3 +31,14 @@ func HasNoDeletes(t *testing.T, up auto.UpResult) {
 		t.Errorf("expected no changes, got %s\n%s", unexpectedOps, up.StdOut)
 	}
 }
+
+func HasNoReplacements(t *testing.T, up auto.UpResult) {
+	t.Helper()
+
+	summary := changesummary.FromStringIntMap(*up.Summary.ResourceChanges)
+	unexpectedOps := summary.WhereOpEquals(apitype.OpReplace, apitype.OpCreateReplacement, apitype.OpDeleteReplaced, apitype.OpDiscardReplaced, apitype.OpImportReplacement, apitype.OpReadReplacement)
+
+	if len(*unexpectedOps) > 0 {
+		t.Errorf("expected no replacements, got %s\n%s", unexpectedOps, up.StdOut)
+	}
+}
