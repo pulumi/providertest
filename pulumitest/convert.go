@@ -52,7 +52,7 @@ func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertRes
 		convertedTest.Install()
 	}
 	if !options.SkipStackCreate {
-		convertedTest.NewStack(options.StackName)
+		convertedTest.NewStack(options.StackName, options.NewStackOpts...)
 	}
 	return ConvertResult{
 		PulumiTest: convertedTest,

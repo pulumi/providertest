@@ -52,7 +52,7 @@ func (a *PulumiTest) CopyTo(dir string, opts ...opttest.Option) *PulumiTest {
 		newTest.Install()
 	}
 	if !options.SkipStackCreate {
-		newTest.NewStack(options.StackName)
+		newTest.NewStack(options.StackName, options.NewStackOpts...)
 	}
 	return newTest
 }

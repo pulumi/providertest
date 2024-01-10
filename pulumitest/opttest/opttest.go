@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/pulumi/providertest/providers"
+	"github.com/pulumi/providertest/pulumitest/optnewstack"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/deepcopy"
 )
@@ -137,10 +138,17 @@ func WorkspaceOptions(opts ...auto.LocalWorkspaceOption) Option {
 	})
 }
 
+func NewStackOptions(opts ...optnewstack.NewStackOpt) Option {
+	return optionFunc(func(o *Options) {
+		o.NewStackOpts = opts
+	})
+}
+
 type Options struct {
 	StackName             string
 	SkipInstall           bool
 	SkipStackCreate       bool
+	NewStackOpts          []optnewstack.NewStackOpt
 	TestInPlace           bool
 	ConfigPassphrase      string
 	Providers             map[providers.ProviderName]ProviderConfigUnion
