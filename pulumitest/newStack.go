@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/pulumi/providertest/providers"
+	"github.com/pulumi/providertest/pulumitest/optnewstack"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optremove"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
@@ -20,8 +21,13 @@ import (
 
 // NewStack creates a new stack, ensure it's cleaned up after the test is done.
 // If no stack name is provided, a random one will be generated.
-func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOption) *auto.Stack {
+func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt) *auto.Stack {
 	pt.t.Helper()
+
+	stackOptions := optnewstack.Defaults()
+	for _, opt := range opts {
+		opt.Apply(&stackOptions)
+	}
 
 	if stackName == "" {
 		stackName = randomStackName(pt.source)
@@ -71,7 +77,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		auto.EnvVars(env),
 	}
 	stackOpts = append(stackOpts, options.ExtraWorkspaceOptions...)
-	stackOpts = append(stackOpts, opts...)
+	stackOpts = append(stackOpts, stackOptions.Opts...)
 
 	pt.T().Logf("creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
@@ -157,18 +163,20 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...auto.LocalWorkspaceOpti
 		pt.t.Fatalf("failed to create stack: %s", err)
 		return nil
 	}
-	pt.t.Cleanup(func() {
-		pt.t.Helper()
-		pt.t.Log("cleaning up stack")
-		_, err := stack.Destroy(pt.ctx)
-		if err != nil {
-			pt.t.Errorf("failed to destroy stack: %s", err)
-		}
-		err = stack.Workspace().RemoveStack(pt.ctx, stackName, optremove.Force())
-		if err != nil {
-			pt.t.Errorf("failed to remove stack: %s", err)
-		}
-	})
+	if !stackOptions.SkipDestroy {
+		pt.t.Cleanup(func() {
+			pt.t.Helper()
+			pt.t.Log("cleaning up stack")
+			_, err := stack.Destroy(pt.ctx)
+			if err != nil {
+				pt.t.Errorf("failed to destroy stack: %s", err)
+			}
+			err = stack.Workspace().RemoveStack(pt.ctx, stackName, optremove.Force())
+			if err != nil {
+				pt.t.Errorf("failed to remove stack: %s", err)
+			}
+		})
+	}
 	pt.currentStack = &stack
 	return &stack
 }

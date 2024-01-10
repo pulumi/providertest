@@ -48,7 +48,7 @@ func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiT
 		pt.Install()
 	}
 	if !options.SkipStackCreate {
-		pt.NewStack(options.StackName)
+		pt.NewStack(options.StackName, options.NewStackOpts...)
 	}
 	return pt
 }
