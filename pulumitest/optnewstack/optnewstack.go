@@ -2,19 +2,21 @@ package optnewstack
 
 import "github.com/pulumi/pulumi/sdk/v3/go/auto"
 
-// DisableAttach will configure the provider binary in the program's Pulumi.yaml rather than attaching the running provider.
+// DisableAutoDestroy will skip running `pulumi destroy` at the end of the test.
 func DisableAutoDestroy() NewStackOpt {
 	return optionFunc(func(o *NewStackOptions) {
 		o.SkipDestroy = true
 	})
 }
 
+// EnableAutoDestroy will ensure run `pulumi destroy` at the end of the test.
 func EnableAutoDestroy() NewStackOpt {
 	return optionFunc(func(o *NewStackOptions) {
 		o.SkipDestroy = false
 	})
 }
 
+// WithOpts adds additional workspace options for the context of the run.
 func WithOpts(opts ...auto.LocalWorkspaceOption) NewStackOpt {
 	return optionFunc(func(o *NewStackOptions) {
 		o.Opts = opts
