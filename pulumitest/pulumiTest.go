@@ -22,6 +22,7 @@ type PulumiTest struct {
 // 2. Install dependencies.
 // 3. Create a new stack called "test" with state stored to a local temporary directory and a fixed passphrase for encryption.
 func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
+	t.Helper()
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if deadline, ok := t.Deadline(); ok {
