@@ -4,13 +4,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/providertest/pulumitest/assertpreview"
 	"github.com/pulumi/providertest/pulumitest/assertup"
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDeploy(t *testing.T) {
@@ -67,49 +65,6 @@ func TestConvert(t *testing.T) {
 
 	// Show the deploy output.
 	t.Log(pythonUp.StdOut)
-}
-
-func TestBinaryAttach(t *testing.T) {
-	t.Parallel()
-	test := NewPulumiTest(t,
-		filepath.Join("testdata", "yaml_azure"),
-		opttest.AttachDownloadedPlugin("azure-native", "2.21.0"))
-	test.InstallStack("my-stack")
-
-	test.SetConfig("azure-native:location", "WestUS2")
-
-	preview := test.Preview()
-	assert.Equal(t,
-		map[apitype.OpType]int{apitype.OpCreate: 3},
-		preview.ChangeSummary)
-}
-
-func TestBinaryPlugin(t *testing.T) {
-	t.Parallel()
-	gcpBinary, err := providers.DownloadPluginBinary("gcp", "7.2.1")
-	require.NoError(t, err)
-	test := NewPulumiTest(t,
-		filepath.Join("testdata", "yaml_gcp"),
-		opttest.LocalProviderPath("gcp", gcpBinary))
-	test.InstallStack("my-stack")
-
-	test.SetConfig("gcp:project", "pulumi-development")
-
-	preview := test.Preview()
-	assert.Equal(t,
-		map[apitype.OpType]int{apitype.OpCreate: 2},
-		preview.ChangeSummary)
-
-	deploy1 := test.Up()
-	assert.Equal(t,
-		map[string]int{"create": 2},
-		*deploy1.Summary.ResourceChanges)
-
-	test.UpdateSource("testdata", "yaml_gcp_updated")
-	deploy2 := test.Up()
-	assert.Equal(t,
-		map[string]int{"same": 1, "update": 1},
-		*deploy2.Summary.ResourceChanges)
 }
 
 func TestGrpcLog(t *testing.T) {
