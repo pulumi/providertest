@@ -15,7 +15,10 @@
 package replay
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestJsonMatch(t *testing.T) {
@@ -26,3 +29,25 @@ func TestJsonMatch(t *testing.T) {
 	AssertJSONMatchesPattern(t, []byte(`[1, "*", 3]`), []byte(`[1, 2, 3]`))
 	AssertJSONMatchesPattern(t, []byte(`{"foo": "*", "bar": 3}`), []byte(`{"foo": 1, "bar": 3}`))
 }
+
+func TestJsonListLengthMistmatch(t *testing.T) {
+	mt := &mockTestingT{}
+	assertJSONMatchesPattern(mt, []byte(`[1, 3]`), []byte(`[1, 2, 3]`))
+	require.NotEmpty(t, mt.errors)
+	require.Equal(t, 1, len(mt.errors))
+	require.Equal(t, "[#]: expected an array of length 2, but got [\n  1,\n  2,\n  3\n]", mt.errors[0])
+}
+
+type mockTestingT struct {
+	errors []string
+}
+
+func (m *mockTestingT) Errorf(format string, args ...interface{}) {
+	m.errors = append(m.errors, fmt.Sprintf(format, args...))
+}
+
+func (m *mockTestingT) FailNow() {
+	panic("FailNow")
+}
+
+var _ testingT = (*mockTestingT)(nil)
