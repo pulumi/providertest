@@ -76,6 +76,7 @@ func AssertJSONMatchesPattern(
 			if len(aa) != len(pp) {
 				t.Errorf("[%s]: expected an array of length %d, but got %s",
 					path, len(pp), prettyJSON(t, a))
+				return
 			}
 			for i, pv := range pp {
 				av := aa[i]
