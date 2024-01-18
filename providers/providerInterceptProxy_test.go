@@ -14,6 +14,7 @@ import (
 )
 
 func TestProviderInterceptProxy(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	didAttach := false

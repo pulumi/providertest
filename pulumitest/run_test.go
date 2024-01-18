@@ -12,6 +12,7 @@ import (
 )
 
 func TestRunInIsolation(t *testing.T) {
+	t.Parallel()
 	t.Run("simple", func(t *testing.T) {
 		test := pulumitest.NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
 		test.Run(func(test *pulumitest.PulumiTest) {
