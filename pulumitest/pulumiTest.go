@@ -23,14 +23,7 @@ type PulumiTest struct {
 // 3. Create a new stack called "test" with state stored to a local temporary directory and a fixed passphrase for encryption.
 func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
 	t.Helper()
-	var ctx context.Context
-	var cancel context.CancelFunc
-	if deadline, ok := t.Deadline(); ok {
-		ctx, cancel = context.WithDeadline(context.Background(), deadline)
-	} else {
-		ctx, cancel = context.WithCancel(context.Background())
-	}
-	t.Cleanup(cancel)
+	ctx := testContext(t)
 	options := opttest.DefaultOptions()
 	for _, opt := range opts {
 		opt.Apply(options)
@@ -43,14 +36,34 @@ func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiT
 	}
 	if !options.TestInPlace {
 		pt = pt.CopyToTempDir()
+	} else {
+		pulumiTestInit(pt, options)
 	}
+	return pt
+}
+
+func testContext(t *testing.T) context.Context {
+	t.Helper()
+	var ctx context.Context
+	var cancel context.CancelFunc
+	if deadline, ok := t.Deadline(); ok {
+		ctx, cancel = context.WithDeadline(context.Background(), deadline)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	t.Cleanup(cancel)
+	return ctx
+}
+
+// Perform the common initialization steps for a PulumiTest instance.
+func pulumiTestInit(pt *PulumiTest, options *opttest.Options) {
+	pt.t.Helper()
 	if !options.SkipInstall {
 		pt.Install()
 	}
 	if !options.SkipStackCreate {
 		pt.NewStack(options.StackName, options.NewStackOpts...)
 	}
-	return pt
 }
 
 // Source returns the current source directory.

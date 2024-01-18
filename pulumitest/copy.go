@@ -48,12 +48,7 @@ func (a *PulumiTest) CopyTo(dir string, opts ...opttest.Option) *PulumiTest {
 		source:  dir,
 		options: options,
 	}
-	if !options.SkipInstall {
-		newTest.Install()
-	}
-	if !options.SkipStackCreate {
-		newTest.NewStack(options.StackName, options.NewStackOpts...)
-	}
+	pulumiTestInit(newTest, options)
 	return newTest
 }
 
