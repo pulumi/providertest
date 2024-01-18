@@ -24,6 +24,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type testingT interface {
+	assert.TestingT
+	require.TestingT
+}
+
 // Assert that a given JSON document structurally matches a pattern.
 //
 // The pattern language supports the following constructs:
@@ -34,6 +39,14 @@ import (
 // use {"\\": "*"} to match only the literal string "*".
 func AssertJSONMatchesPattern(
 	t *testing.T,
+	expectedPattern json.RawMessage,
+	actual json.RawMessage,
+) {
+	assertJSONMatchesPattern(t, expectedPattern, actual)
+}
+
+func assertJSONMatchesPattern(
+	t testingT,
 	expectedPattern json.RawMessage,
 	actual json.RawMessage,
 ) {
@@ -133,11 +146,11 @@ func AssertJSONMatchesPattern(
 	match("#", p, a)
 }
 
-func assertJSONEquals(t *testing.T, path string, expected, actual interface{}) {
+func assertJSONEquals(t testingT, path string, expected, actual interface{}) {
 	assert.Equalf(t, prettyJSON(t, expected), prettyJSON(t, actual), "at %s", path)
 }
 
-func prettyJSON(t *testing.T, msg interface{}) string {
+func prettyJSON(t testingT, msg interface{}) string {
 	bytes, err := json.MarshalIndent(msg, "", "  ")
 	assert.NoError(t, err)
 	return string(bytes)
