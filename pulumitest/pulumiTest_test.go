@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/match"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/pulumi/providertest/pulumitest/assertpreview"
 	"github.com/pulumi/providertest/pulumitest/assertup"
 	"github.com/pulumi/providertest/pulumitest/opttest"
@@ -120,4 +122,14 @@ func TestSkipStackCreateInPlace(t *testing.T) {
 	test := NewPulumiTest(t, source, opttest.SkipStackCreate(), opttest.TestInPlace())
 	assert.Equal(t, source, test.Source(), "should not copy source to a temporary directory")
 	assert.Nil(t, test.CurrentStack(), "should not create a stack")
+}
+
+func TestProviderPluginPath(t *testing.T) {
+	t.Parallel()
+	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"), opttest.DownloadProviderVersion("random", "4.15.0"))
+	test.Preview()
+
+	settings, err := test.CurrentStack().Workspace().ProjectSettings(test.Context())
+	assert.NoError(t, err, "expected no error when getting project settings")
+	snaps.MatchJSON(t, settings.Plugins.Providers, match.Any("0.path"))
 }
