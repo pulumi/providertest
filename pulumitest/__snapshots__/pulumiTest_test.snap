@@ -1,0 +1,9 @@
+
+[TestProviderPluginPath - 1]
+[
+ {
+  "name": "random",
+  "path": "<Any value>"
+ }
+]
+---

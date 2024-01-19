@@ -1,0 +1,12 @@
+name: yaml_program
+runtime: yaml
+description: A minimal Random Pulumi YAML program.
+outputs:
+  name: ${username.id}
+resources:
+  username:
+    type: random:RandomPet
+  password:
+    type: random:RandomPassword
+    properties:
+      length: 10

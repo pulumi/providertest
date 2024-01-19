@@ -48,12 +48,7 @@ func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertRes
 		source:  targetDir,
 		options: options,
 	}
-	if !options.SkipInstall {
-		convertedTest.Install()
-	}
-	if !options.SkipStackCreate {
-		convertedTest.NewStack(options.StackName, options.NewStackOpts...)
-	}
+	pulumiTestInit(convertedTest, options)
 	return ConvertResult{
 		PulumiTest: convertedTest,
 		Output:     string(out),

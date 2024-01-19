@@ -1,0 +1,19 @@
+
+[TestGrpc - 1]
+[
+ {
+  "Request": {
+   "properties": {},
+   "urn": "urn:pulumi:test::yaml_program::random:index/randomPet:RandomPet::username"
+  },
+  "Response": {
+   "id": "<Any value>",
+   "properties": {
+    "id": "<Any value>",
+    "length": 2,
+    "separator": "-"
+   }
+  }
+ }
+]
+---

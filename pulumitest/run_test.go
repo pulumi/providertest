@@ -12,7 +12,9 @@ import (
 )
 
 func TestRunInIsolation(t *testing.T) {
+	t.Parallel()
 	t.Run("simple", func(t *testing.T) {
+		t.Parallel()
 		test := pulumitest.NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
 		test.Run(func(test *pulumitest.PulumiTest) {
 			test.Up()
@@ -22,6 +24,7 @@ func TestRunInIsolation(t *testing.T) {
 	})
 
 	t.Run("additional options", func(t *testing.T) {
+		t.Parallel()
 		test := pulumitest.NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
 		// Disable the gRPC log to ensure options are propagated correctly.
 		test.Run(func(test *pulumitest.PulumiTest) {
@@ -32,6 +35,7 @@ func TestRunInIsolation(t *testing.T) {
 	})
 
 	t.Run("cached state", func(t *testing.T) {
+		t.Parallel()
 		cacheDir := t.TempDir()
 		cacheCalls := 0
 		cachePath := filepath.Join(cacheDir, "stack.yaml")
@@ -55,6 +59,7 @@ func TestRunInIsolation(t *testing.T) {
 	})
 
 	t.Run("fix cached stack name", func(t *testing.T) {
+		t.Parallel()
 		cacheDir := t.TempDir()
 		cachePath := filepath.Join(cacheDir, "stack.yaml")
 

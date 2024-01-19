@@ -14,18 +14,29 @@ import (
 )
 
 func TestProviderInterceptProxy(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	didAttach := false
-	gcpProviderFactory := providers.DownloadPluginBinaryFactory("azure-native", "2.21.0")
-	interceptedFactory := providers.ProviderInterceptFactory(ctx, gcpProviderFactory, providers.ProviderInterceptors{
+	var didAttach, didForward bool
+	mockFactory := providers.ProviderMockFactory(ctx, providers.ProviderMocks{
+		Attach: func(ctx context.Context, in *pulumirpc.PluginAttach) (*emptypb.Empty, error) {
+			didForward = true
+			return &emptypb.Empty{}, nil
+		},
+		Create: func(ctx context.Context, in *pulumirpc.CreateRequest) (*pulumirpc.CreateResponse, error) {
+			// Return without error to indicate success.
+			return &pulumirpc.CreateResponse{}, nil
+		},
+	})
+	interceptedFactory := providers.ProviderInterceptFactory(ctx, mockFactory, providers.ProviderInterceptors{
 		Attach: func(ctx context.Context, in *pulumirpc.PluginAttach, client pulumirpc.ResourceProviderClient) (*emptypb.Empty, error) {
 			didAttach = true
 			return client.Attach(ctx, in)
 		},
 	})
-	test := pulumitest.NewPulumiTest(t, filepath.Join("..", "pulumitest", "testdata", "yaml_azure"), opttest.AttachProvider("azure-native", interceptedFactory))
-	test.SetConfig("azure-native:location", "WestUS2")
+	test := pulumitest.NewPulumiTest(t, filepath.Join("..", "pulumitest", "testdata", "yaml_program"), opttest.AttachProvider("random", interceptedFactory))
+
 	test.Preview()
-	assert.True(t, didAttach, "expected Attach to be called")
+	assert.True(t, didAttach, "expected Attach to be called in proxy")
+	assert.True(t, didForward, "expected Attach to be called in downstream provider")
 }

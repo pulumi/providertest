@@ -63,6 +63,7 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 		if err != nil {
 			pulumiTest.T().Fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
 		}
+		stackExport = fixedStack
 	}
 	pulumiTest.ImportStack(*stackExport)
 	return pulumiTest

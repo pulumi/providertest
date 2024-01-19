@@ -13,6 +13,7 @@ import (
 )
 
 func TestPreviewUpgradeCached(t *testing.T) {
+	t.Parallel()
 	cacheDir := t.TempDir()
 	test := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_program"),
 		opttest.DownloadProviderVersion("random", "4.15.0"))

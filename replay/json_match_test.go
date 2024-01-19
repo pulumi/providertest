@@ -22,6 +22,7 @@ import (
 )
 
 func TestJsonMatch(t *testing.T) {
+	t.Parallel()
 	AssertJSONMatchesPattern(t, []byte(`1`), []byte(`1`))
 	AssertJSONMatchesPattern(t, []byte(`"*"`), []byte(`1`))
 	AssertJSONMatchesPattern(t, []byte(`"*"`), []byte(`2`))
