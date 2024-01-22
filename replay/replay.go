@@ -181,6 +181,11 @@ func replay[Req protoreflect.ProtoMessage, Resp protoreflect.ProtoMessage](
 	assert.NoError(t, err)
 
 	resp, err := serve(ctx, req)
+	if err != nil && entry.Errors != nil {
+		assert.Equal(t, *entry.Errors, err.Error())
+		return
+	}
+
 	require.NoError(t, err)
 
 	bytes, err := jsonpb.Marshal(resp)
@@ -188,7 +193,7 @@ func replay[Req protoreflect.ProtoMessage, Resp protoreflect.ProtoMessage](
 
 	var expected, actual json.RawMessage = entry.Response, bytes
 
-	AssertJSONMatchesPattern(t, expected, actual)
+	AssertJSONMatchesPattern(t, expected, actual, WithUnorderedArrayPaths(map[string]bool{`#["failures"]`: true}))
 }
 
 // ReplayFile executes ReplaySequence on all pulumirpc.ResourceProvider events found in the file produced with
@@ -236,4 +241,5 @@ type jsonLogEntry struct {
 	Method   string          `json:"method"`
 	Request  json.RawMessage `json:"request,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
+	Errors   *string         `json:"errors,omitempty"`
 }
