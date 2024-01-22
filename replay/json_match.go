@@ -17,7 +17,6 @@ package replay
 import (
 	"encoding/json"
 	"fmt"
-	"q"
 	"sort"
 	"strings"
 	"testing"
@@ -111,7 +110,6 @@ func assertJSONMatchesPattern(
 					path, len(pp), prettyJSON(t, a))
 				return
 			}
-			q.Q(path, options.UnorderedArrayPaths)
 			if options.UnorderedArrayPaths[path] {
 				sort.SliceStable(aa, func(i, j int) bool {
 					return strings.Compare(
