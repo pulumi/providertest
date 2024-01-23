@@ -2,6 +2,7 @@ package replay
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -119,5 +120,44 @@ func TestReplayNormalizesCheckFailureOrder(t *testing.T) {
 	      }
 	    ]
 	  }
+	}`)
+}
+
+func TestMatchingErrors(t *testing.T) {
+	p, err := providers.NewProviderMock(context.Background(), providers.ProviderMocks{
+		Check: func(ctx context.Context, in *pulumirpc.CheckRequest) (*pulumirpc.CheckResponse, error) {
+			return &pulumirpc.CheckResponse{}, fmt.Errorf("An error has occurred")
+		},
+	})
+	require.NoError(t, err)
+
+	Replay(t, p, `
+	{
+	  "method": "/pulumirpc.ResourceProvider/Check",
+	  "request": {
+	    "urn": "u",
+	    "news": {}
+	  },
+          "errors": ["An error has occurred"]
+	}`)
+
+	Replay(t, p, `
+	{
+	  "method": "/pulumirpc.ResourceProvider/Check",
+	  "request": {
+	    "urn": "u",
+	    "news": {}
+	  },
+          "errors": ["An error has occurred", "Unrelated error"]
+	}`)
+
+	Replay(t, p, `
+	{
+	  "method": "/pulumirpc.ResourceProvider/Check",
+	  "request": {
+	    "urn": "u",
+	    "news": {}
+	  },
+          "errors": ["*"]
 	}`)
 }

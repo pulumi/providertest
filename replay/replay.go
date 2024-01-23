@@ -183,12 +183,9 @@ func replay[Req protoreflect.ProtoMessage, Resp protoreflect.ProtoMessage](
 	assert.NoError(t, err)
 
 	resp, err := serve(ctx, req)
-	if err != nil && entry.Errors != nil {
-		assert.Equal(t, *entry.Errors, err.Error())
+	if done := assertErrorMatchesSpec(t, entry.Errors, err); done {
 		return
 	}
-
-	require.NoError(t, err)
 
 	if normalizeResponse != nil {
 		normalizeResponse(resp)
@@ -199,6 +196,36 @@ func replay[Req protoreflect.ProtoMessage, Resp protoreflect.ProtoMessage](
 
 	var expected, actual json.RawMessage = entry.Response, bytes
 	AssertJSONMatchesPattern(t, expected, actual)
+}
+
+func assertErrorMatchesSpec(t *testing.T, expectedErrors []string, err error) bool {
+	switch {
+	case len(expectedErrors) == 0:
+		require.NoError(t, err)
+		return false
+	case len(expectedErrors) == 1:
+		require.Error(t, err)
+		e := expectedErrors[0]
+		if e != "*" {
+			require.Equal(t, e, err.Error())
+		}
+		return true
+	default:
+		// The cases where there are actual multiple errors returned from gRPC intereceptor
+		// seem a little unclear, the code is in interceptors.go:
+		//
+		// https://github.com/pulumi/pulumi/blob/master/pkg/util/rpcdebug/interceptors.go#L34
+		//
+		// It seems we have at most one logical error coming from the provider, but we also
+		// may record errors coming from interceptor-related issues in the error list.
+		//
+		// If this reasoning is correct, when reusing GRPC logs as expectations, a
+		// reasonable default assert is to check that the actual error message is contained
+		// in the list of expectations.
+		require.Error(t, err)
+		require.Contains(t, expectedErrors, err.Error())
+		return true
+	}
 }
 
 // ReplayFile executes ReplaySequence on all pulumirpc.ResourceProvider events found in the file produced with
@@ -242,11 +269,12 @@ func ReplayFile(t *testing.T, server pulumirpc.ResourceProviderServer, traceFile
 	assert.Greater(t, count, 0)
 }
 
+// See also: https://github.com/pulumi/pulumi/blob/master/pkg/util/rpcdebug/logformat.go#L28
 type jsonLogEntry struct {
 	Method   string          `json:"method"`
 	Request  json.RawMessage `json:"request,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
-	Errors   *string         `json:"errors,omitempty"`
+	Errors   []string        `json:"errors,omitempty"`
 }
 
 func normInvokeResponse(resp *pulumirpc.InvokeResponse) {
