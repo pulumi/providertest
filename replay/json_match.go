@@ -50,7 +50,6 @@ func assertJSONMatchesPattern(
 	expectedPattern json.RawMessage,
 	actual json.RawMessage,
 ) {
-
 	var p, a interface{}
 
 	if err := json.Unmarshal(expectedPattern, &p); err != nil {
