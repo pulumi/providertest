@@ -18,24 +18,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type jsonMatchOptions struct {
-	UnorderedArrayPaths map[string]bool
-}
-
-type JSONMatchOption func(*jsonMatchOptions)
-
-func WithUnorderedArrayPaths(unorderedArrayPaths map[string]bool) JSONMatchOption {
-	return func(opts *jsonMatchOptions) {
-		opts.UnorderedArrayPaths = unorderedArrayPaths
-	}
-}
 
 type testingT interface {
 	assert.TestingT
@@ -54,23 +41,16 @@ func AssertJSONMatchesPattern(
 	t *testing.T,
 	expectedPattern json.RawMessage,
 	actual json.RawMessage,
-	opts ...JSONMatchOption,
 ) {
-	assertJSONMatchesPattern(t, expectedPattern, actual, opts...)
+	assertJSONMatchesPattern(t, expectedPattern, actual)
 }
 
 func assertJSONMatchesPattern(
 	t testingT,
 	expectedPattern json.RawMessage,
 	actual json.RawMessage,
-	opts ...JSONMatchOption,
 ) {
 	var p, a interface{}
-
-	options := jsonMatchOptions{}
-	for _, opt := range opts {
-		opt(&options)
-	}
 
 	if err := json.Unmarshal(expectedPattern, &p); err != nil {
 		require.NoError(t, err)
@@ -109,14 +89,6 @@ func assertJSONMatchesPattern(
 				t.Errorf("[%s]: expected an array of length %d, but got %s",
 					path, len(pp), prettyJSON(t, a))
 				return
-			}
-			if options.UnorderedArrayPaths[path] {
-				sort.SliceStable(aa, func(i, j int) bool {
-					return strings.Compare(
-						fmt.Sprintf("%v", aa[i]),
-						fmt.Sprintf("%v", aa[j]),
-					) < 0
-				})
 			}
 			for i, pv := range pp {
 				av := aa[i]

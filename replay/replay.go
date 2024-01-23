@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 
@@ -94,45 +95,45 @@ func Replay(t *testing.T, server pulumirpc.ResourceProviderServer, jsonLog strin
 	switch entry.Method {
 
 	case "/pulumirpc.ResourceProvider/GetSchema":
-		replay(t, entry, new(pulumirpc.GetSchemaRequest), server.GetSchema)
+		replay(t, entry, new(pulumirpc.GetSchemaRequest), server.GetSchema, nil)
 
 	case "/pulumirpc.ResourceProvider/CheckConfig":
-		replay(t, entry, new(pulumirpc.CheckRequest), server.CheckConfig)
+		replay(t, entry, new(pulumirpc.CheckRequest), server.CheckConfig, normCheckResponse)
 
 	case "/pulumirpc.ResourceProvider/DiffConfig":
-		replay(t, entry, new(pulumirpc.DiffRequest), server.DiffConfig)
+		replay(t, entry, new(pulumirpc.DiffRequest), server.DiffConfig, nil)
 
 	case "/pulumirpc.ResourceProvider/Configure":
-		replay(t, entry, new(pulumirpc.ConfigureRequest), server.Configure)
+		replay(t, entry, new(pulumirpc.ConfigureRequest), server.Configure, nil)
 
 	case "/pulumirpc.ResourceProvider/Invoke":
-		replay(t, entry, new(pulumirpc.InvokeRequest), server.Invoke)
+		replay(t, entry, new(pulumirpc.InvokeRequest), server.Invoke, normInvokeResponse)
 
 	// TODO StreamInvoke might need some special handling as it is a streaming RPC method.
 
 	case "/pulumirpc.ResourceProvider/Call":
-		replay(t, entry, new(pulumirpc.CallRequest), server.Call)
+		replay(t, entry, new(pulumirpc.CallRequest), server.Call, normCallResponse)
 
 	case "/pulumirpc.ResourceProvider/Check":
-		replay(t, entry, new(pulumirpc.CheckRequest), server.Check)
+		replay(t, entry, new(pulumirpc.CheckRequest), server.Check, normCheckResponse)
 
 	case "/pulumirpc.ResourceProvider/Diff":
-		replay(t, entry, new(pulumirpc.DiffRequest), server.Diff)
+		replay(t, entry, new(pulumirpc.DiffRequest), server.Diff, nil)
 
 	case "/pulumirpc.ResourceProvider/Create":
-		replay(t, entry, new(pulumirpc.CreateRequest), server.Create)
+		replay(t, entry, new(pulumirpc.CreateRequest), server.Create, nil)
 
 	case "/pulumirpc.ResourceProvider/Read":
-		replay(t, entry, new(pulumirpc.ReadRequest), server.Read)
+		replay(t, entry, new(pulumirpc.ReadRequest), server.Read, nil)
 
 	case "/pulumirpc.ResourceProvider/Update":
-		replay(t, entry, new(pulumirpc.UpdateRequest), server.Update)
+		replay(t, entry, new(pulumirpc.UpdateRequest), server.Update, nil)
 
 	case "/pulumirpc.ResourceProvider/Delete":
-		replay(t, entry, new(pulumirpc.DeleteRequest), server.Delete)
+		replay(t, entry, new(pulumirpc.DeleteRequest), server.Delete, nil)
 
 	case "/pulumirpc.ResourceProvider/Construct":
-		replay(t, entry, new(pulumirpc.ConstructRequest), server.Construct)
+		replay(t, entry, new(pulumirpc.ConstructRequest), server.Construct, nil)
 
 	case "/pulumirpc.ResourceProvider/Cancel":
 		_, err := server.Cancel(ctx, &emptypb.Empty{})
@@ -143,13 +144,13 @@ func Replay(t *testing.T, server pulumirpc.ResourceProviderServer, jsonLog strin
 	// rpc GetPluginInfo(google.protobuf.Empty) returns (PluginInfo) {}
 
 	case "/pulumirpc.ResourceProvider/Attach":
-		replay(t, entry, new(pulumirpc.PluginAttach), server.Attach)
+		replay(t, entry, new(pulumirpc.PluginAttach), server.Attach, nil)
 
 	case "/pulumirpc.ResourceProvider/GetMapping":
-		replay(t, entry, new(pulumirpc.GetMappingRequest), server.GetMapping)
+		replay(t, entry, new(pulumirpc.GetMappingRequest), server.GetMapping, nil)
 
 	case "/pulumirpc.ResourceProvider/GetMappings":
-		replay(t, entry, new(pulumirpc.GetMappingsRequest), server.GetMappings)
+		replay(t, entry, new(pulumirpc.GetMappingsRequest), server.GetMappings, nil)
 
 	default:
 		t.Errorf("Unknown method: %s", entry.Method)
@@ -174,6 +175,7 @@ func replay[Req protoreflect.ProtoMessage, Resp protoreflect.ProtoMessage](
 	entry jsonLogEntry,
 	req Req,
 	serve func(context.Context, Req) (Resp, error),
+	normalizeResponse func(Resp),
 ) {
 	ctx := context.Background()
 
@@ -188,12 +190,15 @@ func replay[Req protoreflect.ProtoMessage, Resp protoreflect.ProtoMessage](
 
 	require.NoError(t, err)
 
+	if normalizeResponse != nil {
+		normalizeResponse(resp)
+	}
+
 	bytes, err := jsonpb.Marshal(resp)
 	assert.NoError(t, err)
 
 	var expected, actual json.RawMessage = entry.Response, bytes
-
-	AssertJSONMatchesPattern(t, expected, actual, WithUnorderedArrayPaths(map[string]bool{`#["failures"]`: true}))
+	AssertJSONMatchesPattern(t, expected, actual)
 }
 
 // ReplayFile executes ReplaySequence on all pulumirpc.ResourceProvider events found in the file produced with
@@ -242,4 +247,38 @@ type jsonLogEntry struct {
 	Request  json.RawMessage `json:"request,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
 	Errors   *string         `json:"errors,omitempty"`
+}
+
+func normInvokeResponse(resp *pulumirpc.InvokeResponse) {
+	if resp == nil {
+		return
+	}
+	sortCheckFailures(resp.Failures)
+}
+
+func normCallResponse(resp *pulumirpc.CallResponse) {
+	if resp == nil {
+		return
+	}
+	sortCheckFailures(resp.Failures)
+}
+
+func normCheckResponse(resp *pulumirpc.CheckResponse) {
+	if resp == nil {
+		return
+	}
+	sortCheckFailures(resp.Failures)
+}
+
+func sortCheckFailures(cf []*pulumirpc.CheckFailure) {
+	sort.SliceStable(cf, func(i, j int) bool {
+		a, b := cf[i], cf[j]
+		if a.Property < b.Property {
+			return true
+		}
+		if a.Reason < b.Reason {
+			return true
+		}
+		return false
+	})
 }
