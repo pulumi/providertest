@@ -32,10 +32,21 @@ func PreviewProviderUpgrade(pulumiTest *pulumitest.PulumiTest, providerName stri
 			test.T().Logf("writing grpc log to %s", grpcLogPath)
 			grptLog.WriteTo(grpcLogPath)
 		},
-		optrun.WithOpts(opttest.NewStackOptions(optnewstack.EnableAutoDestroy())),
 		optrun.WithCache(filepath.Join(cacheDir, "stack.json")),
-		optrun.WithOpts(options.BaselineOpts...))
+		optrun.WithOpts(
+			opttest.NewStackOptions(optnewstack.EnableAutoDestroy()),
+			baselineProviderOpt(options, providerName, baselineVersion)),
+		optrun.WithOpts(options.BaselineOpts...),
+	)
 	return previewTest.Preview()
+}
+
+func baselineProviderOpt(options optproviderupgrade.PreviewProviderUpgradeOptions, providerName string, baselineVersion string) opttest.Option {
+	if options.DisableAttach {
+		return opttest.DownloadProviderVersion(providerName, baselineVersion)
+	} else {
+		return opttest.AttachDownloadedPlugin(providerName, baselineVersion)
+	}
 }
 
 func getCacheDir(options optproviderupgrade.PreviewProviderUpgradeOptions, programName string, baselineVersion string) string {
