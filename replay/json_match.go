@@ -134,7 +134,7 @@ func assertJSONMatchesPattern(
 				case !gotPV && gotAV:
 					t.Errorf("[%s] unexpected value %s", subPath, prettyJSON(t, av))
 				case gotPV && !gotAV:
-					t.Errorf("[%s] missing a required value", subPath)
+					t.Errorf("[%s] missing a required value, actual: %s", subPath, actual)
 				}
 			}
 		default:
