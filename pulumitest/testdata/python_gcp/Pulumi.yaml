@@ -1,0 +1,3 @@
+name: yaml_gcp
+runtime: python
+description: A minimal Google Cloud Pulumi YAML program

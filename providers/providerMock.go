@@ -36,14 +36,14 @@ type ProviderMocks struct {
 }
 
 // ProviderInterceptFactory creates a new provider factory that can be used to intercept calls to a downstream provider.
-func ProviderMockFactory(ctx context.Context, mocks ProviderMocks) ProviderFactory {
+func ProviderMockFactory(mocks ProviderMocks) ProviderFactory {
 	return ResourceProviderFactory(func() (rpc.ResourceProviderServer, error) {
-		return NewProviderMock(ctx, mocks)
+		return NewProviderMock(mocks)
 	})
 }
 
 // NewProviderMock creates a new provider proxy that can be used to intercept calls to a downstream provider.
-func NewProviderMock(ctx context.Context, mocks ProviderMocks) (rpc.ResourceProviderServer, error) {
+func NewProviderMock(mocks ProviderMocks) (rpc.ResourceProviderServer, error) {
 	return &providerMock{
 		mocks: mocks,
 	}, nil
@@ -92,12 +92,7 @@ func (i *providerMock) Configure(ctx context.Context, in *rpc.ConfigureRequest) 
 	if i.mocks.Configure != nil {
 		return i.mocks.Configure(ctx, in)
 	}
-	return &rpc.ConfigureResponse{
-		AcceptSecrets:   true,
-		SupportsPreview: true,
-		AcceptResources: true,
-		AcceptOutputs:   true,
-	}, nil
+	return &rpc.ConfigureResponse{}, nil
 }
 
 func (i *providerMock) Construct(ctx context.Context, in *rpc.ConstructRequest) (*rpc.ConstructResponse, error) {

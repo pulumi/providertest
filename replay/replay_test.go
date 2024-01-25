@@ -22,7 +22,7 @@ func TestReplayNormalizesCheckFailureOrder(t *testing.T) {
 		{Property: "A", Reason: "A-failed"},
 	}
 
-	p, err := providers.NewProviderMock(context.Background(), providers.ProviderMocks{
+	p, err := providers.NewProviderMock(providers.ProviderMocks{
 		CheckConfig: func(ctx context.Context, in *pulumirpc.CheckRequest) (*pulumirpc.CheckResponse, error) {
 			return &pulumirpc.CheckResponse{Failures: failures}, nil
 		},
@@ -124,7 +124,7 @@ func TestReplayNormalizesCheckFailureOrder(t *testing.T) {
 }
 
 func TestMatchingErrors(t *testing.T) {
-	p, err := providers.NewProviderMock(context.Background(), providers.ProviderMocks{
+	p, err := providers.NewProviderMock(providers.ProviderMocks{
 		Check: func(ctx context.Context, in *pulumirpc.CheckRequest) (*pulumirpc.CheckResponse, error) {
 			return &pulumirpc.CheckResponse{}, fmt.Errorf("An error has occurred")
 		},

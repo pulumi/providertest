@@ -57,7 +57,8 @@ func NewProviderInterceptProxy(ctx context.Context, downstreamProviderPort Port,
 		fmt.Sprintf("127.0.0.1:%d", downstreamProviderPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(rpcutil.OpenTracingClientInterceptor()),
-		grpc.WithStreamInterceptor(rpcutil.OpenTracingStreamClientInterceptor()))
+		grpc.WithStreamInterceptor(rpcutil.OpenTracingStreamClientInterceptor()),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024*1024*400)))
 	if err != nil {
 		return nil, err
 	}
