@@ -100,11 +100,16 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 		}
 		sort.Strings(providerPluginNames)
 		for _, name := range providerPluginNames {
-			path := providerPluginPaths[providers.ProviderName(name)]
+			relPath := providerPluginPaths[providers.ProviderName(name)]
+			absPath, err := filepath.Abs(relPath)
+			if err != nil {
+				pt.t.Fatalf("failed to get absolute path for %s: %s", relPath, err)
+			}
+
 			found := false
 			for _, provider := range providerPlugins {
 				if provider.Name == name {
-					provider.Path = path
+					provider.Path = absPath
 					found = true
 					break
 				}
@@ -112,7 +117,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			if !found {
 				providerPlugins = append(providerPlugins, workspace.PluginOptions{
 					Name: name,
-					Path: path,
+					Path: absPath,
 				})
 			}
 		}
