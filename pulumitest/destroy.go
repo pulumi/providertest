@@ -13,6 +13,7 @@ func (a *PulumiTest) Destroy(opts ...optdestroy.Option) auto.DestroyResult {
 	if a.currentStack == nil {
 		a.t.Fatal("no current stack")
 	}
+	a.ClearGrpcLog()
 	result, err := a.currentStack.Destroy(a.ctx, opts...)
 	if err != nil {
 		a.t.Fatalf("failed to destroy: %s", err)

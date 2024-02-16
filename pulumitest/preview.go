@@ -13,6 +13,7 @@ func (a *PulumiTest) Preview(opts ...optpreview.Option) auto.PreviewResult {
 	if a.currentStack == nil {
 		a.t.Fatal("no current stack")
 	}
+	a.ClearGrpcLog()
 	result, err := a.currentStack.Preview(a.ctx, opts...)
 	if err != nil {
 		a.t.Fatalf("failed to preview update: %s", err)
