@@ -41,8 +41,8 @@ type ProviderInterceptors struct {
 
 // ProviderInterceptFactory creates a new provider factory that can be used to intercept calls to a downstream provider.
 func ProviderInterceptFactory(ctx context.Context, factory ProviderFactory, interceptors ProviderInterceptors) ProviderFactory {
-	return ResourceProviderFactory(func() (rpc.ResourceProviderServer, error) {
-		port, err := factory(ctx)
+	return ResourceProviderFactory(func(opts ProviderOptions) (rpc.ResourceProviderServer, error) {
+		port, err := factory(ctx, opts)
 		if err != nil {
 			return nil, err
 		}

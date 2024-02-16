@@ -12,7 +12,9 @@ func TestLocalBinaryAttach(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := providers.DownloadPluginBinaryFactory("azure-native", "2.25.0")
-	port, err := factory(ctx)
+	port, err := factory(ctx, providers.ProviderOptions{
+		WorkDir: t.TempDir(),
+	})
 	assert.NoError(t, err)
 	assert.NotZero(t, port)
 }
