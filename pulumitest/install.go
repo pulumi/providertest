@@ -13,7 +13,7 @@ func (a *PulumiTest) Install() string {
 	cmd.Dir = a.source
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		a.t.Fatalf("failed to installing packages and plugins: %s\n%s", err, out)
+		a.t.Fatalf("failed to install packages and plugins: %s\n%s", err, out)
 	}
 	return string(out)
 }
