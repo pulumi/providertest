@@ -236,8 +236,8 @@ func FindByUrn[TRequest resourceRequest, TResponse resourceResponse](entries []T
 	urn string) *TypedEntry[TRequest, TResponse] {
 	// nolint:copylocks
 	for _, e := range entries {
-		var eI any = &e.Request
-		switch r := eI.(type) {
+		var rI any = &e.Request
+		switch r := rI.(type) {
 		case hasURN:
 			if r.GetUrn() == urn {
 				return &e
