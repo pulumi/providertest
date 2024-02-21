@@ -45,6 +45,14 @@ const (
 	Update        Method = "/pulumirpc.ResourceProvider/Update"
 )
 
+type resourceRequest interface {
+	rpc.CheckRequest | rpc.DiffRequest | rpc.ReadRequest | rpc.CreateRequest | rpc.UpdateRequest | rpc.DeleteRequest
+}
+
+type resourceResponse interface {
+	rpc.CheckResponse | rpc.DiffResponse | rpc.ReadResponse | rpc.CreateResponse | rpc.UpdateResponse | emptypb.Empty
+}
+
 func (l *GrpcLog) Attaches() ([]TypedEntry[rpc.PluginAttach, emptypb.Empty], error) {
 	return unmarshalTypedEntries[rpc.PluginAttach, emptypb.Empty](l.WhereMethod(Attach))
 }
@@ -217,4 +225,24 @@ func (l *GrpcLog) Marshal() ([]byte, error) {
 		}
 	}
 	return bytes, nil
+}
+
+type hasURN interface {
+	GetUrn() string
+}
+
+// FindByURN finds the first entry with the given resource URN, or nil if none is found.
+// Returns the index of the entry, if found.
+func FindByURN[TRequest resourceRequest, TResponse resourceResponse](entries []TypedEntry[TRequest, TResponse],
+	urn string) (*TypedEntry[TRequest, TResponse], int) {
+	for i := range entries {
+		var rI any = &entries[i].Request
+		switch r := rI.(type) {
+		case hasURN:
+			if r.GetUrn() == urn {
+				return &entries[i], i
+			}
+		}
+	}
+	return nil, -1
 }
