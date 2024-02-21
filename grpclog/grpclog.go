@@ -232,17 +232,17 @@ type hasURN interface {
 }
 
 // FindByUrn finds the first entry with the given resource URN, or nil if none is found.
+// Returns the index of the entry, if found.
 func FindByUrn[TRequest resourceRequest, TResponse resourceResponse](entries []TypedEntry[TRequest, TResponse],
-	urn string) *TypedEntry[TRequest, TResponse] {
-	// nolint:copylocks
-	for _, e := range entries {
-		var rI any = &e.Request
+	urn string) (*TypedEntry[TRequest, TResponse], int) {
+	for i := range entries {
+		var rI any = &entries[i].Request
 		switch r := rI.(type) {
 		case hasURN:
 			if r.GetUrn() == urn {
-				return &e
+				return &entries[i], i
 			}
 		}
 	}
-	return nil
+	return nil, -1
 }

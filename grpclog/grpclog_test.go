@@ -42,8 +42,10 @@ func TestFindByUrn(t *testing.T) {
 	assert.NoError(t, err)
 	creates, err := log.Creates()
 	assert.NoError(t, err)
-	resource := grpclog.FindByUrn(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::tested-resource")
+	resource, i := grpclog.FindByUrn(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::tested-resource")
 	assert.NotNil(t, resource)
-	resource = grpclog.FindByUrn(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::other")
+	assert.Equal(t, 0, i)
+	resource, i = grpclog.FindByUrn(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::other")
 	assert.Nil(t, resource)
+	assert.Equal(t, -1, i)
 }
