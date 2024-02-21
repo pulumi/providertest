@@ -231,9 +231,9 @@ type hasURN interface {
 	GetUrn() string
 }
 
-// FindByUrn finds the first entry with the given resource URN, or nil if none is found.
+// FindByURN finds the first entry with the given resource URN, or nil if none is found.
 // Returns the index of the entry, if found.
-func FindByUrn[TRequest resourceRequest, TResponse resourceResponse](entries []TypedEntry[TRequest, TResponse],
+func FindByURN[TRequest resourceRequest, TResponse resourceResponse](entries []TypedEntry[TRequest, TResponse],
 	urn string) (*TypedEntry[TRequest, TResponse], int) {
 	for i := range entries {
 		var rI any = &entries[i].Request

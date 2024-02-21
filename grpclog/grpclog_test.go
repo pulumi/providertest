@@ -36,16 +36,16 @@ func TestGrpcLog(t *testing.T) {
 	})
 }
 
-func TestFindByUrn(t *testing.T) {
+func TestFindByURN(t *testing.T) {
 	t.Parallel()
 	log, err := grpclog.LoadLog(filepath.Join("testdata", "aws_bucket_grpc.json"))
 	assert.NoError(t, err)
 	creates, err := log.Creates()
 	assert.NoError(t, err)
-	resource, i := grpclog.FindByUrn(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::tested-resource")
+	resource, i := grpclog.FindByURN(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::tested-resource")
 	assert.NotNil(t, resource)
 	assert.Equal(t, 0, i)
-	resource, i = grpclog.FindByUrn(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::other")
+	resource, i = grpclog.FindByURN(creates, "urn:pulumi:p-it-antons-mac-bucket-9f59db4a::test::aws:s3/bucket:Bucket::other")
 	assert.Nil(t, resource)
 	assert.Equal(t, -1, i)
 }
