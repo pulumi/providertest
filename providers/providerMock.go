@@ -37,7 +37,7 @@ type ProviderMocks struct {
 
 // ProviderInterceptFactory creates a new provider factory that can be used to intercept calls to a downstream provider.
 func ProviderMockFactory(mocks ProviderMocks) ProviderFactory {
-	return ResourceProviderFactory(func() (rpc.ResourceProviderServer, error) {
+	return ResourceProviderFactory(func(_ PulumiTest) (rpc.ResourceProviderServer, error) {
 		return NewProviderMock(mocks)
 	})
 }

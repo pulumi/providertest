@@ -9,12 +9,12 @@ import (
 )
 
 func DownloadPluginBinaryFactory(name, version string) ProviderFactory {
-	factory := func(ctx context.Context) (Port, error) {
+	factory := func(ctx context.Context, pt PulumiTest) (Port, error) {
 		binaryPath, err := DownloadPluginBinary(name, version)
 		if err != nil {
 			return 0, err
 		}
-		return startLocalBinary(ctx, binaryPath, name)
+		return startLocalBinary(ctx, binaryPath, name, pt.Source())
 	}
 	return factory
 }

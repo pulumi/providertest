@@ -12,13 +12,13 @@ import (
 )
 
 func LocalBinary(name, path string) ProviderFactory {
-	factory := func(ctx context.Context) (Port, error) {
-		return startLocalBinary(ctx, path, name)
+	factory := func(ctx context.Context, pt PulumiTest) (Port, error) {
+		return startLocalBinary(ctx, path, name, pt.Source())
 	}
 	return factory
 }
 
-func startLocalBinary(ctx context.Context, path string, name string) (Port, error) {
+func startLocalBinary(ctx context.Context, path, name, cwd string) (Port, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return 0, err
@@ -28,6 +28,7 @@ func startLocalBinary(ctx context.Context, path string, name string) (Port, erro
 		path = filepath.Join(path, binaryName)
 	}
 	cmd := exec.CommandContext(ctx, path)
+	cmd.Dir = cwd
 	reader, err := cmd.StdoutPipe()
 	cmd.Stderr = os.Stderr
 	if err != nil {
