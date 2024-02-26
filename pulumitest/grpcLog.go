@@ -32,7 +32,6 @@ func (pt *PulumiTest) GrpcLog() *grpclog.GrpcLog {
 func (pt *PulumiTest) ClearGrpcLog() {
 	env := pt.CurrentStack().Workspace().GetEnvVars()
 	if env == nil || env["PULUMI_DEBUG_GRPC"] == "" {
-		pt.t.Log("can't clear gRPC log: PULUMI_DEBUG_GRPC env var not set")
 		return
 	}
 	if err := os.RemoveAll(env["PULUMI_DEBUG_GRPC"]); err != nil {
