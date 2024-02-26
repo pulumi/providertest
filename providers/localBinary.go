@@ -12,8 +12,8 @@ import (
 )
 
 func LocalBinary(name, path string) ProviderFactory {
-	factory := func(ctx context.Context, opts ProviderOptions) (Port, error) {
-		return startLocalBinary(ctx, path, name, opts.WorkDir)
+	factory := func(ctx context.Context, pt PulumiTest) (Port, error) {
+		return startLocalBinary(ctx, path, name, pt.Source())
 	}
 	return factory
 }

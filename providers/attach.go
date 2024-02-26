@@ -9,7 +9,7 @@ import (
 
 // StartProviders starts each of the given providers and returns a map of provider names to the ports they are listening on.
 // The context should be cancelled when the test is complete to shut down the providers.
-func StartProviders(ctx context.Context, factories map[ProviderName]ProviderFactory, opts ProviderOptions) (map[ProviderName]Port, error) {
+func StartProviders(ctx context.Context, factories map[ProviderName]ProviderFactory, opts PulumiTest) (map[ProviderName]Port, error) {
 	if len(factories) == 0 {
 		return nil, nil
 	}

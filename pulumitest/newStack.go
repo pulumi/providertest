@@ -55,11 +55,8 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	providerFactories := options.ProviderFactories()
 	if len(providerFactories) > 0 {
 		pt.t.Log("starting providers")
-		providerOpts := providers.ProviderOptions{
-			WorkDir: pt.source,
-		}
 		providerContext, cancelProviders := context.WithCancel(pt.ctx)
-		providerPorts, err := providers.StartProviders(providerContext, providerFactories, providerOpts)
+		providerPorts, err := providers.StartProviders(providerContext, providerFactories, pt)
 		if err != nil {
 			cancelProviders()
 			pt.t.Fatalf("failed to start providers: %v", err)
