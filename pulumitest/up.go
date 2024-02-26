@@ -13,6 +13,9 @@ func (a *PulumiTest) Up(opts ...optup.Option) auto.UpResult {
 	if a.currentStack == nil {
 		a.t.Fatal("no current stack")
 	}
+	if !a.options.DisableGrpcLog {
+		a.ClearGrpcLog()
+	}
 	result, err := a.currentStack.Up(a.ctx, opts...)
 	if err != nil {
 		a.t.Fatalf("failed to deploy: %s", err)
