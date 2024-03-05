@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/pulumi/providertest/pulumitest/opttest"
 )
@@ -66,9 +65,9 @@ func copyDirectory(scrDir, dest string) error {
 			return err
 		}
 
-		stat, ok := fileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			return fmt.Errorf("failed to get raw syscall.Stat_t data for '%s'", sourcePath)
+		owner, err := getFileOwner(fileInfo)
+		if err != nil {
+			return fmt.Errorf("failed to get raw syscall.Stat_t data for '%s': %w", sourcePath, err)
 		}
 
 		switch fileInfo.Mode() & os.ModeType {
@@ -89,8 +88,12 @@ func copyDirectory(scrDir, dest string) error {
 			}
 		}
 
-		if err := os.Lchown(destPath, int(stat.Uid), int(stat.Gid)); err != nil {
-			return err
+		// On Windows, os.Lchown always returns the syscall.EWINDOWS error, wrapped in
+		// *PathError. But on Windows owner will be nil.
+		if owner != nil {
+			if err := os.Lchown(destPath, owner.Uid, owner.Gid); err != nil {
+				return err
+			}
 		}
 
 		fInfo, err := entry.Info()
