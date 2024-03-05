@@ -17,7 +17,6 @@ type owner struct {
 func getFileOwner(fileInfo os.FileInfo) (*owner, error) {
 	stat, ok := fileInfo.Sys().(*syscall.Stat_t)
 	if !ok {
-
 		return nil, fmt.Errorf("failed to get raw syscall.Stat_t data for '%s'", fileInfo.Name())
 	}
 	return &owner{
