@@ -42,6 +42,9 @@ func AssertJSONMatchesPattern(
 	expectedPattern json.RawMessage,
 	actual json.RawMessage,
 ) {
+	if len(expectedPattern) == 0 {
+		require.Fail(t, "Expected response was missing")
+	}
 	assertJSONMatchesPattern(t, expectedPattern, actual)
 }
 
