@@ -3,13 +3,20 @@ package pulumitest
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
 
+type T interface {
+	testing.TB
+	Deadline() (deadline time.Time, ok bool)
+}
+
+
 type PulumiTest struct {
-	t            *testing.T
+	t            T
 	ctx          context.Context
 	source       string
 	options      *opttest.Options
@@ -21,7 +28,7 @@ type PulumiTest struct {
 // 1. Copy the source to a temporary directory.
 // 2. Install dependencies.
 // 3. Create a new stack called "test" with state stored to a local temporary directory and a fixed passphrase for encryption.
-func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
+func NewPulumiTest(t T, source string, opts ...opttest.Option) *PulumiTest {
 	t.Helper()
 	ctx := testContext(t)
 	options := opttest.DefaultOptions()
@@ -42,7 +49,7 @@ func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiT
 	return pt
 }
 
-func testContext(t *testing.T) context.Context {
+func testContext(t T) context.Context {
 	t.Helper()
 	var ctx context.Context
 	var cancel context.CancelFunc
@@ -72,7 +79,7 @@ func (a *PulumiTest) Source() string {
 }
 
 // T returns the current testing.T instance.
-func (a *PulumiTest) T() *testing.T {
+func (a *PulumiTest) T() T {
 	return a.t
 }
 
