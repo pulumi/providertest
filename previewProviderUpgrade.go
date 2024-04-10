@@ -15,7 +15,7 @@ import (
 // with the current provider configuration.
 // Uses a default cache directory of "testdata/recorded/TestProviderUpgrade/{programName}/{baselineVersion}".
 func PreviewProviderUpgrade(pulumiTest *pulumitest.PulumiTest, providerName string, baselineVersion string, opts ...optproviderupgrade.PreviewProviderUpgradeOpt) auto.PreviewResult {
-	pulumiTest.T().Helper()
+	pulumiTest.PT().Helper()
 	previewTest := pulumiTest.CopyToTempDir(opttest.NewStackOptions(optnewstack.DisableAutoDestroy()))
 	options := optproviderupgrade.Defaults()
 	for _, opt := range opts {
@@ -25,11 +25,11 @@ func PreviewProviderUpgrade(pulumiTest *pulumitest.PulumiTest, providerName stri
 	cacheDir := getCacheDir(options, programName, baselineVersion)
 	previewTest.Run(
 		func(test *pulumitest.PulumiTest) {
-			test.T().Helper()
+			test.PT().Helper()
 			test.Up()
 			grptLog := test.GrpcLog()
 			grpcLogPath := filepath.Join(cacheDir, "grpc.json")
-			test.T().Logf("writing grpc log to %s", grpcLogPath)
+			test.PT().Logf("writing grpc log to %s", grpcLogPath)
 			grptLog.WriteTo(grpcLogPath)
 		},
 		optrun.WithCache(filepath.Join(cacheDir, "stack.json")),

@@ -4,7 +4,8 @@ import (
 	"time"
 )
 
-type T interface {
+// A subset of *testing.T functionality used by pulumitest.
+type PT interface {
 	TempDir() string
 	Fatal(...any)
 	Fatalf(string, ...any)

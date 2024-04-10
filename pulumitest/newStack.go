@@ -79,7 +79,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	stackOpts = append(stackOpts, options.ExtraWorkspaceOptions...)
 	stackOpts = append(stackOpts, stackOptions.Opts...)
 
-	pt.T().Logf("creating stack %s", stackName)
+	pt.PT().Logf("creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
 
 	providerPluginPaths := options.ProviderPluginPaths()
