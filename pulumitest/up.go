@@ -11,14 +11,14 @@ func (a *PulumiTest) Up(opts ...optup.Option) auto.UpResult {
 
 	a.t.Log("deploying")
 	if a.currentStack == nil {
-		a.t.Fatal("no current stack")
+		a.fatal("no current stack")
 	}
 	if !a.options.DisableGrpcLog {
 		a.ClearGrpcLog()
 	}
 	result, err := a.currentStack.Up(a.ctx, opts...)
 	if err != nil {
-		a.t.Fatalf("failed to deploy: %s", err)
+		a.fatalf("failed to deploy: %s", err)
 	}
 	return result
 }

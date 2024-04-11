@@ -26,15 +26,15 @@ func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertRes
 	targetDir := filepath.Join(tempDir, fmt.Sprintf("%s-%s", base, language))
 	err := os.Mkdir(targetDir, 0755)
 	if err != nil {
-		a.t.Fatal(err)
+		a.fatal(err)
 	}
 
-	a.t.Logf("converting to %s", language)
+	a.logf("converting to %s", language)
 	cmd := exec.Command("pulumi", "convert", "--language", language, "--generate-only", "--out", targetDir)
 	cmd.Dir = a.source
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		a.t.Fatalf("failed to convert directory: %s\n%s", err, out)
+		a.fatalf("failed to convert directory: %s\n%s", err, out)
 	}
 
 	options := a.options.Copy()

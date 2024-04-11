@@ -23,7 +23,7 @@ func (pt *PulumiTest) GrpcLog() *grpclog.GrpcLog {
 
 	log, err := grpclog.LoadLog(env["PULUMI_DEBUG_GRPC"])
 	if err != nil {
-		pt.t.Fatalf("failed to load grpc log: %s", err)
+		pt.fatalf("failed to load grpc log: %s", err)
 	}
 	return log
 }
@@ -35,6 +35,6 @@ func (pt *PulumiTest) ClearGrpcLog() {
 		return
 	}
 	if err := os.RemoveAll(env["PULUMI_DEBUG_GRPC"]); err != nil {
-		pt.t.Fatalf("failed to clear gRPC log: %s", err)
+		pt.fatalf("failed to clear gRPC log: %s", err)
 	}
 }

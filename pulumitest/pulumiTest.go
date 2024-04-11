@@ -2,14 +2,14 @@ package pulumitest
 
 import (
 	"context"
-	"testing"
+	"fmt"
 
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
 
 type PulumiTest struct {
-	t            *testing.T
+	t            PT
 	ctx          context.Context
 	source       string
 	options      *opttest.Options
@@ -21,7 +21,7 @@ type PulumiTest struct {
 // 1. Copy the source to a temporary directory.
 // 2. Install dependencies.
 // 3. Create a new stack called "test" with state stored to a local temporary directory and a fixed passphrase for encryption.
-func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiTest {
+func NewPulumiTest(t PT, source string, opts ...opttest.Option) *PulumiTest {
 	t.Helper()
 	ctx := testContext(t)
 	options := opttest.DefaultOptions()
@@ -42,7 +42,7 @@ func NewPulumiTest(t *testing.T, source string, opts ...opttest.Option) *PulumiT
 	return pt
 }
 
-func testContext(t *testing.T) context.Context {
+func testContext(t PT) context.Context {
 	t.Helper()
 	var ctx context.Context
 	var cancel context.CancelFunc
@@ -71,11 +71,6 @@ func (a *PulumiTest) Source() string {
 	return a.source
 }
 
-// T returns the current testing.T instance.
-func (a *PulumiTest) T() *testing.T {
-	return a.t
-}
-
 // Context returns the current context.Context instance used for automation API calls.
 func (a *PulumiTest) Context() context.Context {
 	return a.ctx
@@ -84,4 +79,32 @@ func (a *PulumiTest) Context() context.Context {
 // CurrentStack returns the last stack that was created or nil if no stack has been created yet.
 func (a *PulumiTest) CurrentStack() *auto.Stack {
 	return a.currentStack
+}
+
+func (a *PulumiTest) logf(format string, args ...any) {
+	a.t.Log(fmt.Sprintf(format, args...))
+}
+
+func (a *PulumiTest) log(args ...any) {
+	a.t.Log(args...)
+}
+
+func (a *PulumiTest) errorf(format string, args ...any) {
+	a.t.Log(fmt.Sprintf(format, args...))
+	a.t.Fail()
+}
+
+func (a *PulumiTest) error(args ...any) {
+	a.t.Log(args...)
+	a.t.Fail()
+}
+
+func (a *PulumiTest) fatalf(format string, args ...any) {
+	a.t.Log(fmt.Sprintf(format, args...))
+	a.t.FailNow()
+}
+
+func (a *PulumiTest) fatal(args ...any) {
+	a.t.Log(args...)
+	a.t.FailNow()
 }

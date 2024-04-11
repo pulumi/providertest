@@ -18,13 +18,13 @@ func TestPreviewUpgradeCached(t *testing.T) {
 	test := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_program"),
 		opttest.DownloadProviderVersion("random", "4.15.0"))
 
-	uncachedPreviewResult := providertest.PreviewProviderUpgrade(test, "random", "4.5.0",
+	uncachedPreviewResult := providertest.PreviewProviderUpgrade(t, test, "random", "4.5.0",
 		optproviderupgrade.CacheDir(cacheDir, "{programName}", "{baselineVersion}"),
 		optproviderupgrade.DisableAttach())
 	assertpreview.HasNoReplacements(t, uncachedPreviewResult)
 	assertpreview.HasNoChanges(t, uncachedPreviewResult)
 
-	cachedPreviewResult := providertest.PreviewProviderUpgrade(test, "random", "4.5.0",
+	cachedPreviewResult := providertest.PreviewProviderUpgrade(t, test, "random", "4.5.0",
 		optproviderupgrade.CacheDir(cacheDir, "{programName}", "{baselineVersion}"),
 		optproviderupgrade.DisableAttach())
 	assert.Equal(t, uncachedPreviewResult, cachedPreviewResult, "expected uncached and cached preview to be the same")

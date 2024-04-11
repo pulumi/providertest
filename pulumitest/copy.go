@@ -21,7 +21,7 @@ func (a *PulumiTest) CopyToTempDir(opts ...opttest.Option) *PulumiTest {
 	destination := filepath.Join(tempDir, sourceBase)
 	err := os.Mkdir(destination, 0755)
 	if err != nil {
-		a.t.Fatal(err)
+		a.fatal(err)
 	}
 
 	return a.CopyTo(destination, opts...)
@@ -34,7 +34,7 @@ func (a *PulumiTest) CopyTo(dir string, opts ...opttest.Option) *PulumiTest {
 
 	err := copyDirectory(a.source, dir)
 	if err != nil {
-		a.t.Fatal(err)
+		a.fatal(err)
 	}
 
 	options := a.options.Copy()

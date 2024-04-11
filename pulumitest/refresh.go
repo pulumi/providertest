@@ -11,14 +11,14 @@ func (a *PulumiTest) Refresh(opts ...optrefresh.Option) auto.RefreshResult {
 
 	a.t.Log("refreshing")
 	if a.currentStack == nil {
-		a.t.Fatal("no current stack")
+		a.fatal("no current stack")
 	}
 	if !a.options.DisableGrpcLog {
 		a.ClearGrpcLog()
 	}
 	result, err := a.currentStack.Refresh(a.ctx, opts...)
 	if err != nil {
-		a.t.Fatalf("failed to refresh: %s", err)
+		a.fatalf("failed to refresh: %s", err)
 	}
 	return result
 }
