@@ -2,11 +2,9 @@ package pulumitest
 
 import (
 	"context"
-	"testing"
 
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
-	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
 )
 
 type PulumiTest struct {
@@ -70,19 +68,6 @@ func pulumiTestInit(pt *PulumiTest, options *opttest.Options) {
 // Source returns the current source directory.
 func (a *PulumiTest) Source() string {
 	return a.source
-}
-
-// PT returns the current PT instance.
-func (a *PulumiTest) PT() PT {
-	return a.t
-}
-
-// Please use [PulumiTest.PT] instead.
-// Deprecated.
-func (a *PulumiTest) T() *testing.T {
-	r, ok := a.PT().(*testing.T)
-	contract.Assertf(ok, "Testing with something other than *testing.T; Please use PulumiTest.PT()")
-	return r
 }
 
 // Context returns the current context.Context instance used for automation API calls.
