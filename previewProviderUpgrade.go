@@ -1,6 +1,7 @@
 package providertest
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/pulumi/providertest/optproviderupgrade"
@@ -29,7 +30,7 @@ func PreviewProviderUpgrade(t pulumitest.PT, pulumiTest *pulumitest.PulumiTest, 
 			test.Up()
 			grptLog := test.GrpcLog()
 			grpcLogPath := filepath.Join(cacheDir, "grpc.json")
-			t.Logf("writing grpc log to %s", grpcLogPath)
+			t.Log(fmt.Sprintf("writing grpc log to %s", grpcLogPath))
 			grptLog.WriteTo(grpcLogPath)
 		},
 		optrun.WithCache(filepath.Join(cacheDir, "stack.json")),

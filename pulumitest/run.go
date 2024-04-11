@@ -28,12 +28,12 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 	if options.EnableCache {
 		stackExport, err = tryReadStackExport(options.CachePath)
 		if err != nil {
-			pulumiTest.t.Fatalf("failed to read stack export: %v", err)
+			pulumiTest.fatalf("failed to read stack export: %v", err)
 		}
 		if stackExport != nil {
-			pulumiTest.t.Logf("run cache found at %s", options.CachePath)
+			pulumiTest.logf("run cache found at %s", options.CachePath)
 		} else {
-			pulumiTest.t.Logf("no run cache found at %s", options.CachePath)
+			pulumiTest.logf("no run cache found at %s", options.CachePath)
 		}
 	}
 
@@ -42,10 +42,10 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 		execute(isolatedTest)
 		exportedStack := isolatedTest.ExportStack()
 		if options.EnableCache {
-			isolatedTest.t.Logf("writing stack state to %s", options.CachePath)
+			isolatedTest.logf("writing stack state to %s", options.CachePath)
 			err = writeStackExport(options.CachePath, &exportedStack, false /* overwrite */)
 			if err != nil {
-				isolatedTest.t.Fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
+				isolatedTest.fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
 			}
 		}
 		stackExport = &exportedStack
@@ -55,13 +55,13 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 	stackName := pulumiTest.CurrentStack().Name()
 	fixedStack, err := fixupStackName(stackExport, stackName)
 	if err != nil {
-		pulumiTest.t.Fatalf("failed to fixup stack name: %v", err)
+		pulumiTest.fatalf("failed to fixup stack name: %v", err)
 	}
 	if fixedStack != stackExport {
-		pulumiTest.t.Logf("updating snapshot with fixed stack name: %s", stackName)
+		pulumiTest.logf("updating snapshot with fixed stack name: %s", stackName)
 		err = writeStackExport(options.CachePath, fixedStack, true /* overwrite */)
 		if err != nil {
-			pulumiTest.t.Fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
+			pulumiTest.fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
 		}
 		stackExport = fixedStack
 	}

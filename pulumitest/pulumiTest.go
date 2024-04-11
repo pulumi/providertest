@@ -2,6 +2,7 @@ package pulumitest
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
@@ -78,4 +79,32 @@ func (a *PulumiTest) Context() context.Context {
 // CurrentStack returns the last stack that was created or nil if no stack has been created yet.
 func (a *PulumiTest) CurrentStack() *auto.Stack {
 	return a.currentStack
+}
+
+func (a *PulumiTest) logf(format string, args ...any) {
+	a.t.Log(fmt.Sprintf(format, args...))
+}
+
+func (a *PulumiTest) log(args ...any) {
+	a.t.Log(args...)
+}
+
+func (a *PulumiTest) errorf(format string, args ...any) {
+	a.t.Log(fmt.Sprintf(format, args...))
+	a.t.Fail()
+}
+
+func (a *PulumiTest) error(args ...any) {
+	a.t.Log(args...)
+	a.t.Fail()
+}
+
+func (a *PulumiTest) fatalf(format string, args ...any) {
+	a.t.Log(fmt.Sprintf(format, args...))
+	a.t.FailNow()
+}
+
+func (a *PulumiTest) fatal(args ...any) {
+	a.t.Log(args...)
+	a.t.FailNow()
 }
