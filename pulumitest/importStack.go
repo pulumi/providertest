@@ -10,10 +10,10 @@ func (a *PulumiTest) ImportStack(source apitype.UntypedDeployment) {
 
 	a.t.Log("importing stack")
 	if a.currentStack == nil {
-		a.t.Fatal("no current stack")
+		a.fatal("no current stack")
 	}
 	err := a.currentStack.Workspace().ImportStack(a.Context(), a.currentStack.Name(), source)
 	if err != nil {
-		a.t.Fatalf("failed to import stack: %s", err)
+		a.fatalf("failed to import stack: %s", err)
 	}
 }

@@ -59,7 +59,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 		providerPorts, err := providers.StartProviders(providerContext, providerFactories, pt)
 		if err != nil {
 			cancelProviders()
-			pt.t.Fatalf("failed to start providers: %v", err)
+			pt.fatalf("failed to start providers: %v", err)
 		} else {
 			pt.t.Cleanup(func() {
 				cancelProviders()
@@ -79,14 +79,14 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	stackOpts = append(stackOpts, options.ExtraWorkspaceOptions...)
 	stackOpts = append(stackOpts, stackOptions.Opts...)
 
-	pt.t.Logf("creating stack %s", stackName)
+	pt.logf("creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
 
 	providerPluginPaths := options.ProviderPluginPaths()
 	if len(providerPluginPaths) > 0 {
 		projectSettings, err := stack.Workspace().ProjectSettings(pt.ctx)
 		if err != nil {
-			pt.t.Fatalf("failed to get project settings: %s", err)
+			pt.fatalf("failed to get project settings: %s", err)
 		}
 		var plugins workspace.Plugins
 		if projectSettings.Plugins != nil {
@@ -103,7 +103,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			relPath := providerPluginPaths[providers.ProviderName(name)]
 			absPath, err := filepath.Abs(relPath)
 			if err != nil {
-				pt.t.Fatalf("failed to get absolute path for %s: %s", relPath, err)
+				pt.fatalf("failed to get absolute path for %s: %s", relPath, err)
 			}
 
 			found := false
@@ -125,7 +125,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 		projectSettings.Plugins = &plugins
 		err = stack.Workspace().SaveProjectSettings(pt.ctx, projectSettings)
 		if err != nil {
-			pt.t.Fatalf("failed to save project settings: %s", err)
+			pt.fatalf("failed to save project settings: %s", err)
 		}
 	}
 
@@ -133,10 +133,10 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 		for _, pkg := range options.YarnLinks {
 			cmd := exec.Command("yarn", "link", pkg)
 			cmd.Dir = pt.source
-			pt.t.Logf("linking yarn package: %s", cmd)
+			pt.logf("linking yarn package: %s", cmd)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				pt.t.Fatalf("failed to link yarn package %s: %s\n%s", pkg, err, out)
+				pt.fatalf("failed to link yarn package %s: %s\n%s", pkg, err, out)
 			}
 		}
 	}
@@ -151,21 +151,21 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			relPath := options.GoModReplacements[old]
 			absPath, err := filepath.Abs(relPath)
 			if err != nil {
-				pt.t.Fatalf("failed to get absolute path for %s: %s", relPath, err)
+				pt.fatalf("failed to get absolute path for %s: %s", relPath, err)
 			}
 			replacement := fmt.Sprintf("%s=%s", old, absPath)
 			cmd := exec.Command("go", "mod", "edit", "-replace", replacement)
 			cmd.Dir = pt.source
-			pt.t.Logf("adding go.mod replacement: %s", cmd)
+			pt.logf("adding go.mod replacement: %s", cmd)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				pt.t.Fatalf("failed to add go.mod replacement %s: %s\n%s", replacement, err, out)
+				pt.fatalf("failed to add go.mod replacement %s: %s\n%s", replacement, err, out)
 			}
 		}
 	}
 
 	if err != nil {
-		pt.t.Fatalf("failed to create stack: %s", err)
+		pt.fatalf("failed to create stack: %s", err)
 		return nil
 	}
 	if !stackOptions.SkipDestroy {
@@ -174,11 +174,11 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			pt.t.Log("cleaning up stack")
 			_, err := stack.Destroy(pt.ctx)
 			if err != nil {
-				pt.t.Errorf("failed to destroy stack: %s", err)
+				pt.errorf("failed to destroy stack: %s", err)
 			}
 			err = stack.Workspace().RemoveStack(pt.ctx, stackName, optremove.Force())
 			if err != nil {
-				pt.t.Errorf("failed to remove stack: %s", err)
+				pt.errorf("failed to remove stack: %s", err)
 			}
 		})
 	}
