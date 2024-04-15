@@ -43,12 +43,14 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	}
 
 	if !options.UseAmbientBackend {
-		backendFolder := pt.t.TempDir()
+		backendFolder := tempDirWithoutCleanupOnFailedTest(pt.t, "backendDir")
+		pt.t.Log("PULUMI_BACKEND_URL=" + "file://" + backendFolder)
 		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
 	}
 
 	if !options.DisableGrpcLog {
-		grpcLogDir := pt.t.TempDir()
+		grpcLogDir := tempDirWithoutCleanupOnFailedTest(pt.t, pt.t.TempDir())
+		pt.t.Log("PULUMI_DEBUG_GRPC=" + filepath.Join(grpcLogDir, "grpc.json"))
 		env["PULUMI_DEBUG_GRPC"] = filepath.Join(grpcLogDir, "grpc.json")
 	}
 
@@ -171,6 +173,13 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	if !stackOptions.SkipDestroy {
 		pt.t.Cleanup(func() {
 			pt.t.Helper()
+
+			if ptFailed(pt.t) {
+				pt.t.Log(fmt.Sprintf("refusing to destroy stack at %q to help debug the failing test",
+					stack.Workspace().WorkDir()))
+				return
+			}
+
 			pt.t.Log("cleaning up stack")
 			_, err := stack.Destroy(pt.ctx)
 			if err != nil {
