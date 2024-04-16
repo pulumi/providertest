@@ -53,7 +53,7 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc string) string {
 		c.tempDir, c.tempDirErr = os.MkdirTemp("", pattern)
 		if c.tempDirErr == nil {
 			t.Cleanup(func() {
-				if ptFailed(t) {
+				if ptFailed(t) && !runningInCI() {
 					ptErrorF(t, "TempDir leaving %s to help debugging: %q", desc, c.tempDir)
 				} else if err := os.RemoveAll(c.tempDir); err != nil {
 					ptErrorF(t, "TempDir RemoveAll cleanup: %v", err)
