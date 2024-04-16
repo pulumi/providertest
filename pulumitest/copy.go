@@ -14,7 +14,7 @@ import (
 // This is used to avoid temporary files being written to the source directory.
 func (a *PulumiTest) CopyToTempDir(opts ...opttest.Option) *PulumiTest {
 	a.t.Helper()
-	tempDir := a.t.TempDir()
+	tempDir := tempDirWithoutCleanupOnFailedTest(a.t, "programDir")
 
 	// Maintain the directory name in the temp dir as this might be used for stack naming.
 	sourceBase := filepath.Base(a.source)
