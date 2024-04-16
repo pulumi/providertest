@@ -10,7 +10,6 @@ import (
 )
 
 func tempDirWithoutCleanupOnFailedTest(t PT, desc string) string {
-	t.TempDir()
 	c := getOrCreateTempDirState(t)
 
 	// Use a single parent directory for all the temporary directories
