@@ -49,7 +49,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	}
 
 	if !options.DisableGrpcLog {
-		grpcLogDir := tempDirWithoutCleanupOnFailedTest(pt.t, pt.t.TempDir())
+		grpcLogDir := tempDirWithoutCleanupOnFailedTest(pt.t, "grpcLogDir")
 		pt.t.Log("PULUMI_DEBUG_GRPC=" + filepath.Join(grpcLogDir, "grpc.json"))
 		env["PULUMI_DEBUG_GRPC"] = filepath.Join(grpcLogDir, "grpc.json")
 	}
