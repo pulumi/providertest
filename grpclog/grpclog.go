@@ -91,12 +91,10 @@ func (l *GrpcLog) Deletes() ([]TypedEntry[rpc.DeleteRequest, emptypb.Empty], err
 	return unmarshalTypedEntries[rpc.DeleteRequest, emptypb.Empty](l.WhereMethod(Delete))
 }
 
-// BUG: will currently fail to unmarshal the response due to a enums not having JSON unmashalling implemented.
 func (l *GrpcLog) Diffs() ([]TypedEntry[rpc.DiffRequest, rpc.DiffResponse], error) {
 	return unmarshalTypedEntries[rpc.DiffRequest, rpc.DiffResponse](l.WhereMethod(Diff))
 }
 
-// BUG: will currently fail to unmarshal the response due to a enums not having JSON unmashalling implemented.
 func (l *GrpcLog) DiffConfigs() ([]TypedEntry[rpc.DiffRequest, rpc.DiffResponse], error) {
 	return unmarshalTypedEntries[rpc.DiffRequest, rpc.DiffResponse](l.WhereMethod(DiffConfig))
 }
