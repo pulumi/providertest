@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	rpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -132,10 +134,10 @@ type TypedEntry[TRequest any, TResponse any] struct {
 	Response TResponse
 }
 
-func unmarshalTypedEntries[Request any, Response any](entries []GrpcLogEntry) ([]TypedEntry[Request, Response], error) {
-	var typedEntries []TypedEntry[Request, Response]
+func unmarshalTypedEntries[TRequest, TResponse any](entries []GrpcLogEntry) ([]TypedEntry[TRequest, TResponse], error) {
+	var typedEntries []TypedEntry[TRequest, TResponse]
 	for _, entry := range entries {
-		typedEntry, err := unmarshalTypedEntry[Request, Response](entry)
+		typedEntry, err := unmarshalTypedEntry[TRequest, TResponse](entry)
 		if err != nil {
 			return nil, err
 		}
@@ -144,21 +146,20 @@ func unmarshalTypedEntries[Request any, Response any](entries []GrpcLogEntry) ([
 	return typedEntries, nil
 }
 
-func unmarshalTypedEntry[Request any, Response any](entry GrpcLogEntry) (*TypedEntry[Request, Response], error) {
-	var typedEntry TypedEntry[Request, Response]
-	err := unmarshalEntry(entry, &typedEntry.Request, &typedEntry.Response)
-	if err != nil {
+func unmarshalTypedEntry[TRequest, TResponse any](entry GrpcLogEntry) (*TypedEntry[TRequest, TResponse], error) {
+	reqSlot := new(TRequest)
+	resSlot := new(TResponse)
+	if err := jsonpb.Unmarshal([]byte(entry.Request), any(reqSlot).(protoreflect.ProtoMessage)); err != nil {
 		return nil, err
 	}
-	return &typedEntry, nil
-}
-
-func unmarshalEntry(entry GrpcLogEntry, req any, res any) error {
-	err := json.Unmarshal(entry.Request, req)
-	if err != nil {
-		return err
+	if err := jsonpb.Unmarshal([]byte(entry.Response), any(resSlot).(protoreflect.ProtoMessage)); err != nil {
+		return nil, err
 	}
-	return json.Unmarshal(entry.Response, res)
+	typedEntry := TypedEntry[TRequest, TResponse]{
+		Request:  *reqSlot,
+		Response: *resSlot,
+	}
+	return &typedEntry, nil
 }
 
 func LoadLog(path string) (*GrpcLog, error) {
