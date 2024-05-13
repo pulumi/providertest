@@ -109,9 +109,9 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			}
 
 			found := false
-			for _, provider := range providerPlugins {
-				if provider.Name == name {
-					provider.Path = absPath
+			for idx := range providerPlugins {
+				if providerPlugins[idx].Name == name {
+					providerPlugins[idx].Path = absPath
 					found = true
 					break
 				}
