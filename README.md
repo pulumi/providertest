@@ -2,6 +2,8 @@
 
 Incubating facilities for testing Pulumi providers
 
+NOTE: The libraries in this repo are used internally by the Pulumi providers team, but are still evolving; you should expect incomplete documentation and breaking changes. 
+
 ## Test Modes
 
 ### End To End (e2e)
