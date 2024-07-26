@@ -1,7 +1,7 @@
 package pulumitest
 
 func (a *PulumiTest) Import(
-	resourceType, resourceName, resourceID string, providerUrn string,
+	resourceType, resourceName, resourceID string, providerUrn string, args ...string,
 ) cmdOutput {
 	a.t.Helper()
 	arguments := []string{
@@ -10,6 +10,7 @@ func (a *PulumiTest) Import(
 	if providerUrn != "" {
 		arguments = append(arguments, "--provider="+providerUrn)
 	}
+	arguments = append(arguments, args...)
 	ret := a.execCmd(arguments...)
 	if ret.ReturnCode != 0 {
 		a.log(ret.Stdout)
