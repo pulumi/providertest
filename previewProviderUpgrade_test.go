@@ -29,3 +29,18 @@ func TestPreviewUpgradeCached(t *testing.T) {
 		optproviderupgrade.DisableAttach())
 	assert.Equal(t, uncachedPreviewResult, cachedPreviewResult, "expected uncached and cached preview to be the same")
 }
+
+func TestPreviewUpgradeWithKnownSourceEdit(t *testing.T) {
+	t.Parallel()
+	cacheDir := t.TempDir()
+	test := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_program"),
+		opttest.DownloadProviderVersion("random", "4.15.0"))
+
+	previewResult := providertest.PreviewProviderUpgrade(t, test, "random", "4.5.0",
+		optproviderupgrade.CacheDir(cacheDir, "{programName}", "{baselineVersion}"),
+		optproviderupgrade.DisableAttach(),
+		optproviderupgrade.NewSourcePath(filepath.Join("pulumitest", "testdata", "yaml_program_updated")),
+	)
+
+	assert.Contains(t, previewResult.StdOut, "random:index:RandomPassword password create")
+}

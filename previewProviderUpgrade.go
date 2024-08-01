@@ -39,6 +39,10 @@ func PreviewProviderUpgrade(t pulumitest.PT, pulumiTest *pulumitest.PulumiTest, 
 			baselineProviderOpt(options, providerName, baselineVersion)),
 		optrun.WithOpts(options.BaselineOpts...),
 	)
+
+	if options.NewSourcePath != "" {
+		previewTest.UpdateSource(options.NewSourcePath)
+	}
 	return previewTest.Preview()
 }
 
