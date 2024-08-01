@@ -8,5 +8,9 @@ func (a *PulumiTest) UpdateSource(pathElems ...string) {
 
 	path := filepath.Join(pathElems...)
 	a.logf("updating source from %s", path)
-	copyDirectory(path, a.source)
+	err := copyDirectory(path, a.source)
+	if err != nil {
+		a.t.Log(err)
+		a.t.FailNow()
+	}
 }
