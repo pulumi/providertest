@@ -38,10 +38,17 @@ func CacheDir(elem ...string) PreviewProviderUpgradeOpt {
 	})
 }
 
+func NewSourcePath(path string) PreviewProviderUpgradeOpt {
+	return optionFunc(func(o *PreviewProviderUpgradeOptions) {
+		o.NewSourcePath = path
+	})
+}
+
 type PreviewProviderUpgradeOptions struct {
 	CacheDirTemplate []string
 	DisableAttach    bool
 	BaselineOpts     []opttest.Option
+	NewSourcePath    string
 }
 
 type PreviewProviderUpgradeOpt interface {
