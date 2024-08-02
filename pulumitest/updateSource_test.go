@@ -17,4 +17,32 @@ func TestUpdateSource(t *testing.T) {
 
 	changes := *updated.Summary.ResourceChanges
 	assert.Equal(t, 1, changes["create"])
+
+}
+
+func TestUpdateSourceError(t *testing.T) {
+	t.Parallel()
+
+	tt := &mockT{T: t}
+	test := pulumitest.NewPulumiTest(tt, "testdata/yaml_program")
+	test.UpdateSource("this-should-fail")
+
+	assert.True(t, tt.Failed())
+}
+
+type mockT struct {
+	*testing.T
+	failed bool
+}
+
+func (m *mockT) Fail() {
+	m.failed = true
+}
+
+func (m *mockT) FailNow() {
+	m.failed = true
+}
+
+func (m *mockT) Failed() bool {
+	return m.failed
 }
