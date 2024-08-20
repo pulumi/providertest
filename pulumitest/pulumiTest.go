@@ -2,9 +2,13 @@ package pulumitest
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	"github.com/pulumi/providertest/pulumitest/opttest"
+	"github.com/pulumi/providertest/pulumiyaml"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"gopkg.in/yaml.v3"
 )
 
 type PulumiTest struct {
@@ -36,6 +40,39 @@ func NewPulumiTest(t PT, source string, opts ...opttest.Option) *PulumiTest {
 	} else {
 		pulumiTestInit(t, pt, options)
 	}
+	return pt
+}
+
+// NewPulumiYamlTest creates a new PulumiYamlTest instance.
+func NewInlinePulumiTest(t PT, program *pulumiyaml.Program, opts ...opttest.Option) *PulumiTest {
+	t.Helper()
+	ctx := testContext(t)
+	options := opttest.DefaultOptions()
+	for _, opt := range opts {
+		opt.Apply(options)
+	}
+	if program.Runtime == "" {
+		program.Runtime = "yaml"
+	}
+	if program.Name == "" {
+		program.Name = "test"
+	}
+	workingDir := tempDirWithoutCleanupOnFailedTest(t, "yamlProgramDir")
+	pt := &PulumiTest{
+		ctx:        ctx,
+		workingDir: workingDir,
+		options:    options,
+	}
+	yamlBytes, err := yaml.Marshal(program)
+	if err != nil {
+		ptFatalF(t, "failed to marshal yaml program: %v", err)
+	}
+	yamlPath := filepath.Join(workingDir, "Pulumi.yaml")
+	err = os.WriteFile(yamlPath, yamlBytes, 0644)
+	if err != nil {
+		ptFatalF(t, "failed to write yaml program: %v", err)
+	}
+	pulumiTestInit(t, pt, options)
 	return pt
 }
 

@@ -31,6 +31,7 @@ func ptFatalF(t PT, format string, args ...any) {
 }
 
 func ptFailed(t PT) bool {
+	t.Helper()
 	if tF, tFailedSupported := t.(interface {
 		Failed() bool
 	}); tFailedSupported && tF.Failed() {

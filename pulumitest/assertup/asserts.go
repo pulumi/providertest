@@ -42,3 +42,39 @@ func HasNoReplacements(t *testing.T, up auto.UpResult) {
 		t.Errorf("expected no replacements, got %s\n%s", unexpectedOps, up.StdOut)
 	}
 }
+
+func CreateCountEquals(t *testing.T, up auto.UpResult, expectedCreateCount int) {
+	t.Helper()
+
+	summary := changesummary.FromStringIntMap(*up.Summary.ResourceChanges)
+	if summary[apitype.OpCreate] != expectedCreateCount {
+		t.Errorf("expected %d create operations, got %d\n%s", expectedCreateCount, summary[apitype.OpCreate], up.StdOut)
+	}
+}
+
+func UpdateCountEquals(t *testing.T, up auto.UpResult, expectedUpdateCount int) {
+	t.Helper()
+
+	summary := changesummary.FromStringIntMap(*up.Summary.ResourceChanges)
+	if summary[apitype.OpUpdate] != expectedUpdateCount {
+		t.Errorf("expected %d update operations, got %d\n%s", expectedUpdateCount, summary[apitype.OpUpdate], up.StdOut)
+	}
+}
+
+func ReplaceCountEquals(t *testing.T, up auto.UpResult, expectedReplaceCount int) {
+	t.Helper()
+
+	summary := changesummary.FromStringIntMap(*up.Summary.ResourceChanges)
+	if summary[apitype.OpReplace] != expectedReplaceCount {
+		t.Errorf("expected %d replace operations, got %d\n%s", expectedReplaceCount, summary[apitype.OpReplace], up.StdOut)
+	}
+}
+
+func DeleteCountEquals(t *testing.T, up auto.UpResult, expectedDeleteCount int) {
+	t.Helper()
+
+	summary := changesummary.FromStringIntMap(*up.Summary.ResourceChanges)
+	if summary[apitype.OpDelete] != expectedDeleteCount {
+		t.Errorf("expected %d delete operations, got %d\n%s", expectedDeleteCount, summary[apitype.OpDelete], up.StdOut)
+	}
+}
