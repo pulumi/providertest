@@ -17,7 +17,7 @@ func (a *PulumiTest) CopyToTempDir(opts ...opttest.Option) *PulumiTest {
 	tempDir := tempDirWithoutCleanupOnFailedTest(a.t, "programDir")
 
 	// Maintain the directory name in the temp dir as this might be used for stack naming.
-	sourceBase := filepath.Base(a.source)
+	sourceBase := filepath.Base(a.workingDir)
 	destination := filepath.Join(tempDir, sourceBase)
 	err := os.Mkdir(destination, 0755)
 	if err != nil {
@@ -32,7 +32,7 @@ func (a *PulumiTest) CopyToTempDir(opts ...opttest.Option) *PulumiTest {
 func (a *PulumiTest) CopyTo(dir string, opts ...opttest.Option) *PulumiTest {
 	a.t.Helper()
 
-	err := copyDirectory(a.source, dir)
+	err := copyDirectory(a.workingDir, dir)
 	if err != nil {
 		a.fatal(err)
 	}
@@ -42,10 +42,10 @@ func (a *PulumiTest) CopyTo(dir string, opts ...opttest.Option) *PulumiTest {
 		opt.Apply(options)
 	}
 	newTest := &PulumiTest{
-		t:       a.t,
-		ctx:     a.ctx,
-		source:  dir,
-		options: options,
+		t:          a.t,
+		ctx:        a.ctx,
+		workingDir: dir,
+		options:    options,
 	}
 	pulumiTestInit(newTest, options)
 	return newTest

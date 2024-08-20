@@ -30,7 +30,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	}
 
 	if stackName == "" {
-		stackName = randomStackName(pt.source)
+		stackName = randomStackName(pt.workingDir)
 	}
 
 	options := pt.options
@@ -82,7 +82,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	stackOpts = append(stackOpts, stackOptions.Opts...)
 
 	pt.logf("creating stack %s", stackName)
-	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.source, stackOpts...)
+	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.workingDir, stackOpts...)
 
 	providerPluginPaths := options.ProviderPluginPaths()
 	if len(providerPluginPaths) > 0 {
@@ -134,7 +134,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	if options.YarnLinks != nil && len(options.YarnLinks) > 0 {
 		for _, pkg := range options.YarnLinks {
 			cmd := exec.Command("yarn", "link", pkg)
-			cmd.Dir = pt.source
+			cmd.Dir = pt.workingDir
 			pt.logf("linking yarn package: %s", cmd)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
@@ -157,7 +157,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			}
 			replacement := fmt.Sprintf("%s=%s", old, absPath)
 			cmd := exec.Command("go", "mod", "edit", "-replace", replacement)
-			cmd.Dir = pt.source
+			cmd.Dir = pt.workingDir
 			pt.logf("adding go.mod replacement: %s", cmd)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
