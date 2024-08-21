@@ -100,11 +100,6 @@ func (a *PulumiTest) errorf(format string, args ...any) {
 	a.t.Fail()
 }
 
-func (a *PulumiTest) error(args ...any) {
-	a.t.Log(args...)
-	a.t.Fail()
-}
-
 func (a *PulumiTest) fatalf(format string, args ...any) {
 	a.t.Log(fmt.Sprintf(format, args...))
 	a.t.FailNow()

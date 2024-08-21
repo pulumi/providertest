@@ -134,7 +134,7 @@ type UpgradeTestMode int
 
 const (
 	// The least precise but fastest mode. Tests are performed in-memory using pre-recorded
-	// snapshots of baseline provider behavior. No cloud credentals are required, no
+	// snapshots of baseline provider behavior. No cloud credentials are required, no
 	// subprocesses are launched, fully debuggable.
 	UpgradeTestMode_Quick UpgradeTestMode = iota
 
@@ -333,7 +333,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradeQuick(t *testing.T) {
 	require.NotEmptyf(t, eng.verifiedDiffResourceCounter, "Need at least one replay test")
 }
 
-// Verifies provider upgrades by replaying Diff calls. This is slighly involved. The available
+// Verifies provider upgrades by replaying Diff calls. This is slightly involved. The available
 // information is Check and Diff calls recorded on vPrev version of the provider, and a vNext
 // in-memory version of the provider available to test. The calls cannot be replayed directly,
 // instead Check and Diff calls are paired to do something equivalent to this:
@@ -366,7 +366,7 @@ func (e *mockPulumiEngine) replayGRPCLog(t *testing.T, jsonLog string) {
 	switch entry.Method {
 	case "/pulumirpc.ResourceProvider/Check":
 		req := unmarshalProto(t, entry.Request, new(pulumirpc.CheckRequest))
-		e.recordCheck(t, req)
+		e.recordCheck(req)
 	case "/pulumirpc.ResourceProvider/Diff":
 		req := unmarshalProto(t, entry.Request, new(pulumirpc.DiffRequest))
 		e.fixupDiff(t, req)
@@ -379,7 +379,7 @@ func (e *mockPulumiEngine) replayGRPCLog(t *testing.T, jsonLog string) {
 	}
 }
 
-func (e *mockPulumiEngine) recordCheck(t *testing.T, checkReq *pulumirpc.CheckRequest) {
+func (e *mockPulumiEngine) recordCheck(checkReq *pulumirpc.CheckRequest) {
 	e.lastCheckRequestByURN[checkReq.Urn] = checkReq
 }
 
@@ -458,7 +458,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 
 	// Skip if state not yet created
 	if _, err := os.Stat(info.stateFile); os.IsNotExist(err) {
-		t.Logf("No pre-recorded state found for %s, recording baseline behaviour.", b.baselineVersion)
+		t.Logf("No pre-recorded state found for %s, recording baseline behavior.", b.baselineVersion)
 		b.providerUpgradeRecordBaselines(t)
 	}
 
@@ -500,7 +500,7 @@ func (b *providerUpgradeBuilder) checkProviderUpgradePreviewOnly(t *testing.T) {
 }
 
 func (b *providerUpgradeBuilder) optionsForPreviewOnly(t *testing.T) integration.ProgramTestOptions {
-	projInfo, err := getProjinfo(b.program)
+	projInfo, err := getProjInfo(b.program)
 	require.NoError(t, err)
 	switch rt := projInfo.Proj.Runtime.Name(); rt {
 	case integration.YAMLRuntime:
@@ -514,15 +514,15 @@ func (b *providerUpgradeBuilder) optionsForPreviewOnly(t *testing.T) integration
 			Dependencies: []string{fmt.Sprintf("@pulumi/%s", b.providerName)},
 		}
 	case integration.PythonRuntime:
-		require.NoError(t, fmt.Errorf("PythonRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("python runtime does not yet support upgrade tests"))
 	case integration.DotNetRuntime:
-		require.NoError(t, fmt.Errorf("DotNetRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("dotnet runtime does not yet support upgrade tests"))
 	case integration.GoRuntime:
-		require.NoError(t, fmt.Errorf("GoRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("go runtime does not yet support upgrade tests"))
 	case integration.JavaRuntime:
-		require.NoError(t, fmt.Errorf("JavaRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("java Runtime does not yet support upgrade tests"))
 	default:
-		require.NoError(t, fmt.Errorf("Unrecognized project runtime: %s", projInfo.Proj.Runtime.Name()))
+		require.NoError(t, fmt.Errorf("unrecognized project runtime: %s", projInfo.Proj.Runtime.Name()))
 	}
 	return integration.ProgramTestOptions{}
 }
@@ -676,23 +676,23 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 }
 
 func (b *providerUpgradeBuilder) optionsForRecording(t *testing.T) integration.ProgramTestOptions {
-	projInfo, err := getProjinfo(b.program)
+	projInfo, err := getProjInfo(b.program)
 	require.NoError(t, err)
 	switch rt := projInfo.Proj.Runtime.Name(); rt {
 	case integration.YAMLRuntime:
 		return b.optionsForRecordingYAML(t)
 	case integration.NodeJSRuntime:
-		return b.optionsForRecordingNode(t)
+		return b.optionsForRecordingNode()
 	case integration.PythonRuntime:
-		require.NoError(t, fmt.Errorf("PythonRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("python runtime does not yet support upgrade tests"))
 	case integration.DotNetRuntime:
-		require.NoError(t, fmt.Errorf("DotNetRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("dotnet runtime does not yet support upgrade tests"))
 	case integration.GoRuntime:
-		require.NoError(t, fmt.Errorf("GoRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("go runtime does not yet support upgrade tests"))
 	case integration.JavaRuntime:
-		require.NoError(t, fmt.Errorf("JavaRuntime does not yet support upgrade tests"))
+		require.NoError(t, fmt.Errorf("java runtime does not yet support upgrade tests"))
 	default:
-		require.NoError(t, fmt.Errorf("Unrecognized project runtime: %s", projInfo.Proj.Runtime.Name()))
+		require.NoError(t, fmt.Errorf("unrecognized project runtime: %s", projInfo.Proj.Runtime.Name()))
 	}
 	return integration.ProgramTestOptions{}
 }
@@ -715,11 +715,11 @@ func (b *providerUpgradeBuilder) optionsForRecordingYAML(t *testing.T) integrati
 	path, err := pathWithAmbientPlugins(t, os.Getenv("PATH"), ambients...)
 	require.NoError(t, err)
 	// Cannot set PULUMI_IGNORE_AMBIENT_PLUGINS=true here because ambient plugins is how this
-	// code installs the baseline depdendencies.
+	// code installs the baseline dependencies.
 	return integration.ProgramTestOptions{Env: []string{fmt.Sprintf("PATH=%s", path)}}
 }
 
-func (b *providerUpgradeBuilder) optionsForRecordingNode(t *testing.T) integration.ProgramTestOptions {
+func (b *providerUpgradeBuilder) optionsForRecordingNode() integration.ProgramTestOptions {
 	// Overrides will make ProgramTest install specific baseline versions of Node SDKs and that
 	// in turn will make Pulumi CLI auto-install matching provider binaries.
 	overrides := map[string]string{

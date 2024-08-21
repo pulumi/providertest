@@ -81,9 +81,9 @@ func (wrapper *programTestWrapper) lifecycleInitAndDestroy(
 }
 
 // Utility to load up Pulumi.yaml so we know things like what language the project is.
-func getProjinfo(projectDir string) (*engine.Projinfo, error) {
-	projfile := filepath.Join(projectDir, workspace.ProjectFile+".yaml")
-	proj, err := workspace.LoadProject(projfile)
+func getProjInfo(projectDir string) (*engine.Projinfo, error) {
+	projFile := filepath.Join(projectDir, workspace.ProjectFile+".yaml")
+	proj, err := workspace.LoadProject(projFile)
 	if err != nil {
 		return nil, err
 	}
