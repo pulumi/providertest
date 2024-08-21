@@ -1,3 +1,33 @@
 {
-  "go.testTimeout": "320s"
+  "go.testTimeout": "320s",
+  "cSpell.language": "en-US",
+  "cSpell.words": [
+    "apitype",
+    "Assertf",
+    "assertpreview",
+    "assertup",
+    "changesummary",
+    "debuggable",
+    "Emptyf",
+    "emptypb",
+    "Falsef",
+    "gkampitakis",
+    "jsonpb",
+    "Nilf",
+    "optdestroy",
+    "optproviderupgrade",
+    "opttest",
+    "Projinfo",
+    "protobuf",
+    "protojson",
+    "protoreflect",
+    "providertest",
+    "pulumirpc",
+    "pulumitest",
+    "statefile",
+    "stretchr",
+    "structpb",
+    "Truef",
+    "upstreamed"
+  ]
 }
