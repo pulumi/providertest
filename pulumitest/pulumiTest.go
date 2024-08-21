@@ -11,7 +11,7 @@ import (
 type PulumiTest struct {
 	t            PT
 	ctx          context.Context
-	source       string
+	workingDir   string
 	options      *opttest.Options
 	currentStack *auto.Stack
 }
@@ -29,10 +29,10 @@ func NewPulumiTest(t PT, source string, opts ...opttest.Option) *PulumiTest {
 		opt.Apply(options)
 	}
 	pt := &PulumiTest{
-		t:       t,
-		ctx:     ctx,
-		source:  source,
-		options: options,
+		t:          t,
+		ctx:        ctx,
+		workingDir: source,
+		options:    options,
 	}
 	if !options.TestInPlace {
 		pt = pt.CopyToTempDir()
@@ -66,9 +66,15 @@ func pulumiTestInit(pt *PulumiTest, options *opttest.Options) {
 	}
 }
 
-// Source returns the current source directory.
+// Deprecated: Use WorkingDir instead.
+// Source returns the current working directory.
 func (a *PulumiTest) Source() string {
-	return a.source
+	return a.workingDir
+}
+
+// WorkingDir returns the current working directory.
+func (a *PulumiTest) WorkingDir() string {
+	return a.workingDir
 }
 
 // Context returns the current context.Context instance used for automation API calls.

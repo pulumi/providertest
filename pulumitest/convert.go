@@ -22,7 +22,7 @@ func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertRes
 	a.t.Helper()
 
 	tempDir := a.t.TempDir()
-	base := filepath.Base(a.source)
+	base := filepath.Base(a.workingDir)
 	targetDir := filepath.Join(tempDir, fmt.Sprintf("%s-%s", base, language))
 	err := os.Mkdir(targetDir, 0755)
 	if err != nil {
@@ -31,7 +31,7 @@ func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertRes
 
 	a.logf("converting to %s", language)
 	cmd := exec.Command("pulumi", "convert", "--language", language, "--generate-only", "--out", targetDir)
-	cmd.Dir = a.source
+	cmd.Dir = a.workingDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		a.fatalf("failed to convert directory: %s\n%s", err, out)
@@ -43,10 +43,10 @@ func (a *PulumiTest) Convert(language string, opts ...opttest.Option) ConvertRes
 	}
 
 	convertedTest := &PulumiTest{
-		t:       a.t,
-		ctx:     a.ctx,
-		source:  targetDir,
-		options: options,
+		t:          a.t,
+		ctx:        a.ctx,
+		workingDir: targetDir,
+		options:    options,
 	}
 	pulumiTestInit(convertedTest, options)
 	return ConvertResult{
