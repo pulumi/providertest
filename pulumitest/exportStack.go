@@ -5,16 +5,16 @@ import (
 )
 
 // ExportStack exports the current stack state.
-func (a *PulumiTest) ExportStack() apitype.UntypedDeployment {
-	a.t.Helper()
+func (a *PulumiTest) ExportStack(t PT) apitype.UntypedDeployment {
+	t.Helper()
 
-	a.t.Log("exporting stack")
+	t.Log("exporting stack")
 	if a.currentStack == nil {
-		a.fatal("no current stack")
+		ptFatal(t, "no current stack")
 	}
 	out, err := a.currentStack.Workspace().ExportStack(a.Context(), a.currentStack.Name())
 	if err != nil {
-		a.fatalf("failed to export stack: %s", err)
+		ptFatalF(t, "failed to export stack: %s", err)
 	}
 	return out
 }

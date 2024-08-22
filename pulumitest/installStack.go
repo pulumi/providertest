@@ -5,10 +5,10 @@ import (
 )
 
 // InstallStack installs packages, and creates a new stack.
-func (pt *PulumiTest) InstallStack(stackName string, opts ...optnewstack.NewStackOpt) *PulumiTest {
-	pt.t.Helper()
+func (pt *PulumiTest) InstallStack(t PT, stackName string, opts ...optnewstack.NewStackOpt) *PulumiTest {
+	t.Helper()
 
-	pt.Install()
-	pt.NewStack(stackName, opts...)
+	pt.Install(t)
+	pt.NewStack(t, stackName, opts...)
 	return pt
 }

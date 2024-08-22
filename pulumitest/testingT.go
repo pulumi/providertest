@@ -38,3 +38,20 @@ func ptFailed(t PT) bool {
 	}
 	return false
 }
+
+func ptLogF(t PT, format string, args ...any) {
+	t.Helper()
+	t.Log(fmt.Sprintf(format, args...))
+}
+
+func ptError(t PT, args ...any) {
+	t.Helper()
+	t.Log(args...)
+	t.Fail()
+}
+
+func ptFatal(t PT, args ...any) {
+	t.Helper()
+	t.Log(args...)
+	t.FailNow()
+}

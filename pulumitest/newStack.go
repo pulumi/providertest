@@ -21,8 +21,8 @@ import (
 
 // NewStack creates a new stack, ensure it's cleaned up after the test is done.
 // If no stack name is provided, a random one will be generated.
-func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt) *auto.Stack {
-	pt.t.Helper()
+func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewStackOpt) *auto.Stack {
+	t.Helper()
 
 	stackOptions := optnewstack.Defaults()
 	for _, opt := range opts {
@@ -43,27 +43,27 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	}
 
 	if !options.UseAmbientBackend {
-		backendFolder := tempDirWithoutCleanupOnFailedTest(pt.t, "backendDir")
-		pt.t.Log("PULUMI_BACKEND_URL=" + "file://" + backendFolder)
+		backendFolder := tempDirWithoutCleanupOnFailedTest(t, "backendDir")
+		t.Log("PULUMI_BACKEND_URL=" + "file://" + backendFolder)
 		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
 	}
 
 	if !options.DisableGrpcLog {
-		grpcLogDir := tempDirWithoutCleanupOnFailedTest(pt.t, "grpcLogDir")
-		pt.t.Log("PULUMI_DEBUG_GRPC=" + filepath.Join(grpcLogDir, "grpc.json"))
+		grpcLogDir := tempDirWithoutCleanupOnFailedTest(t, "grpcLogDir")
+		t.Log("PULUMI_DEBUG_GRPC=" + filepath.Join(grpcLogDir, "grpc.json"))
 		env["PULUMI_DEBUG_GRPC"] = filepath.Join(grpcLogDir, "grpc.json")
 	}
 
 	providerFactories := options.ProviderFactories()
 	if len(providerFactories) > 0 {
-		pt.t.Log("starting providers")
+		t.Log("starting providers")
 		providerContext, cancelProviders := context.WithCancel(pt.ctx)
 		providerPorts, err := providers.StartProviders(providerContext, providerFactories, pt)
 		if err != nil {
 			cancelProviders()
-			pt.fatalf("failed to start providers: %v", err)
+			ptFatalF(t, "failed to start providers: %v", err)
 		} else {
-			pt.t.Cleanup(func() {
+			t.Cleanup(func() {
 				cancelProviders()
 			})
 		}
@@ -81,14 +81,14 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 	stackOpts = append(stackOpts, options.ExtraWorkspaceOptions...)
 	stackOpts = append(stackOpts, stackOptions.Opts...)
 
-	pt.logf("creating stack %s", stackName)
+	ptLogF(t, "creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.workingDir, stackOpts...)
 
 	providerPluginPaths := options.ProviderPluginPaths()
 	if len(providerPluginPaths) > 0 {
 		projectSettings, err := stack.Workspace().ProjectSettings(pt.ctx)
 		if err != nil {
-			pt.fatalf("failed to get project settings: %s", err)
+			ptFatalF(t, "failed to get project settings: %s", err)
 		}
 		var plugins workspace.Plugins
 		if projectSettings.Plugins != nil {
@@ -105,7 +105,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			relPath := providerPluginPaths[providers.ProviderName(name)]
 			absPath, err := filepath.Abs(relPath)
 			if err != nil {
-				pt.fatalf("failed to get absolute path for %s: %s", relPath, err)
+				ptFatalF(t, "failed to get absolute path for %s: %s", relPath, err)
 			}
 
 			found := false
@@ -127,7 +127,7 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 		projectSettings.Plugins = &plugins
 		err = stack.Workspace().SaveProjectSettings(pt.ctx, projectSettings)
 		if err != nil {
-			pt.fatalf("failed to save project settings: %s", err)
+			ptFatalF(t, "failed to save project settings: %s", err)
 		}
 	}
 
@@ -135,10 +135,10 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 		for _, pkg := range options.YarnLinks {
 			cmd := exec.Command("yarn", "link", pkg)
 			cmd.Dir = pt.workingDir
-			pt.logf("linking yarn package: %s", cmd)
+			ptLogF(t, "linking yarn package: %s", cmd)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				pt.fatalf("failed to link yarn package %s: %s\n%s", pkg, err, out)
+				ptFatalF(t, "failed to link yarn package %s: %s\n%s", pkg, err, out)
 			}
 		}
 	}
@@ -153,41 +153,41 @@ func (pt *PulumiTest) NewStack(stackName string, opts ...optnewstack.NewStackOpt
 			relPath := options.GoModReplacements[old]
 			absPath, err := filepath.Abs(relPath)
 			if err != nil {
-				pt.fatalf("failed to get absolute path for %s: %s", relPath, err)
+				ptFatalF(t, "failed to get absolute path for %s: %s", relPath, err)
 			}
 			replacement := fmt.Sprintf("%s=%s", old, absPath)
 			cmd := exec.Command("go", "mod", "edit", "-replace", replacement)
 			cmd.Dir = pt.workingDir
-			pt.logf("adding go.mod replacement: %s", cmd)
+			ptLogF(t, "adding go.mod replacement: %s", cmd)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				pt.fatalf("failed to add go.mod replacement %s: %s\n%s", replacement, err, out)
+				ptFatalF(t, "failed to add go.mod replacement %s: %s\n%s", replacement, err, out)
 			}
 		}
 	}
 
 	if err != nil {
-		pt.fatalf("failed to create stack: %s", err)
+		ptFatalF(t, "failed to create stack: %s", err)
 		return nil
 	}
 	if !stackOptions.SkipDestroy {
-		pt.t.Cleanup(func() {
-			pt.t.Helper()
+		t.Cleanup(func() {
+			t.Helper()
 
-			if ptFailed(pt.t) && !runningInCI() {
-				pt.t.Log(fmt.Sprintf("refusing to destroy stack at %q to help debug the failing test",
+			if ptFailed(t) && !runningInCI() {
+				t.Log(fmt.Sprintf("refusing to destroy stack at %q to help debug the failing test",
 					stack.Workspace().WorkDir()))
 				return
 			}
 
-			pt.t.Log("cleaning up stack")
+			t.Log("cleaning up stack")
 			_, err := stack.Destroy(pt.ctx)
 			if err != nil {
-				pt.errorf("failed to destroy stack: %s", err)
+				ptErrorF(t, "failed to destroy stack: %s", err)
 			}
 			err = stack.Workspace().RemoveStack(pt.ctx, stackName, optremove.Force())
 			if err != nil {
-				pt.errorf("failed to remove stack: %s", err)
+				ptErrorF(t, "failed to remove stack: %s", err)
 			}
 		})
 	}

@@ -17,18 +17,18 @@ import (
 // Uses a default cache directory of "testdata/recorded/TestProviderUpgrade/{programName}/{baselineVersion}".
 func PreviewProviderUpgrade(t pulumitest.PT, pulumiTest *pulumitest.PulumiTest, providerName string, baselineVersion string, opts ...optproviderupgrade.PreviewProviderUpgradeOpt) auto.PreviewResult {
 	t.Helper()
-	previewTest := pulumiTest.CopyToTempDir(opttest.NewStackOptions(optnewstack.DisableAutoDestroy()))
+	previewTest := pulumiTest.CopyToTempDir(t, opttest.NewStackOptions(optnewstack.DisableAutoDestroy()))
 	options := optproviderupgrade.Defaults()
 	for _, opt := range opts {
 		opt.Apply(&options)
 	}
 	programName := filepath.Base(pulumiTest.Source())
 	cacheDir := getCacheDir(options, programName, baselineVersion)
-	previewTest.Run(
+	previewTest.Run(t,
 		func(test *pulumitest.PulumiTest) {
 			t.Helper()
-			test.Up()
-			grptLog := test.GrpcLog()
+			test.Up(t)
+			grptLog := test.GrpcLog(t)
 			grpcLogPath := filepath.Join(cacheDir, "grpc.json")
 			t.Log(fmt.Sprintf("writing grpc log to %s", grpcLogPath))
 			grptLog.WriteTo(grpcLogPath)
@@ -41,9 +41,9 @@ func PreviewProviderUpgrade(t pulumitest.PT, pulumiTest *pulumitest.PulumiTest, 
 	)
 
 	if options.NewSourcePath != "" {
-		previewTest.UpdateSource(options.NewSourcePath)
+		previewTest.UpdateSource(t, options.NewSourcePath)
 	}
-	return previewTest.Preview()
+	return previewTest.Preview(t)
 }
 
 func baselineProviderOpt(options optproviderupgrade.PreviewProviderUpgradeOptions, providerName string, baselineVersion string) opttest.Option {

@@ -6,19 +6,19 @@ import (
 )
 
 // Up deploys the current stack.
-func (a *PulumiTest) Up(opts ...optup.Option) auto.UpResult {
-	a.t.Helper()
+func (a *PulumiTest) Up(t PT, opts ...optup.Option) auto.UpResult {
+	t.Helper()
 
-	a.t.Log("deploying")
+	t.Log("deploying")
 	if a.currentStack == nil {
-		a.fatal("no current stack")
+		ptFatal(t, "no current stack")
 	}
 	if !a.options.DisableGrpcLog {
-		a.ClearGrpcLog()
+		a.ClearGrpcLog(t)
 	}
 	result, err := a.currentStack.Up(a.ctx, opts...)
 	if err != nil {
-		a.fatalf("failed to deploy: %s", err)
+		ptFatalF(t, "failed to deploy: %s", err)
 	}
 	return result
 }

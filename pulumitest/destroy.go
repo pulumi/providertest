@@ -6,19 +6,19 @@ import (
 )
 
 // Up deploys the current stack.
-func (a *PulumiTest) Destroy(opts ...optdestroy.Option) auto.DestroyResult {
-	a.t.Helper()
+func (a *PulumiTest) Destroy(t PT, opts ...optdestroy.Option) auto.DestroyResult {
+	t.Helper()
 
-	a.t.Log("destroying")
+	t.Log("destroying")
 	if a.currentStack == nil {
-		a.fatal("no current stack")
+		ptFatal(t, "no current stack")
 	}
 	if !a.options.DisableGrpcLog {
-		a.ClearGrpcLog()
+		a.ClearGrpcLog(t)
 	}
 	result, err := a.currentStack.Destroy(a.ctx, opts...)
 	if err != nil {
-		a.fatalf("failed to destroy: %s", err)
+		ptFatalF(t, "failed to destroy: %s", err)
 	}
 	return result
 }
