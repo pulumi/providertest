@@ -22,7 +22,7 @@ func TestProviderMock(t *testing.T) {
 		test := pulumitest.NewPulumiTest(t, source,
 			opttest.AttachProvider("gcp",
 				providers.ProviderMockFactory(providers.ProviderMocks{})))
-		test.Preview()
+		test.Preview(t)
 	})
 
 	t.Run("with mocks", func(t *testing.T) {
@@ -60,8 +60,8 @@ func TestProviderMock(t *testing.T) {
 						return &emptypb.Empty{}, nil
 					},
 				})))
-		test.Preview()
-		test.Up()
+		test.Preview(t)
+		test.Up(t)
 		assert.True(t, attached, "expected Attach to be called in mock")
 		assert.True(t, configured, "expected Configure to be called in mock")
 		assert.True(t, checkedConfig, "expected CheckConfig to be called in mock")
