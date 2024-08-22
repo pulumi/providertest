@@ -25,9 +25,9 @@ func TestUpdateSourceError(t *testing.T) {
 
 	tt := &mockT{T: t}
 	test := pulumitest.NewPulumiTest(tt, "testdata/yaml_program")
-	test.UpdateSource("this-should-fail")
+	test.UpdateSource(tt, "this-should-fail")
 
-	assert.True(t, tt.Failed())
+	assert.True(tt, tt.Failed())
 }
 
 type mockT struct {
