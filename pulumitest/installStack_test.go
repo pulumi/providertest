@@ -13,7 +13,7 @@ func TestInstallStack(t *testing.T) {
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_program", opttest.SkipInstall(), opttest.SkipStackCreate())
 	assert.Nil(t, test.CurrentStack())
 
-	test.InstallStack("teststack")
+	test.InstallStack(t, "teststack")
 
 	assert.Equal(t, "teststack", test.CurrentStack().Name())
 }

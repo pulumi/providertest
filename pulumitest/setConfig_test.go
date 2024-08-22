@@ -10,8 +10,8 @@ import (
 func TestSetConfig(t *testing.T) {
 	t.Parallel()
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_program_with_config")
-	test.SetConfig("passwordLength", "7")
-	result := test.Up()
+	test.SetConfig(t, "passwordLength", "7")
+	result := test.Up(t)
 
 	outputs := result.Outputs
 	assert.Len(t, outputs["password"].Value, 7)

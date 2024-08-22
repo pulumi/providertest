@@ -6,19 +6,19 @@ import (
 )
 
 // Refresh refreshes the current stack.
-func (a *PulumiTest) Refresh(opts ...optrefresh.Option) auto.RefreshResult {
-	a.t.Helper()
+func (a *PulumiTest) Refresh(t PT, opts ...optrefresh.Option) auto.RefreshResult {
+	t.Helper()
 
-	a.t.Log("refreshing")
+	t.Log("refreshing")
 	if a.currentStack == nil {
-		a.fatal("no current stack")
+		ptFatal(t, "no current stack")
 	}
 	if !a.options.DisableGrpcLog {
-		a.ClearGrpcLog()
+		a.ClearGrpcLog(t)
 	}
 	result, err := a.currentStack.Refresh(a.ctx, opts...)
 	if err != nil {
-		a.fatalf("failed to refresh: %s", err)
+		ptFatalF(t, "failed to refresh: %s", err)
 	}
 	return result
 }

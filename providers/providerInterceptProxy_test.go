@@ -41,6 +41,6 @@ func TestProviderInterceptProxy(t *testing.T) {
 		filepath.Join("..", "pulumitest", "testdata", "yaml_azure"),
 		opttest.AttachProvider("azure-native", interceptedFactory))
 
-	test.Preview()
+	test.Preview(t)
 	assert.True(t, didAttach, "expected Attach to be called in proxy")
 }
