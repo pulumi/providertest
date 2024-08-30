@@ -22,8 +22,8 @@ func PreviewProviderUpgrade(t pulumitest.PT, pulumiTest *pulumitest.PulumiTest, 
 	for _, opt := range opts {
 		opt.Apply(&options)
 	}
-	programName := filepath.Base(pulumiTest.Source())
-	cacheDir := getCacheDir(options, programName, baselineVersion)
+	programName := filepath.Base(pulumiTest.WorkingDir())
+	cacheDir := GetUpgradeCacheDir(programName, baselineVersion, options.CacheDirTemplate...)
 	previewTest.Run(t,
 		func(test *pulumitest.PulumiTest) {
 			t.Helper()
@@ -54,9 +54,15 @@ func baselineProviderOpt(options optproviderupgrade.PreviewProviderUpgradeOption
 	}
 }
 
-func getCacheDir(options optproviderupgrade.PreviewProviderUpgradeOptions, programName string, baselineVersion string) string {
+// GetUpgradeCacheDir returns the cache directory for a provider upgrade test.
+// If no cacheDirTemplatePath is provided, the default cache directory is used.
+func GetUpgradeCacheDir(programName, baselineVersion string, cacheDirTemplatePath ...string) string {
+	cacheDirTemplate := cacheDirTemplatePath
+	if len(cacheDirTemplate) == 0 {
+		cacheDirTemplate = optproviderupgrade.Defaults().CacheDirTemplate
+	}
 	var cacheDir string
-	for _, pathTemplateElement := range options.CacheDirTemplate {
+	for _, pathTemplateElement := range cacheDirTemplate {
 		switch pathTemplateElement {
 		case optproviderupgrade.ProgramName:
 			cacheDir = filepath.Join(cacheDir, programName)
