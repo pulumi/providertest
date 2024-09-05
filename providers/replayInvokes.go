@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/pulumi/providertest/grpclog"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
@@ -28,7 +29,9 @@ func (pf ProviderFactory) ReplayInvokes(ctx context.Context, grpcLogPath string,
 			// Avoid using range due to invokes containing sync locks.
 			for i := 0; i < len(invokes); i++ {
 				if invokes[i].Request.Tok == requestedToken {
-					return &invokes[i].Response, nil
+					if reflect.DeepEqual(in.Args.AsMap(), invokes[i].Request.Args.AsMap()) {
+						return &invokes[i].Response, nil
+					}
 				}
 			}
 			if allowLiveFallback {
