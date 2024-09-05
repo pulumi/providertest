@@ -13,9 +13,9 @@ import (
 // Example:
 // providerFactory := providers.ResourceProviderFactory(providerServer)
 // cacheDir := providertest.GetUpgradeCacheDir(filepath.Base(dir), "5.60.0")
-// factoryWithReplay := providerFactory.ReplayInvokes(ctx, filepath.Join(cacheDir, "grpc.json"), true)
-func (pf ProviderFactory) ReplayInvokes(ctx context.Context, grpcLogPath string, allowLiveFallback bool) ProviderFactory {
-	return ProviderInterceptFactory(ctx, pf, ProviderInterceptors{
+// factoryWithReplay := providerFactory.ReplayInvokes(filepath.Join(cacheDir, "grpc.json"), true)
+func (pf ProviderFactory) ReplayInvokes(grpcLogPath string, allowLiveFallback bool) ProviderFactory {
+	interceptors := ProviderInterceptors{
 		Invoke: func(ctx context.Context, in *pulumirpc.InvokeRequest, client pulumirpc.ResourceProviderClient) (*pulumirpc.InvokeResponse, error) {
 			log, err := grpclog.LoadLog(grpcLogPath)
 			if err != nil {
@@ -40,5 +40,18 @@ func (pf ProviderFactory) ReplayInvokes(ctx context.Context, grpcLogPath string,
 				return nil, fmt.Errorf("failed to find invoke %s in gRPC log", requestedToken)
 			}
 		},
-	})
+	}
+	return func(ctx context.Context, pt PulumiTest) (Port, error) {
+		port, err := pf(ctx, pt)
+		if err != nil {
+			return -1, err
+		}
+		interceptResourceProviderServer, err := NewProviderInterceptProxy(ctx, port, interceptors)
+		if err != nil {
+			return -1, err
+		}
+		return startResourceProviderServer(ctx, pt, func(pt PulumiTest) (pulumirpc.ResourceProviderServer, error) {
+			return interceptResourceProviderServer, nil
+		})
+	}
 }

@@ -1,7 +1,6 @@
 package providertest_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -52,7 +51,7 @@ func TestPreviewWithInvokeReplayed(t *testing.T) {
 	cacheDir := t.TempDir()
 	commandProvider := providers.DownloadPluginBinaryFactory("command", "1.0.1")
 	// Intercept all invokes and replay them from a gRPC log during the preview.
-	commandProvider = commandProvider.ReplayInvokes(context.Background(), filepath.Join(cacheDir, "grpc.json"), false)
+	commandProvider = commandProvider.ReplayInvokes(filepath.Join(cacheDir, "grpc.json"), false)
 	test := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_command_invoke"),
 		opttest.AttachProvider("command", commandProvider))
 
