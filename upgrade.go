@@ -36,6 +36,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/pulumi/providertest/flags"
+	"github.com/pulumi/providertest/pulumitest/sanitize"
 	"github.com/pulumi/providertest/replay"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 )
@@ -667,7 +668,7 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 			err := json.Unmarshal(state, &stack)
 			require.NoError(t, err)
 
-			newStack, err := SanitizeSecretsInStackState(&stack)
+			newStack, err := sanitize.SanitizeSecretsInStackState(&stack)
 			require.NoError(t, err)
 
 			newState, err := json.MarshalIndent(newStack, "", "  ")
@@ -683,57 +684,6 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 	}
 	test = test.With(b.optionsForRecording(t))
 	integration.ProgramTest(t, &test)
-}
-
-func SanitizeSecretsInStackState(stack *apitype.UntypedDeployment) (*apitype.UntypedDeployment, error) {
-	var d apitype.DeploymentV3
-	err := json.Unmarshal(stack.Deployment, &d)
-	if err != nil {
-		return nil, err
-	}
-
-	sanitizeSecretsInResources(d.Resources)
-
-	marshaledDeployment, err := json.Marshal(d)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apitype.UntypedDeployment{
-		Version:    stack.Version,
-		Deployment: json.RawMessage(marshaledDeployment),
-	}, nil
-}
-
-func sanitizeSecretsInResources(resources []apitype.ResourceV3) {
-	for i, r := range resources {
-		r.Inputs = sanitizeSecretsInObject(r.Inputs)
-		r.Outputs = sanitizeSecretsInObject(r.Outputs)
-		resources[i] = r
-	}
-}
-
-var secretReplacement = map[string]any{
-	"4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-	"plaintext":                        "REDACTED BY PROVIDERTEST",
-}
-
-func sanitizeSecretsInObject(obj map[string]any) map[string]any {
-	copy := map[string]any{}
-	for k, v := range obj {
-		innerObj, ok := v.(map[string]any)
-		if ok {
-			_, hasSecret := innerObj["4dabf18193072939515e22adb298388d"]
-			if hasSecret {
-				copy[k] = secretReplacement
-			} else {
-				copy[k] = sanitizeSecretsInObject(innerObj)
-			}
-		} else {
-			copy[k] = v
-		}
-	}
-	return copy
 }
 
 func (b *providerUpgradeBuilder) optionsForRecording(t *testing.T) integration.ProgramTestOptions {
