@@ -55,7 +55,7 @@ func sanitizeSecretsInResources(resources []apitype.ResourceV3) {
 
 var secretReplacement = map[string]any{
 	secretSignature: "1b47061264138c4ac30d75fd1eb44270",
-	"plaintext":     plaintextSub,
+	"plaintext":     `"` + plaintextSub + `"`, // must be valid JSON, hence quoted
 }
 
 func sanitizeSecretsInObject(obj map[string]any) map[string]any {

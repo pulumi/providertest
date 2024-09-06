@@ -78,7 +78,7 @@ func TestSanitizeSecretsInStackState(t *testing.T) {
 	sanitized, err := SanitizeSecretsInStackState(&stack)
 	require.NoError(t, err)
 
-	expected := bytes.ReplaceAll(realStack, []byte("SECRET"), []byte(plaintextSub))
+	expected := bytes.ReplaceAll(realStack, []byte(`\"SECRET\"`), []byte(`\"`+plaintextSub+`\"`))
 	var expectedDeployment apitype.UntypedDeployment
 	err = json.Unmarshal(expected, &expectedDeployment)
 	require.NoError(t, err)
@@ -127,13 +127,13 @@ var realStack = []byte(`{
         "inputs": {
           "subscriptionId": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           }
         },
         "outputs": {
           "subscriptionId": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           }
         },
         "created": "2024-09-05T09:22:05.050659Z",
@@ -257,11 +257,11 @@ var realStack = []byte(`{
           "nfsv3Enabled": false,
           "primaryAccessKey": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           },
           "primaryBlobConnectionString": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           },
           "primaryBlobEndpoint": "https://exampleaccount4cb2982b.blob.core.windows.net/",
           "primaryBlobHost": "exampleaccount4cb2982b.blob.core.windows.net",
@@ -271,7 +271,7 @@ var realStack = []byte(`{
           "primaryBlobMicrosoftHost": "",
           "primaryConnectionString": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           },
           "primaryDfsEndpoint": "https://exampleaccount4cb2982b.dfs.core.windows.net/",
           "primaryDfsHost": "exampleaccount4cb2982b.dfs.core.windows.net",
@@ -329,11 +329,11 @@ var realStack = []byte(`{
           "sasPolicy": null,
           "secondaryAccessKey": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           },
           "secondaryBlobConnectionString": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           },
           "secondaryBlobEndpoint": "",
           "secondaryBlobHost": "",
@@ -343,7 +343,7 @@ var realStack = []byte(`{
           "secondaryBlobMicrosoftHost": "",
           "secondaryConnectionString": {
             "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
-            "plaintext": "SECRET"
+            "plaintext": "\"SECRET\""
           },
           "secondaryDfsEndpoint": "",
           "secondaryDfsHost": "",
