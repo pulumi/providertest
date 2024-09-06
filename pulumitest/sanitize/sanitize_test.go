@@ -86,6 +86,15 @@ func TestSanitizeSecretsInStackState(t *testing.T) {
 	sanitizedPretty := prettyPrintJson(t, sanitized.Deployment)
 	expectedPretty := prettyPrintJson(t, expectedDeployment.Deployment)
 	assert.JSONEq(t, string(expectedPretty), string(sanitizedPretty))
+
+	// Sanity check that `plaintext` has a valid JSON string since we could have gotten `expected` wrong.
+	var d apitype.DeploymentV3
+	err = json.Unmarshal(stack.Deployment, &d)
+	require.NoError(t, err)
+	p := d.Resources[1].Outputs["subscriptionId"].(map[string]any)["plaintext"].(string)
+	var s string
+	err = json.Unmarshal([]byte(p), &s)
+	require.NoError(t, err)
 }
 
 func prettyPrintJson(t *testing.T, jsonStr []byte) []byte {
