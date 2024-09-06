@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pulumi/providertest/pulumitest/optrun"
+	"github.com/pulumi/providertest/pulumitest/sanitize"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 )
 
@@ -42,8 +43,14 @@ func (pulumiTest *PulumiTest) Run(t PT, execute func(test *PulumiTest), opts ...
 		execute(isolatedTest)
 		exportedStack := isolatedTest.ExportStack(t)
 		if options.EnableCache {
+			ptLogF(t, "sanitizing secrets from stack state")
+			sanitizedStack, err := sanitize.SanitizeSecretsInStackState(&exportedStack)
+			if err != nil {
+				ptError(t, "failed to sanitize secrets from stack state: %v", err)
+			}
+
 			ptLogF(t, "writing stack state to %s", options.CachePath)
-			err = writeStackExport(options.CachePath, &exportedStack, false /* overwrite */)
+			err = writeStackExport(options.CachePath, sanitizedStack, false /* overwrite */)
 			if err != nil {
 				ptFatalF(t, "failed to write snapshot to %s: %v", options.CachePath, err)
 			}
