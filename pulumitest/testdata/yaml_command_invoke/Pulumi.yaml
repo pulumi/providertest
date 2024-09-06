@@ -1,17 +1,32 @@
 name: yaml_command_invoke
+description: This is used to test invoke replay.
 runtime: yaml
 variables:
   # Create a variable which always changes on every run
-  randomShellString:
+  randomShellString1:
     fn::invoke:
       function: command:local:run
       arguments:
         command: cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | head -c 10
+  # Create a second to check the args are deeply matched
+  # We therefore have a slightly different command so the command text isn't identical
+  randomShellString2:
+    fn::invoke:
+      function: command:local:run
+      arguments:
+        command: cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | head -c 20
 resources:
-  randomEchoResource:
+  randomEchoResource1:
     type: command:local:Command
     properties:
-      create: echo "Hello world!"
+      create: echo "${randomShellString1}"
       # Force this resource to be updated if the invoke changes which is easy to assert on in the preview result.
       triggers:
-        - ${randomShellString}
+        - ${randomShellString1}
+  randomEchoResource2:
+    type: command:local:Command
+    properties:
+      create: echo "${randomShellString2}"
+      # Force this resource to be updated if the invoke changes which is easy to assert on in the preview result.
+      triggers:
+        - ${randomShellString2}
