@@ -39,7 +39,7 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			"secondaryAccessKey": stateSecretReplacement,
 		}
 
-		assert.Equal(t, expected, sanitizeSecretsInObject(input))
+		assert.Equal(t, expected, sanitizeSecretsInObject(input, stateSecretReplacement))
 	})
 
 	t.Run("nested", func(t *testing.T) {
@@ -64,7 +64,7 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, expected, sanitizeSecretsInObject(input))
+		assert.Equal(t, expected, sanitizeSecretsInObject(input, stateSecretReplacement))
 	})
 }
 
