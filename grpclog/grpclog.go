@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pulumi/providertest/pulumitest/sanitize"
 	rpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -194,6 +195,17 @@ func (l *GrpcLog) WhereMethod(method Method) []GrpcLogEntry {
 		}
 	}
 	return matching
+}
+
+func (l *GrpcLog) SanitizeSecrets() {
+	for i := range l.Entries {
+		l.Entries[i].SanitizeSecrets()
+	}
+}
+
+func (e *GrpcLogEntry) SanitizeSecrets() {
+	e.Request = sanitize.SanitizeSecretsInGrpcLog(e.Request)
+	e.Response = sanitize.SanitizeSecretsInGrpcLog(e.Response)
 }
 
 // WriteTo writes the log to the given path.

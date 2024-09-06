@@ -45,20 +45,37 @@ func SanitizeSecretsInStackState(stack *apitype.UntypedDeployment) (*apitype.Unt
 	}, nil
 }
 
+func SanitizeSecretsInGrpcLog(log json.RawMessage) json.RawMessage {
+	var data map[string]any
+	if err := json.Unmarshal(log, &data); err != nil {
+		return log
+	}
+
+	sanitized := sanitizeSecretsInObject(data, map[string]any{
+		secretSignature: "1b47061264138c4ac30d75fd1eb44270",
+		"value":         plaintextSub,
+	})
+	sanitizedBytes, err := json.Marshal(sanitized)
+	if err != nil {
+		return log
+	}
+	return sanitizedBytes
+}
+
 func sanitizeSecretsInResources(resources []apitype.ResourceV3) {
 	for i, r := range resources {
-		r.Inputs = sanitizeSecretsInObject(r.Inputs)
-		r.Outputs = sanitizeSecretsInObject(r.Outputs)
+		r.Inputs = sanitizeSecretsInObject(r.Inputs, stateSecretReplacement)
+		r.Outputs = sanitizeSecretsInObject(r.Outputs, stateSecretReplacement)
 		resources[i] = r
 	}
 }
 
-var secretReplacement = map[string]any{
+var stateSecretReplacement = map[string]any{
 	secretSignature: "1b47061264138c4ac30d75fd1eb44270",
 	"plaintext":     `"` + plaintextSub + `"`, // must be valid JSON, hence quoted
 }
 
-func sanitizeSecretsInObject(obj map[string]any) map[string]any {
+func sanitizeSecretsInObject(obj map[string]any, secretReplacement map[string]any) map[string]any {
 	copy := map[string]any{}
 	for k, v := range obj {
 		innerObj, ok := v.(map[string]any)
@@ -67,7 +84,7 @@ func sanitizeSecretsInObject(obj map[string]any) map[string]any {
 			if hasSecret {
 				copy[k] = secretReplacement
 			} else {
-				copy[k] = sanitizeSecretsInObject(innerObj)
+				copy[k] = sanitizeSecretsInObject(innerObj, secretReplacement)
 			}
 		} else {
 			copy[k] = v

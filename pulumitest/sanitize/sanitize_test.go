@@ -36,7 +36,7 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 		}
 
 		expected := map[string]any{
-			"secondaryAccessKey": secretReplacement,
+			"secondaryAccessKey": stateSecretReplacement,
 		}
 
 		assert.Equal(t, expected, sanitizeSecretsInObject(input))
@@ -59,7 +59,7 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			"bar": 1,
 			"foo": map[string]any{
 				"inner": map[string]any{
-					"secondaryAccessKey": secretReplacement,
+					"secondaryAccessKey": stateSecretReplacement,
 				},
 			},
 		}
