@@ -148,10 +148,11 @@ func unmarshalTypedEntries[TRequest, TResponse any](entries []GrpcLogEntry) ([]T
 func unmarshalTypedEntry[TRequest, TResponse any](entry GrpcLogEntry) (*TypedEntry[TRequest, TResponse], error) {
 	reqSlot := new(TRequest)
 	resSlot := new(TResponse)
-	if err := jsonpb.Unmarshal([]byte(entry.Request), any(reqSlot).(protoreflect.ProtoMessage)); err != nil {
+	jsonOpts := jsonpb.UnmarshalOptions{DiscardUnknown: true, AllowPartial: true}
+	if err := jsonOpts.Unmarshal([]byte(entry.Request), any(reqSlot).(protoreflect.ProtoMessage)); err != nil {
 		return nil, err
 	}
-	if err := jsonpb.Unmarshal([]byte(entry.Response), any(resSlot).(protoreflect.ProtoMessage)); err != nil {
+	if err := jsonOpts.Unmarshal([]byte(entry.Response), any(resSlot).(protoreflect.ProtoMessage)); err != nil {
 		return nil, err
 	}
 	typedEntry := TypedEntry[TRequest, TResponse]{
