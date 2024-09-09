@@ -29,12 +29,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/pulumi/providertest/flags"
+	"github.com/pulumi/providertest/pulumitest/sanitize"
 	"github.com/pulumi/providertest/replay"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 )
@@ -662,7 +664,16 @@ func (b *providerUpgradeBuilder) providerUpgradeRecordBaselines(t *testing.T) {
 			fmt.Sprintf("PULUMI_DEBUG_GRPC=%s", info.grpcFile),
 		),
 		ExportStateValidator: func(t *testing.T, state []byte) {
-			writeFile(t, info.stateFile, state)
+			var stack apitype.UntypedDeployment
+			err := json.Unmarshal(state, &stack)
+			require.NoError(t, err)
+
+			newStack, err := sanitize.SanitizeSecretsInStackState(&stack)
+			require.NoError(t, err)
+
+			newState, err := json.MarshalIndent(newStack, "", "  ")
+			require.NoError(t, err)
+			writeFile(t, info.stateFile, newState)
 			t.Logf("wrote %s", info.stateFile)
 		},
 		Config: b.config,
