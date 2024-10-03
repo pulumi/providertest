@@ -13,13 +13,13 @@ func TestReplaceProgram(t *testing.T) {
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_empty")
 
 	// Note the forbidden tab character in the program
-	test.WritePulumiYaml(`
+	test.WritePulumiYaml(t, `
 name: yaml_empty
 runtime: yaml
 outputs:
 	output: "output"`)
 
-	res := test.Up()
+	res := test.Up(t)
 
 	require.Equal(t, "output", res.Outputs["output"].Value)
 }
