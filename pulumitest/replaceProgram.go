@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (a *PulumiTest) ReplaceProgram(program string) {
+func (a *PulumiTest) WritePulumiYaml(program string) {
 	a.t.Helper()
 
 	// YAML doesn't allow tabs but go uses tabs which makes for a miserable experience with inline yaml programs
