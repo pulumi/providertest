@@ -7,14 +7,14 @@ import (
 )
 
 type cmdOutput struct {
-	Args  []string
-	Stdout string
-	Stderr string
+	Args       []string
+	Stdout     string
+	Stderr     string
 	ReturnCode int
 }
 
-func (a *PulumiTest) execCmd(args ...string) cmdOutput {
-	a.t.Helper()
+func (a *PulumiTest) execCmd(t PT, args ...string) cmdOutput {
+	t.Helper()
 	workspace := a.CurrentStack().Workspace()
 	ctx := context.Background()
 	workdir := workspace.WorkDir()
@@ -26,16 +26,15 @@ func (a *PulumiTest) execCmd(args ...string) cmdOutput {
 
 	s1, s2, code, err := workspace.PulumiCommand().Run(ctx, workdir, stdin, nil, nil, env, args...)
 	if err != nil {
-		a.logf(s1)
-		a.logf(s2)
-		a.fatalf("Failed to run command %v: %v", args, err)
+		ptLogF(t, s1)
+		ptLogF(t, s2)
+		ptFatalF(t, "Failed to run command %v: %v", args, err)
 	}
 
 	return cmdOutput{
-		Args: args,
-		Stdout: s1,
-		Stderr: s2,
+		Args:       args,
+		Stdout:     s1,
+		Stderr:     s2,
 		ReturnCode: code,
 	}
 }
-

@@ -9,14 +9,15 @@ import (
 	"strings"
 
 	"github.com/pulumi/providertest/pulumitest/optrun"
+	"github.com/pulumi/providertest/pulumitest/sanitize"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
 )
 
 // Run will run the `execute` function in an isolated temp directory and with additional test options, then import the resulting stack state into the original test.
 // WithCache can be used to skip executing the run and return the cached stack state if available, or to cache the stack state after executing the run.
 // Options will be inherited from the original test, but can be added to with `optrun.WithOpts` or reset with `opttest.Defaults()`.
-func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun.Option) *PulumiTest {
-	pulumiTest.t.Helper()
+func (pulumiTest *PulumiTest) Run(t PT, execute func(test *PulumiTest), opts ...optrun.Option) *PulumiTest {
+	t.Helper()
 
 	options := optrun.DefaultOptions()
 	for _, o := range opts {
@@ -28,24 +29,30 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 	if options.EnableCache {
 		stackExport, err = tryReadStackExport(options.CachePath)
 		if err != nil {
-			pulumiTest.fatalf("failed to read stack export: %v", err)
+			ptFatalF(t, "failed to read stack export: %v", err)
 		}
 		if stackExport != nil {
-			pulumiTest.logf("run cache found at %s", options.CachePath)
+			ptLogF(t, "run cache found at %s", options.CachePath)
 		} else {
-			pulumiTest.logf("no run cache found at %s", options.CachePath)
+			ptLogF(t, "no run cache found at %s", options.CachePath)
 		}
 	}
 
 	if stackExport == nil {
-		isolatedTest := pulumiTest.CopyToTempDir(options.OptTest...)
+		isolatedTest := pulumiTest.CopyToTempDir(t, options.OptTest...)
 		execute(isolatedTest)
-		exportedStack := isolatedTest.ExportStack()
+		exportedStack := isolatedTest.ExportStack(t)
 		if options.EnableCache {
-			isolatedTest.logf("writing stack state to %s", options.CachePath)
-			err = writeStackExport(options.CachePath, &exportedStack, false /* overwrite */)
+			ptLogF(t, "sanitizing secrets from stack state")
+			sanitizedStack, err := sanitize.SanitizeSecretsInStackState(&exportedStack)
 			if err != nil {
-				isolatedTest.fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
+				ptError(t, "failed to sanitize secrets from stack state: %v", err)
+			}
+
+			ptLogF(t, "writing stack state to %s", options.CachePath)
+			err = writeStackExport(options.CachePath, sanitizedStack, false /* overwrite */)
+			if err != nil {
+				ptFatalF(t, "failed to write snapshot to %s: %v", options.CachePath, err)
 			}
 		}
 		stackExport = &exportedStack
@@ -55,17 +62,17 @@ func (pulumiTest *PulumiTest) Run(execute func(test *PulumiTest), opts ...optrun
 	stackName := pulumiTest.CurrentStack().Name()
 	fixedStack, err := fixupStackName(stackExport, stackName)
 	if err != nil {
-		pulumiTest.fatalf("failed to fixup stack name: %v", err)
+		ptFatalF(t, "failed to fixup stack name: %v", err)
 	}
 	if fixedStack != stackExport {
-		pulumiTest.logf("updating snapshot with fixed stack name: %s", stackName)
+		ptLogF(t, "updating snapshot with fixed stack name: %s", stackName)
 		err = writeStackExport(options.CachePath, fixedStack, true /* overwrite */)
 		if err != nil {
-			pulumiTest.fatalf("failed to write snapshot to %s: %v", options.CachePath, err)
+			ptFatalF(t, "failed to write snapshot to %s: %v", options.CachePath, err)
 		}
 		stackExport = fixedStack
 	}
-	pulumiTest.ImportStack(*stackExport)
+	pulumiTest.ImportStack(t, *stackExport)
 	return pulumiTest
 }
 

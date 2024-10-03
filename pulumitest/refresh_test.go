@@ -10,9 +10,9 @@ import (
 func TestRefresh(t *testing.T) {
 	t.Parallel()
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_program")
-	test.Up()
+	test.Up(t)
 
-	result := test.Refresh()
+	result := test.Refresh(t)
 
 	assertrefresh.HasNoChanges(t, result)
 }

@@ -18,26 +18,26 @@ func TestDeploy(t *testing.T) {
 	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"), opttest.SkipInstall(), opttest.SkipStackCreate())
 
 	// Ensure dependencies are installed.
-	test.Install()
+	test.Install(t)
 	// Create a new stack with auto-naming.
-	test.NewStack("")
+	test.NewStack(t, "")
 
 	// Test a preview.
-	yamlPreview := test.Preview()
+	yamlPreview := test.Preview(t)
 	assert.Equal(t,
 		map[apitype.OpType]int{apitype.OpCreate: 2},
 		yamlPreview.ChangeSummary)
 	// Now do a real deploy.
-	yamlUp := test.Up()
+	yamlUp := test.Up(t)
 	assert.Equal(t,
 		map[string]int{"create": 2},
 		*yamlUp.Summary.ResourceChanges)
 
 	// Export the stack state.
-	yamlStack := test.ExportStack()
-	test.ImportStack(yamlStack)
+	yamlStack := test.ExportStack(t)
+	test.ImportStack(t, yamlStack)
 
-	yamlPreview2 := test.Preview()
+	yamlPreview2 := test.Preview(t)
 	assertpreview.HasNoChanges(t, yamlPreview2)
 }
 
@@ -47,18 +47,18 @@ func TestConvert(t *testing.T) {
 	source := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"), opttest.TestInPlace())
 
 	// Convert the original source to Python.
-	converted := source.Convert("python").PulumiTest
+	converted := source.Convert(t, "python").PulumiTest
 	assert.NotEqual(t, converted.Source(), source.Source())
 
-	converted.Install()
-	converted.NewStack("test")
+	converted.Install(t)
+	converted.NewStack(t, "test")
 
-	pythonPreview := converted.Preview()
+	pythonPreview := converted.Preview(t)
 	assert.Equal(t,
 		map[apitype.OpType]int{apitype.OpCreate: 2},
 		pythonPreview.ChangeSummary)
 
-	pythonUp := converted.Up()
+	pythonUp := converted.Up(t)
 	assert.Equal(t,
 		map[string]int{"create": 2},
 		*pythonUp.Summary.ResourceChanges)
@@ -72,8 +72,8 @@ func TestConvert(t *testing.T) {
 func TestGrpcLog(t *testing.T) {
 	t.Parallel()
 	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"))
-	test.Preview()
-	grpcLog := test.GrpcLog()
+	test.Preview(t)
+	grpcLog := test.GrpcLog(t)
 	creates, err := grpcLog.Creates()
 	assert.NoError(t, err, "expected no error when reading creates from grpc log")
 	assert.Equal(t, 1, len(creates))
@@ -127,7 +127,7 @@ func TestSkipStackCreateInPlace(t *testing.T) {
 func TestProviderPluginPath(t *testing.T) {
 	t.Parallel()
 	test := NewPulumiTest(t, filepath.Join("testdata", "yaml_program"), opttest.DownloadProviderVersion("random", "4.15.0"))
-	test.Preview()
+	test.Preview(t)
 
 	settings, err := test.CurrentStack().Workspace().ProjectSettings(test.Context())
 	assert.NoError(t, err, "expected no error when getting project settings")

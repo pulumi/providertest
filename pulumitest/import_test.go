@@ -15,13 +15,13 @@ func TestImport(t *testing.T) {
 	t.Parallel()
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_empty")
 
-	res := test.Import("random:index/randomString:RandomString", "str", "importedString", "")
+	res := test.Import(t, "random:index/randomString:RandomString", "str", "importedString", "")
 
 	// Assert on the generated YAML containing a resource definition
 	require.Contains(t, res.Stdout, "type: random:RandomString")
 
 	// Assert on the stack containing the resource state
-	stack := test.ExportStack()
+	stack := test.ExportStack(t)
 	data, err := stack.Deployment.MarshalJSON()
 	require.NoError(t, err)
 	var stateMap map[string]interface{}
@@ -47,7 +47,7 @@ func TestImportWithArgs(t *testing.T) {
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_empty")
 
 	outFile := filepath.Join(test.CurrentStack().Workspace().WorkDir(), "out.yaml")
-	res := test.Import("random:index/randomString:RandomString", "str", "importedString", "", "--out", outFile)
+	res := test.Import(t, "random:index/randomString:RandomString", "str", "importedString", "", "--out", outFile)
 
 	assert.Equal(t, []string{
 		"import",
@@ -62,7 +62,7 @@ func TestImportWithArgs(t *testing.T) {
 	assert.Contains(t, string(contents), "type: random:RandomString")
 
 	// Assert on the stack containing the resource state
-	stack := test.ExportStack()
+	stack := test.ExportStack(t)
 	data, err := stack.Deployment.MarshalJSON()
 	require.NoError(t, err)
 	var stateMap map[string]interface{}

@@ -12,8 +12,8 @@ import (
 func TestGrpc(t *testing.T) {
 	t.Parallel()
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_program")
-	test.Up()
-	log := test.GrpcLog()
+	test.Up(t)
+	log := test.GrpcLog(t)
 	assert.NotEmpty(t, log)
 	creates, err := log.Creates()
 	assert.NoError(t, err)

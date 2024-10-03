@@ -5,15 +5,15 @@ import (
 )
 
 // Install installs packages and plugins for a given directory by running `pulumi install`.
-func (a *PulumiTest) Install() string {
-	a.t.Helper()
+func (a *PulumiTest) Install(t PT) string {
+	t.Helper()
 
-	a.t.Log("installing packages and plugins")
+	t.Log("installing packages and plugins")
 	cmd := exec.Command("pulumi", "install")
-	cmd.Dir = a.source
+	cmd.Dir = a.workingDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		a.fatalf("failed to install packages and plugins: %s\n%s", err, out)
+		ptFatalF(t, "failed to install packages and plugins: %s\n%s", err, out)
 	}
 	return string(out)
 }

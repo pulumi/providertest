@@ -15,28 +15,32 @@ type ResourceProviderServerFactory func(PulumiTest) (pulumirpc.ResourceProviderS
 // To shut down the provider, cancel the context.
 func ResourceProviderFactory(makeResourceProviderServer ResourceProviderServerFactory) ProviderFactory {
 	return func(ctx context.Context, pt PulumiTest) (Port, error) {
-		cancelChannel := make(chan bool)
-		go func() {
-			<-ctx.Done()
-			close(cancelChannel)
-		}()
-
-		handle, err := rpcutil.ServeWithOptions(rpcutil.ServeOptions{
-			Cancel: cancelChannel,
-			Init: func(srv *grpc.Server) error {
-				prov, proverr := makeResourceProviderServer(pt)
-				if proverr != nil {
-					return fmt.Errorf("failed to create resource provider server: %v", proverr)
-				}
-				pulumirpc.RegisterResourceProviderServer(srv, prov)
-				return nil
-			},
-			Options: rpcutil.OpenTracingServerInterceptorOptions(nil),
-		})
-		if err != nil {
-			return 0, fmt.Errorf("fatal: %v", err)
-		}
-
-		return Port(handle.Port), nil
+		return startResourceProviderServer(ctx, pt, makeResourceProviderServer)
 	}
+}
+
+func startResourceProviderServer(ctx context.Context, pt PulumiTest, makeResourceProviderServer ResourceProviderServerFactory) (Port, error) {
+	cancelChannel := make(chan bool)
+	go func() {
+		<-ctx.Done()
+		close(cancelChannel)
+	}()
+
+	handle, err := rpcutil.ServeWithOptions(rpcutil.ServeOptions{
+		Cancel: cancelChannel,
+		Init: func(srv *grpc.Server) error {
+			prov, proverr := makeResourceProviderServer(pt)
+			if proverr != nil {
+				return fmt.Errorf("failed to create resource provider server: %v", proverr)
+			}
+			pulumirpc.RegisterResourceProviderServer(srv, prov)
+			return nil
+		},
+		Options: rpcutil.OpenTracingServerInterceptorOptions(nil),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("fatal: %v", err)
+	}
+
+	return Port(handle.Port), nil
 }

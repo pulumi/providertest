@@ -24,17 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func dirExists(t *testing.T, dir string) bool {
-	_, err := os.Stat(dir)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return false
-		}
-		require.NoError(t, err)
-	}
-	return true
-}
-
 func deleteFileIfExists(t *testing.T, file string) {
 	err := os.Remove(file)
 	if errors.Is(err, fs.ErrNotExist) {
