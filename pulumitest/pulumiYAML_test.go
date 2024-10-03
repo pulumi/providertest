@@ -29,7 +29,7 @@ func TestReadProgram(t *testing.T) {
 	test := pulumitest.NewPulumiTest(t, "testdata/yaml_empty")
 
 	program := `
-name: yaml_prog
+name: yaml_empty
 runtime: yaml
 outputs:
     output: "output"`
