@@ -36,5 +36,8 @@ outputs:
 
 	test.WritePulumiYaml(t, program)
 
+	res := test.Up(t)
+	require.Equal(t, "output", res.Outputs["output"].Value)
+
 	require.Equal(t, program, test.ReadPulumiYaml(t))
 }
