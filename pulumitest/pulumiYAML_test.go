@@ -32,7 +32,7 @@ func TestReadProgram(t *testing.T) {
 name: yaml_prog
 runtime: yaml
 outputs:
-	output: "output"`
+    output: "output"`
 
 	test.WritePulumiYaml(t, program)
 

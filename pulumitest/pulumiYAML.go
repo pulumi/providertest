@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// WritePulumiYaml writes the contents of the program string to the Pulumi.yaml file in the current testing directory.
 // YAML does not allow tabs, so this function will error if the program contains tabs.
 func (a *PulumiTest) WritePulumiYaml(t PT, program string) {
 	t.Helper()
@@ -25,6 +26,7 @@ func (a *PulumiTest) WritePulumiYaml(t PT, program string) {
 	}
 }
 
+// ReadPulumiYaml reads the contents of the Pulumi.yaml file in the current testing directory.
 func (a *PulumiTest) ReadPulumiYaml(t PT) string {
 	t.Helper()
 
