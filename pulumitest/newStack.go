@@ -174,7 +174,7 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		t.Cleanup(func() {
 			t.Helper()
 
-			if ptFailed(t) && !runningInCI() {
+			if ptFailed(t) && skipDestroyOnFailure() {
 				t.Log(fmt.Sprintf("refusing to destroy stack at %q to help debug the failing test",
 					stack.Workspace().WorkDir()))
 				return
