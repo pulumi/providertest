@@ -55,6 +55,8 @@ The created stack is returned but is also set as the current stack on the Pulumi
 
 `PULUMI_CONFIG_PASSPHRASE` is set by default to "correct horse battery staple" (an arbitrary phrase) so that encrypted values are not tied to an external secret store that the user might not have access to. This can be overridden by setting `PULUMI_CONFIG_PASSPHRASE` in the stack initialization options.
 
+When a test fails, the stack will attempt to be destroyed, though the temporary directories will remain in place. If you want to retain any resources which were created, you can set the env variable `PULUMITEST_SKIP_DESTROY_ON_FAILURE=true`.
+
 ## Configuring Providers
 
 Pulumi discovers plugins the same as when running Pulumi commands directly.
