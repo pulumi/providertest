@@ -51,10 +51,7 @@ func SanitizeSecretsInGrpcLog(log json.RawMessage) json.RawMessage {
 		return log
 	}
 
-	sanitized := sanitizeSecretsInObject(data, map[string]any{
-		secretSignature: "1b47061264138c4ac30d75fd1eb44270",
-		"value":         plaintextSub,
-	})
+	sanitized := sanitizeSecretsInObject(data, sanitizeGrpcSecret)
 	sanitizedBytes, err := json.Marshal(sanitized)
 	if err != nil {
 		return log
@@ -62,33 +59,79 @@ func SanitizeSecretsInGrpcLog(log json.RawMessage) json.RawMessage {
 	return sanitizedBytes
 }
 
+func sanitizeGrpcSecret(secretObj map[string]any) map[string]any {
+	// gRPC logs contain a field called "value" which is any JSON value
+	secretObj["value"] = sanitizeStringsRecursively(secretObj["value"])
+	return secretObj
+}
+
 func sanitizeSecretsInResources(resources []apitype.ResourceV3) {
 	for i, r := range resources {
-		r.Inputs = sanitizeSecretsInObject(r.Inputs, stateSecretReplacement)
-		r.Outputs = sanitizeSecretsInObject(r.Outputs, stateSecretReplacement)
+		r.Inputs = sanitizeSecretsInObject(r.Inputs, sanitizeStateSecret)
+		r.Outputs = sanitizeSecretsInObject(r.Outputs, sanitizeStateSecret)
 		resources[i] = r
 	}
 }
 
-var stateSecretReplacement = map[string]any{
-	secretSignature: "1b47061264138c4ac30d75fd1eb44270",
-	"plaintext":     `"` + plaintextSub + `"`, // must be valid JSON, hence quoted
+func sanitizeStateSecret(secretObj map[string]any) map[string]any {
+	// State file secrets either have a plaintext field which is any serialized JSON value
+	// of a cyphertext field which is and encrypted version of the JSON value.
+	plaintext, hasPlaintext := secretObj["plaintext"]
+	if !hasPlaintext {
+		return secretObj
+	}
+	plaintextString, isString := plaintext.(string)
+	if !isString {
+		return secretObj
+	}
+	var jsonValue any
+	err := json.Unmarshal([]byte(plaintextString), &jsonValue)
+	if err != nil {
+		return secretObj
+	}
+	sanitized := sanitizeStringsRecursively(jsonValue)
+	sanitizedBytes, err := json.Marshal(sanitized)
+	if err != nil {
+		return secretObj
+	}
+	secretObj["plaintext"] = string(sanitizedBytes)
+	return secretObj
 }
 
-func sanitizeSecretsInObject(obj map[string]any, secretReplacement map[string]any) map[string]any {
+func sanitizeSecretsInObject(obj map[string]any, sanitizeSecret func(map[string]any) map[string]any) map[string]any {
 	copy := map[string]any{}
 	for k, v := range obj {
 		innerObj, ok := v.(map[string]any)
 		if ok {
-			_, hasSecret := innerObj[secretSignature]
-			if hasSecret {
-				copy[k] = secretReplacement
+			_, hasSecretSignature := innerObj[secretSignature]
+			if hasSecretSignature {
+				copy[k] = sanitizeSecret(innerObj)
 			} else {
-				copy[k] = sanitizeSecretsInObject(innerObj, secretReplacement)
+				copy[k] = sanitizeSecretsInObject(innerObj, sanitizeSecret)
 			}
 		} else {
 			copy[k] = v
 		}
 	}
 	return copy
+}
+
+func sanitizeStringsRecursively(value any) any {
+	switch typedValue := value.(type) {
+	case string:
+		return plaintextSub
+	case []any:
+		sanitizedSlice := make([]any, len(typedValue))
+		for i, v := range typedValue {
+			sanitizedSlice[i] = sanitizeStringsRecursively(v)
+		}
+		return sanitizedSlice
+	case map[string]any:
+		sanitizedMap := make(map[string]any, len(typedValue))
+		for k, v := range typedValue {
+			sanitizedMap[k] = sanitizeStringsRecursively(v)
+		}
+		return sanitizedMap
+	}
+	return value
 }

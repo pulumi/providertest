@@ -36,10 +36,16 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 		}
 
 		expected := map[string]any{
-			"secondaryAccessKey": stateSecretReplacement,
+			"secondaryAccessKey": map[string]any{
+				secretSignature: "1b47061264138c4ac30d75fd1eb44270",
+				"plaintext":     "sanitized",
+			},
 		}
 
-		assert.Equal(t, expected, sanitizeSecretsInObject(input, stateSecretReplacement))
+		assert.Equal(t, expected, sanitizeSecretsInObject(input, func(m map[string]any) map[string]any {
+			m["plaintext"] = "sanitized"
+			return m
+		}))
 	})
 
 	t.Run("nested", func(t *testing.T) {
@@ -59,12 +65,18 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			"bar": 1,
 			"foo": map[string]any{
 				"inner": map[string]any{
-					"secondaryAccessKey": stateSecretReplacement,
+					"secondaryAccessKey": map[string]any{
+						secretSignature: "1b47061264138c4ac30d75fd1eb44270",
+						"plaintext":     "sanitized",
+					},
 				},
 			},
 		}
 
-		assert.Equal(t, expected, sanitizeSecretsInObject(input, stateSecretReplacement))
+		assert.Equal(t, expected, sanitizeSecretsInObject(input, func(m map[string]any) map[string]any {
+			m["plaintext"] = "sanitized"
+			return m
+		}))
 	})
 }
 
