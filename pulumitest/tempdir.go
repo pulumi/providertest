@@ -53,9 +53,14 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc string) string {
 		if c.tempDirErr == nil {
 			t.Cleanup(func() {
 				t.Helper()
-				if ptFailed(t) && !runningInCI() {
-					ptErrorF(t, "TempDir leaving %s to help debugging: %q", desc, c.tempDir)
-				} else if err := os.RemoveAll(c.tempDir); err != nil {
+				if ptFailed(t) && shouldRetainFilesOnFailure() {
+					ptLogF(t, "Skipping removal of %s temp directories on failures: %q", desc, c.tempDir)
+					t.Log("To remove these directories on failures, set PULUMITEST_RETAIN_FILES_ON_FAILURE=false")
+					return
+				}
+				err := os.RemoveAll(c.tempDir)
+				t.Log("Removed temp directories. To retain these, set PULUMITEST_RETAIN_FILES_ON_FAILURE=true")
+				if err != nil {
 					ptErrorF(t, "TempDir RemoveAll cleanup: %v", err)
 				}
 			})
