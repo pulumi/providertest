@@ -1,6 +1,6 @@
 module github.com/pulumi/providertest
 
-go 1.20
+go 1.23
 
 require (
 	github.com/gkampitakis/go-snaps v0.4.9
