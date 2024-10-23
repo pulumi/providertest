@@ -175,12 +175,12 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 			t.Helper()
 
 			if ptFailed(t) && skipDestroyOnFailure() {
-				t.Log(fmt.Sprintf("refusing to destroy stack at %q to help debug the failing test",
-					stack.Workspace().WorkDir()))
+				t.Log("Skipping destroy because PULUMITEST_SKIP_DESTROY_ON_FAILURE is set to 'true'.")
+				writeDestroyScript(t, stack.Workspace().WorkDir(), stackName, env)
 				return
 			}
 
-			t.Log("cleaning up stack")
+			t.Log("destroying stack, to skip this set PULUMITEST_SKIP_DESTROY_ON_FAILURE=true")
 			_, err := stack.Destroy(pt.ctx)
 			if err != nil {
 				ptErrorF(t, "failed to destroy stack: %s", err)
@@ -193,6 +193,25 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 	}
 	pt.currentStack = &stack
 	return &stack
+}
+
+func writeDestroyScript(t PT, dir, stackName string, env map[string]string) {
+	t.Helper()
+	envPrefix := ""
+	if passphrase, ok := env["PULUMI_CONFIG_PASSPHRASE"]; ok {
+		envPrefix += fmt.Sprintf("export PULUMI_CONFIG_PASSPHRASE=%q\n", passphrase)
+	}
+	if backendUrl, ok := env["PULUMI_BACKEND_URL"]; ok {
+		envPrefix += fmt.Sprintf("export PULUMI_BACKEND_URL=%q\n", backendUrl)
+	}
+	scriptContent := fmt.Sprintf(`#!/usr/bin/env bash
+%s
+cd "$(dirname "$0")" || exit
+pulumi stack select %q
+pulumi destroy --yes`, envPrefix, stackName)
+	destroyScriptPath := filepath.Join(dir, "destroy.sh")
+	os.WriteFile(destroyScriptPath, []byte(scriptContent), 0755)
+	ptLogF(t, "Destroy can be run manually by running script at %q", destroyScriptPath)
 }
 
 func randomStackName(dir string) string {
