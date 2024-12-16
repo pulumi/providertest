@@ -161,3 +161,56 @@ func TestMatchingErrors(t *testing.T) {
           "errors": ["*"]
 	}`)
 }
+
+func TestHandshake(t *testing.T) {
+	p, err := providers.NewProviderMock(providers.ProviderMocks{
+		Handshake: func(ctx context.Context, in *pulumirpc.ProviderHandshakeRequest) (*pulumirpc.ProviderHandshakeResponse, error) {
+			return &pulumirpc.ProviderHandshakeResponse{}, nil
+		},
+	})
+
+	require.NoError(t, err)
+
+	Replay(t, p, `
+	  {
+    "method": "/pulumirpc.ResourceProvider/Handshake",
+    "request": {
+      "engineAddress": "127.0.0.1:57575",
+      "rootDirectory": "/Users/vvm/code/pulumi-terraform-bridge/pkg/pf/tests/testdatagen/genrandom/bin",
+      "programDirectory": "/Users/vvm/code/pulumi-terraform-bridge/pkg/pf/tests/testdatagen/genrandom/bin"
+    },
+    "response": {
+    },
+    "metadata": {
+      "kind": "resource",
+      "mode": "client",
+      "name": "random"
+    }
+  }`)
+}
+
+func TestHandshakeError(t *testing.T) {
+	p, err := providers.NewProviderMock(providers.ProviderMocks{
+		Handshake: func(ctx context.Context, in *pulumirpc.ProviderHandshakeRequest) (*pulumirpc.ProviderHandshakeResponse, error) {
+			return &pulumirpc.ProviderHandshakeResponse{}, fmt.Errorf("An error has occurred")
+		},
+	})
+
+	require.NoError(t, err)
+
+	Replay(t, p, `
+	  {
+    "method": "/pulumirpc.ResourceProvider/Handshake",
+    "request": {
+      "engineAddress": "127.0.0.1:57575",
+      "rootDirectory": "/Users/vvm/code/pulumi-terraform-bridge/pkg/pf/tests/testdatagen/genrandom/bin",
+      "programDirectory": "/Users/vvm/code/pulumi-terraform-bridge/pkg/pf/tests/testdatagen/genrandom/bin"
+    },
+    "errors": ["An error has occurred"],
+    "metadata": {
+      "kind": "resource",
+      "mode": "client",
+      "name": "random"
+    }
+  }`)
+}

@@ -21,6 +21,7 @@ type ProviderMocks struct {
 	Check         func(ctx context.Context, in *rpc.CheckRequest) (*rpc.CheckResponse, error)
 	CheckConfig   func(ctx context.Context, in *rpc.CheckRequest) (*rpc.CheckResponse, error)
 	Configure     func(ctx context.Context, in *rpc.ConfigureRequest) (*rpc.ConfigureResponse, error)
+	Handshake     func(ctx context.Context, in *rpc.ProviderHandshakeRequest) (*rpc.ProviderHandshakeResponse, error)
 	Construct     func(ctx context.Context, in *rpc.ConstructRequest) (*rpc.ConstructResponse, error)
 	Create        func(ctx context.Context, in *rpc.CreateRequest) (*rpc.CreateResponse, error)
 	Delete        func(ctx context.Context, in *rpc.DeleteRequest) (*emptypb.Empty, error)
@@ -93,6 +94,13 @@ func (i *providerMock) Configure(ctx context.Context, in *rpc.ConfigureRequest) 
 		return i.mocks.Configure(ctx, in)
 	}
 	return &rpc.ConfigureResponse{}, nil
+}
+
+func (i *providerMock) Handshake(ctx context.Context, in *rpc.ProviderHandshakeRequest) (*rpc.ProviderHandshakeResponse, error) {
+	if i.mocks.Handshake != nil {
+		return i.mocks.Handshake(ctx, in)
+	}
+	return &rpc.ProviderHandshakeResponse{}, nil
 }
 
 func (i *providerMock) Construct(ctx context.Context, in *rpc.ConstructRequest) (*rpc.ConstructResponse, error) {
