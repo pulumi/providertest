@@ -132,6 +132,7 @@ var realStack = []byte(`{
         "salt": "v1:YMv/Yx+VlW0=:v1:sbgZHJ6QDAq8dzEQ:gbsJTyFyS7GU0svVisIL+uQyDJYqqA=="
       }
     },
+    "metadata": {},
     "resources": [
       {
         "urn": "urn:pulumi:test::storage::pulumi:pulumi:Stack::storage-test",
