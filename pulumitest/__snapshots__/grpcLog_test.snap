@@ -3,7 +3,9 @@
 [
  {
   "Request": {
+   "name": "username",
    "properties": {},
+   "type": "random:index/randomPet:RandomPet",
    "urn": "urn:pulumi:test::yaml_program::random:index/randomPet:RandomPet::username"
   },
   "Response": {
