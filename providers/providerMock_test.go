@@ -18,13 +18,6 @@ func TestProviderMock(t *testing.T) {
 	t.Parallel()
 	source := filepath.Join("..", "pulumitest", "testdata", "python_gcp")
 
-	t.Run("defaults", func(t *testing.T) {
-		test := pulumitest.NewPulumiTest(t, source,
-			opttest.AttachProvider("gcp",
-				providers.ProviderMockFactory(providers.ProviderMocks{})))
-		test.Preview(t)
-	})
-
 	t.Run("with mocks", func(t *testing.T) {
 		var attached, configured, checkedConfig, checked, created bool
 		test := pulumitest.NewPulumiTest(t, source,

@@ -106,6 +106,9 @@ func Replay(t *testing.T, server pulumirpc.ResourceProviderServer, jsonLog strin
 	case "/pulumirpc.ResourceProvider/Configure":
 		replay(t, entry, new(pulumirpc.ConfigureRequest), server.Configure, nil)
 
+	case "/pulumirpc.ResourceProvider/Handshake":
+		replay(t, entry, new(pulumirpc.ProviderHandshakeRequest), server.Handshake, nil)
+
 	case "/pulumirpc.ResourceProvider/Invoke":
 		replay(t, entry, new(pulumirpc.InvokeRequest), server.Invoke, normInvokeResponse)
 
