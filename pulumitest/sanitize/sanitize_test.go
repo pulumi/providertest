@@ -25,20 +25,21 @@ import (
 )
 
 func TestSanitizeSecretsInObject(t *testing.T) {
+
 	t.Parallel()
 
 	t.Run("simple", func(t *testing.T) {
 		input := map[string]any{
 			"secondaryAccessKey": map[string]any{
-				secretSignature: "1b47061264138c4ac30d75fd1eb44270",
-				"plaintext":     "secret",
+				sigKey:      "1b47061264138c4ac30d75fd1eb44270",
+				"plaintext": "secret",
 			},
 		}
 
 		expected := map[string]any{
 			"secondaryAccessKey": map[string]any{
-				secretSignature: "1b47061264138c4ac30d75fd1eb44270",
-				"plaintext":     "sanitized",
+				sigKey:      "1b47061264138c4ac30d75fd1eb44270",
+				"plaintext": "sanitized",
 			},
 		}
 
@@ -54,8 +55,8 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			"foo": map[string]any{
 				"inner": map[string]any{
 					"secondaryAccessKey": map[string]any{
-						secretSignature: "1b47061264138c4ac30d75fd1eb44270",
-						"plaintext":     "secret",
+						sigKey:      "1b47061264138c4ac30d75fd1eb44270",
+						"plaintext": "secret",
 					},
 				},
 			},
@@ -66,8 +67,8 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			"foo": map[string]any{
 				"inner": map[string]any{
 					"secondaryAccessKey": map[string]any{
-						secretSignature: "1b47061264138c4ac30d75fd1eb44270",
-						"plaintext":     "sanitized",
+						sigKey:      "1b47061264138c4ac30d75fd1eb44270",
+						"plaintext": "sanitized",
 					},
 				},
 			},
@@ -77,6 +78,18 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			m["plaintext"] = "sanitized"
 			return m
 		}))
+	})
+
+	t.Run("asset unaffected", func(t *testing.T) {
+		input := map[string]any{
+			"source": map[string]any{
+				sigKey: "c44067f5952c0a294b673a41bacd8c17",
+				"hash": "678e7adc27d2686c9451d307fa0dc71ccae7a8e040c552ef1bacd453ad9e3bc9",
+				"text": "secret",
+			},
+		}
+
+		assert.Equal(t, input, sanitizeSecretsInObject(input, sanitizeStateSecret))
 	})
 }
 

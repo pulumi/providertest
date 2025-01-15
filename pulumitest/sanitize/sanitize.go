@@ -18,10 +18,11 @@ import (
 	"encoding/json"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/resource/sig"
 )
 
 const plaintextSub = "REDACTED BY PROVIDERTEST"
-const secretSignature = "4dabf18193072939515e22adb298388d"
+const sigKey = sig.Key
 
 // SanitizeSecretsInStackState sanitizes secrets in the stack state by replacing them with a placeholder.
 // secrets are identified by their magic signature, copied from pulumi/pulumi.
@@ -103,8 +104,8 @@ func sanitizeSecretsInObject(obj map[string]any, sanitizeSecret func(map[string]
 	for k, v := range obj {
 		innerObj, ok := v.(map[string]any)
 		if ok {
-			_, hasSecretSignature := innerObj[secretSignature]
-			if hasSecretSignature {
+			sigValue, hasSecretSignature := innerObj[sigKey]
+			if hasSecretSignature && sigValue == sig.Secret {
 				copy[k] = sanitizeSecret(innerObj)
 			} else {
 				copy[k] = sanitizeSecretsInObject(innerObj, sanitizeSecret)
