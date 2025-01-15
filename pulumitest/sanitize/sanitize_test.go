@@ -25,6 +25,7 @@ import (
 )
 
 func TestSanitizeSecretsInObject(t *testing.T) {
+
 	t.Parallel()
 
 	t.Run("simple", func(t *testing.T) {
@@ -88,10 +89,7 @@ func TestSanitizeSecretsInObject(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, input, sanitizeSecretsInObject(input, func(m map[string]any) map[string]any {
-			m["plaintext"] = "sanitized"
-			return m
-		}))
+		assert.Equal(t, input, sanitizeSecretsInObject(input, sanitizeStateSecret))
 	})
 }
 
