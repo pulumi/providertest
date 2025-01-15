@@ -29,12 +29,5 @@
     "structpb",
     "Truef",
     "upstreamed"
-  ],
-  "workbench.colorCustomizations": {
-    "activityBar.background": "#302E25",
-    "titleBar.activeBackground": "#434033",
-    "titleBar.activeForeground": "#FAFAF9",
-    "statusBar.background": "#434033",
-    "statusBar.foreground": "#FAFAF9"
-  }
+  ]
 }
