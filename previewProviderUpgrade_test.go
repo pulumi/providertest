@@ -43,7 +43,8 @@ func TestPreviewUpgradeWithKnownSourceEdit(t *testing.T) {
 		optproviderupgrade.NewSourcePath(filepath.Join("pulumitest", "testdata", "yaml_program_updated")),
 	)
 
-	assert.Contains(t, previewResult.StdOut, "random:index:RandomPassword password create")
+	assert.Contains(t, previewResult.StdOut, "random:index/randomPassword:RandomPassword::password")
+	assert.Contains(t, previewResult.StdOut, "+ 1 to create\n")
 }
 
 func TestPreviewWithInvokeReplayed(t *testing.T) {

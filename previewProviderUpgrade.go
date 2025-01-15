@@ -10,6 +10,7 @@ import (
 	"github.com/pulumi/providertest/pulumitest/optrun"
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto/optpreview"
 )
 
 // PreviewProviderUpgrade captures the state of a stack from a baseline provider configuration, then previews the stack
@@ -44,7 +45,7 @@ func PreviewProviderUpgrade(t pulumitest.PT, pulumiTest *pulumitest.PulumiTest, 
 	if options.NewSourcePath != "" {
 		previewTest.UpdateSource(t, options.NewSourcePath)
 	}
-	return previewTest.Preview(t)
+	return previewTest.Preview(t, optpreview.Diff())
 }
 
 func baselineProviderOpt(options optproviderupgrade.PreviewProviderUpgradeOptions, providerName string, baselineVersion string) opttest.Option {
