@@ -2,7 +2,8 @@
 
 Incubating facilities for testing Pulumi providers
 
-NOTE: The libraries in this repo are used internally by the Pulumi providers team, but are still evolving; you should expect incomplete documentation and breaking changes. 
+> [!NOTE]
+> The libraries in this repo are used internally by the Pulumi providers team, but are still evolving; you should expect incomplete documentation and breaking changes. If you do choose to use this library we strongly reccomend starting with [providertest/pulumitest](https://github.com/pulumi/providertest/tree/main/pulumitest) which is our latest approach. Code in this repository that is not in the pulumitest subdirectory is very likely to be deprecated and removed in the near future. 
 
 ## Test Modes
 
