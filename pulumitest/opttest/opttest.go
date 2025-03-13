@@ -38,6 +38,16 @@ func TestInPlace() Option {
 	})
 }
 
+// TempDir sets the temporary directory to use when copying the program under test during an test.
+// This directory will be created if missing and will not be cleaned up after the test.
+// If not set (or set to an empty string), an OS-specific temporary directory will be used.
+// It's recommended to ignore this directory in your version control system.
+func TempDir(dir string) Option {
+	return optionFunc(func(o *Options) {
+		o.TempDir = dir
+	})
+}
+
 // AttachProvider will start the provider via the specified factory and attach it when running the program under test.
 func AttachProvider(name string, startProvider providers.ProviderFactory) Option {
 	return optionFunc(func(o *Options) {
@@ -150,6 +160,7 @@ type Options struct {
 	SkipStackCreate       bool
 	NewStackOpts          []optnewstack.NewStackOpt
 	TestInPlace           bool
+	TempDir               string
 	ConfigPassphrase      string
 	Providers             map[providers.ProviderName]ProviderConfigUnion
 	UseAmbientBackend     bool

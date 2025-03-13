@@ -15,7 +15,13 @@ func TestPulumiProgram(t *testing.T) {
 }
 ```
 
-By default your program is copied to a temporary directory before running to avoid cluttering your working directory with temporary or ephemeral files. To disable this behaviour, use `opttest.TestInPlace()`. You can also do a copy of a test manually by calling `CopyToTempDir()`:
+By default, your program is copied to a temporary directory before running to avoid modifying your source files or cluttering your working directory with temporary files. This will use an OS-specific temporary location by default but can be set to a custom directory using the `opttest.TempDir(dir)` option. Using an ignored directory within your repository can be useful for being able to locate any left-over folders retained from failed tests:
+
+```go
+test := NewPulumiTest(t, filepath.Join("path", "to", "program"), opttest.TempDir(".temp"))
+```
+
+If you don't want to copy your program to a temporary directory, use `opttest.TestInPlace()`. Also, you can also do a copy of a test manually by calling `CopyToTempDir()`:
 
 ```go
 source := NewPulumiTest(t, opttest.TestInPlace())
