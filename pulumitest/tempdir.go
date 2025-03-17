@@ -73,11 +73,15 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc, tempDir string) string {
 					t.Log("To remove these directories on failures, set PULUMITEST_RETAIN_FILES_ON_FAILURE=false")
 					return
 				}
-				err := os.RemoveAll(c.tempDir)
-				t.Log("Removed temp directories. To retain these, set PULUMITEST_RETAIN_FILES_ON_FAILURE=true")
-				if err != nil {
-					ptErrorF(t, "TempDir RemoveAll cleanup: %v", err)
+				if shouldAlwaysRetainFiles() {
+					ptLogF(t, "Skipping removal of %s temp directories as `PULUMITEST_RETAIN_FILES` is enabled: %q", desc, c.tempDir)
+					return
 				}
+				err := os.RemoveAll(c.tempDir)
+				if err != nil {
+					ptErrorF(t, "Failed removing %s temp directory: %q: %v", desc, c.tempDir, err)
+				}
+				t.Log("Removed temp directories. To retain these, set PULUMITEST_RETAIN_FILES=true")
 			})
 		}
 	}

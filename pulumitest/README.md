@@ -149,6 +149,17 @@ Set a variable in the stack's config:
 test.SetConfig("gcp:project", "pulumi-development")
 ```
 
+## Environment Variables
+
+The behavior of pulumitest can be adjusted through use of certain environment variables:
+
+| Environment Variable | Purpose |
+|----------------------|---------|
+| `CI` | We inspect the `CI` environment flag to adjust certain defaults for an automated test environment |
+| `PULUMITEST_RETAIN_FILES` | Set to `true` to always retain temporary files. |
+| `PULUMITEST_RETAIN_FILES_ON_FAILURE` | Can be set explicitly to `true` or `false`. Defaults to `true` locally and `false` in CI environments. |
+| `PULUMITEST_SKIP_DESTROY_ON_FAILURE` | Skips the automatic attempt to destroy a stack even after a test failure. This defaults to `false`. If set to true, the files will also be retained unless `PULUMITEST_RETAIN_FILES_ON_FAILURE` set to `false`. |
+
 ## Asserts
 
 The `assertup` and `assertpreview` modules contain a selection of functions for asserting on the results of the automation API:
