@@ -1,6 +1,7 @@
 package opttest
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/pulumi/providertest/providers"
@@ -203,6 +204,7 @@ func Defaults() Option {
 		o.CustomEnv = make(map[string]string)
 		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
 		o.DisableGrpcLog = false
+		o.TempDir = os.Getenv("PULUMITEST_TEMP_DIR")
 	})
 }
 

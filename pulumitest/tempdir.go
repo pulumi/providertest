@@ -11,17 +11,22 @@ import (
 )
 
 func tempDirWithoutCleanupOnFailedTest(t PT, desc, tempDir string) string {
+	t.Helper()
 	if tempDir != "" { // If a tempDir is provided, create on first test and don't worry about cleanup.
 		if !filepath.IsAbs(tempDir) {
 			absTempDir, err := filepath.Abs(tempDir)
 			if err != nil {
-				ptFatalF(t, "TempDir: %v", err)
+				ptFatalF(t, "failed to calculate tempDir abs path: %v", err)
 			}
 			tempDir = absTempDir
 		}
 		if _, err := os.Stat(tempDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(tempDir, 0755); err != nil {
-				ptFatalF(t, "TempDir: %v", err)
+			globalTempDirMu.Lock()
+			err := os.MkdirAll(tempDir, 0755)
+			globalTempDirMu.Unlock()
+			// If the directory already exists, we can ignore the error - parallel tests may have created it.
+			if err != nil && !os.IsExist(err) {
+				ptFatalF(t, "failed to create tempDir: %v", err)
 			}
 		}
 	}
@@ -73,11 +78,15 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc, tempDir string) string {
 					t.Log("To remove these directories on failures, set PULUMITEST_RETAIN_FILES_ON_FAILURE=false")
 					return
 				}
-				err := os.RemoveAll(c.tempDir)
-				t.Log("Removed temp directories. To retain these, set PULUMITEST_RETAIN_FILES_ON_FAILURE=true")
-				if err != nil {
-					ptErrorF(t, "TempDir RemoveAll cleanup: %v", err)
+				if shouldAlwaysRetainFiles() {
+					ptLogF(t, "Skipping removal of %s temp directories as `PULUMITEST_RETAIN_FILES` is enabled: %q", desc, c.tempDir)
+					return
 				}
+				err := os.RemoveAll(c.tempDir)
+				if err != nil {
+					ptErrorF(t, "Failed removing %s temp directory: %q: %v", desc, c.tempDir, err)
+				}
+				t.Log("Removed temp directories. To retain these, set PULUMITEST_RETAIN_FILES=true")
 			})
 		}
 	}
@@ -107,6 +116,7 @@ type tempDirState struct {
 }
 
 var tempDirStates sync.Map
+var globalTempDirMu sync.Mutex
 
 func getOrCreateTempDirState(pointer any) *tempDirState {
 	fresh := &tempDirState{}
