@@ -15,7 +15,7 @@ func TestPulumiProgram(t *testing.T) {
 }
 ```
 
-By default, your program is copied to a temporary directory before running to avoid modifying your source files or cluttering your working directory with temporary files. This will use an OS-specific temporary location by default but can be set to a custom directory using the `opttest.TempDir(dir)` option. Using an ignored directory within your repository can be useful for being able to locate any left-over folders retained from failed tests:
+By default, your program is copied to a temporary directory before running to avoid modifying your source files or cluttering your working directory with temporary files. This will use an OS-specific temporary location by default but can be set to a custom directory using the `opttest.TempDir(dir)` option or the `PULUMITEST_TEMP_DIR` environment variable. Using an ignored directory within your repository can be useful for being able to locate any left-over folders retained from failed tests:
 
 ```go
 test := NewPulumiTest(t, filepath.Join("path", "to", "program"), opttest.TempDir(".temp"))
@@ -159,6 +159,7 @@ The behavior of pulumitest can be adjusted through use of certain environment va
 | `PULUMITEST_RETAIN_FILES` | Set to `true` to always retain temporary files. |
 | `PULUMITEST_RETAIN_FILES_ON_FAILURE` | Can be set explicitly to `true` or `false`. Defaults to `true` locally and `false` in CI environments. |
 | `PULUMITEST_SKIP_DESTROY_ON_FAILURE` | Skips the automatic attempt to destroy a stack even after a test failure. This defaults to `false`. If set to true, the files will also be retained unless `PULUMITEST_RETAIN_FILES_ON_FAILURE` set to `false`. |
+| `PULUMITEST_TEMP_DIR` | Changes the default temp directory from the OS-specific system location. |
 
 ## Asserts
 
