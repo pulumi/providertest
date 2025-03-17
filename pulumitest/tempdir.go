@@ -11,17 +11,22 @@ import (
 )
 
 func tempDirWithoutCleanupOnFailedTest(t PT, desc, tempDir string) string {
+	t.Helper()
 	if tempDir != "" { // If a tempDir is provided, create on first test and don't worry about cleanup.
 		if !filepath.IsAbs(tempDir) {
 			absTempDir, err := filepath.Abs(tempDir)
 			if err != nil {
-				ptFatalF(t, "TempDir: %v", err)
+				ptFatalF(t, "failed to calculate tempDir abs path: %v", err)
 			}
 			tempDir = absTempDir
 		}
 		if _, err := os.Stat(tempDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(tempDir, 0755); err != nil {
-				ptFatalF(t, "TempDir: %v", err)
+			globalTempDirMu.Lock()
+			err := os.MkdirAll(tempDir, 0755)
+			globalTempDirMu.Unlock()
+			// If the directory already exists, we can ignore the error - parallel tests may have created it.
+			if err != nil && !os.IsExist(err) {
+				ptFatalF(t, "failed to create tempDir: %v", err)
 			}
 		}
 	}
@@ -111,6 +116,7 @@ type tempDirState struct {
 }
 
 var tempDirStates sync.Map
+var globalTempDirMu sync.Mutex
 
 func getOrCreateTempDirState(pointer any) *tempDirState {
 	fresh := &tempDirState{}
