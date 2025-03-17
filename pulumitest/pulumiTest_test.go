@@ -1,8 +1,8 @@
 package pulumitest
 
 import (
-	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/match"
@@ -137,10 +137,12 @@ func TestProviderPluginPath(t *testing.T) {
 
 func TestCustomTempDir(t *testing.T) {
 	t.Parallel()
-	// Ensure ".temp" doesn't yet exist.
-	assert.NoError(t, os.RemoveAll(".temp"))
+	customTempDir := t.TempDir()
 	// Test installing python program in a custom local directory.
-	NewPulumiTest(t, filepath.Join("testdata", "python_gcp"), opttest.TempDir(".temp/sub-dir"))
+	test := NewPulumiTest(t, filepath.Join("testdata", "python_gcp"), opttest.TempDir(customTempDir))
 
-	assert.DirExists(t, ".temp", "should leave custom local .temp directory")
+	workingDir := test.WorkingDir()
+	if !strings.HasPrefix(workingDir, customTempDir) {
+		t.Fatalf("expected working directory to be in the custom temp directory, got %s", workingDir)
+	}
 }
