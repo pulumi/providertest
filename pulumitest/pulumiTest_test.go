@@ -1,6 +1,7 @@
 package pulumitest
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -132,4 +133,14 @@ func TestProviderPluginPath(t *testing.T) {
 	settings, err := test.CurrentStack().Workspace().ProjectSettings(test.Context())
 	assert.NoError(t, err, "expected no error when getting project settings")
 	snaps.MatchJSON(t, settings.Plugins.Providers, match.Any("0.path"))
+}
+
+func TestCustomTempDir(t *testing.T) {
+	t.Parallel()
+	// Ensure ".temp" doesn't yet exist.
+	assert.NoError(t, os.RemoveAll(".temp"))
+	// Test installing python program in a custom local directory.
+	NewPulumiTest(t, filepath.Join("testdata", "python_gcp"), opttest.TempDir(".temp/sub-dir"))
+
+	assert.DirExists(t, ".temp", "should leave custom local .temp directory")
 }

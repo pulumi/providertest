@@ -43,13 +43,13 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 	}
 
 	if !options.UseAmbientBackend {
-		backendFolder := tempDirWithoutCleanupOnFailedTest(t, "backendDir")
+		backendFolder := tempDirWithoutCleanupOnFailedTest(t, "backendDir", options.TempDir)
 		t.Log("PULUMI_BACKEND_URL=" + "file://" + backendFolder)
 		env["PULUMI_BACKEND_URL"] = "file://" + backendFolder
 	}
 
 	if !options.DisableGrpcLog {
-		grpcLogDir := tempDirWithoutCleanupOnFailedTest(t, "grpcLogDir")
+		grpcLogDir := tempDirWithoutCleanupOnFailedTest(t, "grpcLogDir", options.TempDir)
 		t.Log("PULUMI_DEBUG_GRPC=" + filepath.Join(grpcLogDir, "grpc.json"))
 		env["PULUMI_DEBUG_GRPC"] = filepath.Join(grpcLogDir, "grpc.json")
 	}

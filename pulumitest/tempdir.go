@@ -3,13 +3,28 @@ package pulumitest
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
 )
 
-func tempDirWithoutCleanupOnFailedTest(t PT, desc string) string {
+func tempDirWithoutCleanupOnFailedTest(t PT, desc, tempDir string) string {
+	if tempDir != "" { // If a tempDir is provided, create on first test and don't worry about cleanup.
+		if !filepath.IsAbs(tempDir) {
+			absTempDir, err := filepath.Abs(tempDir)
+			if err != nil {
+				ptFatalF(t, "TempDir: %v", err)
+			}
+			tempDir = absTempDir
+		}
+		if _, err := os.Stat(tempDir); os.IsNotExist(err) {
+			if err := os.MkdirAll(tempDir, 0755); err != nil {
+				ptFatalF(t, "TempDir: %v", err)
+			}
+		}
+	}
 	c := getOrCreateTempDirState(t)
 
 	// Use a single parent directory for all the temporary directories
@@ -49,7 +64,7 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc string) string {
 			return -1
 		}
 		pattern := strings.Map(mapper, t.Name())
-		c.tempDir, c.tempDirErr = os.MkdirTemp("", pattern)
+		c.tempDir, c.tempDirErr = os.MkdirTemp(tempDir, pattern)
 		if c.tempDirErr == nil {
 			t.Cleanup(func() {
 				t.Helper()
@@ -78,7 +93,7 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc string) string {
 	}
 
 	dir := fmt.Sprintf("%s%c%03d", c.tempDir, os.PathSeparator, seq)
-	if err := os.Mkdir(dir, 0777); err != nil {
+	if err := os.Mkdir(dir, 0755); err != nil {
 		ptFatalF(t, "TempDir: %v", err)
 	}
 	return dir
