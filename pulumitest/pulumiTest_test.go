@@ -140,7 +140,7 @@ func TestCustomTempDir(t *testing.T) {
 	// Ensure ".temp" doesn't yet exist.
 	assert.NoError(t, os.RemoveAll(".temp"))
 	// Test installing python program in a custom local directory.
-	NewPulumiTest(t, filepath.Join("testdata", "python_gcp"), opttest.TempDir(".temp"))
+	NewPulumiTest(t, filepath.Join("testdata", "python_gcp"), opttest.TempDir(".temp/sub-dir"))
 
 	assert.DirExists(t, ".temp", "should leave custom local .temp directory")
 }

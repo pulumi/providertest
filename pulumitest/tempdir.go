@@ -20,7 +20,7 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc, tempDir string) string {
 			tempDir = absTempDir
 		}
 		if _, err := os.Stat(tempDir); os.IsNotExist(err) {
-			if err := os.Mkdir(tempDir, 0755); err != nil {
+			if err := os.MkdirAll(tempDir, 0755); err != nil {
 				ptFatalF(t, "TempDir: %v", err)
 			}
 		}
