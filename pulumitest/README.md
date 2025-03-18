@@ -25,7 +25,7 @@ If you don't want to copy your program to a temporary directory, use `opttest.Te
 
 ```go
 source := NewPulumiTest(t, opttest.TestInPlace())
-copy := source.CopyToTempDir()
+copy := source.CopyToTempDir(t)
 ```
 
 The `source` variable is still pointing to the original path, but the `copy` is pointing to a new PulumiTest in temporary directory which will automatically get removed at the end of the test.
@@ -40,8 +40,8 @@ The following program is equivalent to the default test setup:
 
 ```go
 test := NewPulumiTest(t, opttest.SkipInstall(), opttest.SkipStackCreate())
-test.Install() // Runs `pulumi install` to restore all dependencies
-test.NewStack("test") // Creates a new stack and returns it.
+test.Install(t) // Runs `pulumi install` to restore all dependencies
+test.NewStack(t, "test") // Creates a new stack and returns it.
 ```
 
 The `Install` and `NewStack` steps can also be done together by calling `InstallStack()`:
@@ -97,10 +97,10 @@ NewPulumiTest(t, "path", opttest.LocalProviderPath("gcp", filepath.Join("..", "b
 Preview, Up, Refresh and Destroy can be run directly from the test context:
 
 ```go
-test.Preview()
-test.Up()
-test.Refresh()
-test.Destroy()
+test.Preview(t)
+test.Up(t)
+test.Refresh(t)
+test.Destroy(t)
 ```
 
 > [!NOTE]
@@ -138,7 +138,7 @@ NewPulumiTest(t, "test_dir",
 Update source files for a subsequent step in the test:
 
 ```go
-test.UpdateSource("folder_with_updates")
+test.UpdateSource(t, "folder_with_updates")
 ```
 
 ### Set Config
@@ -146,7 +146,7 @@ test.UpdateSource("folder_with_updates")
 Set a variable in the stack's config:
 
 ```go
-test.SetConfig("gcp:project", "pulumi-development")
+test.SetConfig(t, "gcp:project", "pulumi-development")
 ```
 
 ## Environment Variables
@@ -180,25 +180,25 @@ Here's a complete example as a test might look for the gcp provider with a local
 func TestExample(t *testing.T) {
   // Copy test_dir to temp directory, install deps and create "my-stack"
   test := NewPulumiTest(t, "test_dir", opttest.AttachProviderBinary("gcp", "../bin"))
-  test.InstallStack("my-stack")
+  test.InstallStack(t, "my-stack")
 
   // Configure the test environment & project
-  test.SetConfig("gcp:project", "pulumi-development")
+  test.SetConfig(t, "gcp:project", "pulumi-development")
 
   // Preview, Deploy, Refresh, 
-  preview := test.Preview()
+  preview := test.Preview(t)
   t.Log(preview.StdOut)
 
-  deploy := test.Up()
+  deploy := test.Up(t)
   t.Log(deploy.StdOut)
-  assertpreview.HasNoChanges(t, test.Preview())
+  assertpreview.HasNoChanges(t, test.Preview(t))
 
   // Export import
-  test.ImportStack(test.ExportStack())
+  test.ImportStack(t, test.ExportStack(t))
   assertpreview.HasNoChanges(t, test.Preview())
 
   test.UpdateSource(filepath.Join("testdata", "step2"))
-  update := test.Up()
+  update := test.Up(t)
   t.Log(update.StdOut)
 }
 ```

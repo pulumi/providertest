@@ -24,6 +24,7 @@ import (
 	"github.com/pulumi/providertest/flags"
 )
 
+// Deprecated: Use pulumitest.PulumiTest instead. This will be removed in a future release.
 type ProviderTest struct {
 	dir              string
 	providerStartups []StartProvider
@@ -35,6 +36,8 @@ type ProviderTest struct {
 }
 
 // NewProviderTest creates a new provider test with the initial directory to be tested.
+//
+// Deprecated: Use pulumitest.NewPulumiTest instead. This will be removed in a future release.
 func NewProviderTest(dir string, opts ...Option) *ProviderTest {
 	pt := &ProviderTest{
 		dir:     dir,
