@@ -1,5 +1,8 @@
 {
   "go.testTimeout": "320s",
+  "go.testEnvVars": {
+    "PULUMITEST_TEMP_DIR": "${workspaceFolder}/.temp"
+  },
   "cSpell.language": "en-US",
   "cSpell.words": [
     "apitype",

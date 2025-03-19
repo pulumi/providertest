@@ -21,7 +21,12 @@ type ConvertResult struct {
 func (a *PulumiTest) Convert(t PT, language string, opts ...opttest.Option) ConvertResult {
 	t.Helper()
 
-	tempDir := t.TempDir()
+	options := a.options.Copy()
+	for _, opt := range opts {
+		opt.Apply(options)
+	}
+
+	tempDir := tempDirWithoutCleanupOnFailedTest(t, "converted", options.TempDir)
 	base := filepath.Base(a.workingDir)
 	targetDir := filepath.Join(tempDir, fmt.Sprintf("%s-%s", base, language))
 	err := os.Mkdir(targetDir, 0755)
@@ -35,11 +40,6 @@ func (a *PulumiTest) Convert(t PT, language string, opts ...opttest.Option) Conv
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		ptFatalF(t, "failed to convert directory: %s\n%s", err, out)
-	}
-
-	options := a.options.Copy()
-	for _, opt := range opts {
-		opt.Apply(options)
 	}
 
 	convertedTest := &PulumiTest{
