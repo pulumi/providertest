@@ -13,9 +13,9 @@ type cmdOutput struct {
 	ReturnCode int
 }
 
-func (a *PulumiTest) execCmd(t PT, args ...string) cmdOutput {
+func (pt *PulumiTest) execCmd(t PT, args ...string) cmdOutput {
 	t.Helper()
-	workspace := a.CurrentStack().Workspace()
+	workspace := pt.CurrentStack().Workspace()
 	ctx := context.Background()
 	workdir := workspace.WorkDir()
 	var env []string

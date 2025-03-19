@@ -5,18 +5,19 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
 )
 
-// Up deploys the current stack.
-func (a *PulumiTest) Destroy(t PT, opts ...optdestroy.Option) auto.DestroyResult {
+// Destroy the current stack.
+// If an error is expected, use `CurrentStack().Destroy()` instead to be returned the error.
+func (pt *PulumiTest) Destroy(t PT, opts ...optdestroy.Option) auto.DestroyResult {
 	t.Helper()
 
 	t.Log("destroying")
-	if a.currentStack == nil {
+	if pt.currentStack == nil {
 		ptFatal(t, "no current stack")
 	}
-	if !a.options.DisableGrpcLog {
-		a.ClearGrpcLog(t)
+	if !pt.options.DisableGrpcLog {
+		pt.ClearGrpcLog(t)
 	}
-	result, err := a.currentStack.Destroy(a.ctx, opts...)
+	result, err := pt.currentStack.Destroy(pt.ctx, opts...)
 	if err != nil {
 		ptFatalF(t, "failed to destroy: %s", err)
 	}
