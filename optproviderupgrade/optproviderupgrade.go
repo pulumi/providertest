@@ -40,6 +40,7 @@ func CacheDir(elem ...string) PreviewProviderUpgradeOpt {
 
 // NewSourcePath sets the path to new source code to use for the target version of the upgrade.
 // If not set, the original pulumitest program source is used.
+// Like the source argument to NewPulumiTest, the path can be absolute, or relative to the directory the test source is in.
 // This is useful for where it's expected for a user to perform code changes during a migration.
 func NewSourcePath(path string) PreviewProviderUpgradeOpt {
 	return optionFunc(func(o *PreviewProviderUpgradeOptions) {
