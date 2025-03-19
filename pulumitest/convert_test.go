@@ -21,6 +21,30 @@ runtime:
     virtualenv: venv
 `
 
+func TestImmediateConvertTypescript(t *testing.T) {
+	t.Parallel()
+
+	// No need to copy the source, since we're not going to modify it.
+	convertResult := pulumitest.Convert(t, filepath.Join("testdata", "yaml_program"), "typescript")
+	t.Log(convertResult.Output)
+	test := convertResult.PulumiTest
+
+	tsPreview := test.Preview(t)
+	assert.Equal(t,
+		map[apitype.OpType]int{apitype.OpCreate: 2},
+		tsPreview.ChangeSummary)
+
+	tsUp := test.Up(t)
+	assert.Equal(t,
+		map[string]int{"create": 2},
+		*tsUp.Summary.ResourceChanges)
+
+	assertup.HasNoDeletes(t, tsUp)
+
+	// Show the deploy output.
+	t.Log(tsUp.StdOut)
+}
+
 func TestConvertPython(t *testing.T) {
 	t.Parallel()
 

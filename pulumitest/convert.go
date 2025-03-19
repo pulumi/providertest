@@ -9,11 +9,26 @@ import (
 	"github.com/pulumi/providertest/pulumitest/opttest"
 )
 
+// ConvertResult encapsulates the result of a conversion operation.
 type ConvertResult struct {
 	// PulumiTest instance for the converted program.
 	PulumiTest *PulumiTest
 	// Combined output of the `pulumi convert` command.
 	Output string
+}
+
+// Create a new test by converting a program into a specific language.
+// It returns a new PulumiTest instance for the converted program which will be outputted into a temporary directory.
+func Convert(t PT, source, language string, opts ...opttest.Option) ConvertResult {
+	t.Helper()
+
+	pulumiTest := PulumiTest{
+		ctx:        testContext(t),
+		workingDir: source,
+		options:    opttest.DefaultOptions(),
+	}
+
+	return pulumiTest.Convert(t, language, opts...)
 }
 
 // Convert a program to a given language.
