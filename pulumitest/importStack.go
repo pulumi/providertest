@@ -5,14 +5,14 @@ import (
 )
 
 // ImportStack imports the given stack state into the test's current stack.
-func (a *PulumiTest) ImportStack(t PT, source apitype.UntypedDeployment) {
+func (pt *PulumiTest) ImportStack(t PT, source apitype.UntypedDeployment) {
 	t.Helper()
 
 	t.Log("importing stack")
-	if a.currentStack == nil {
+	if pt.currentStack == nil {
 		ptFatal(t, "no current stack")
 	}
-	err := a.currentStack.Workspace().ImportStack(a.Context(), a.currentStack.Name(), source)
+	err := pt.currentStack.Workspace().ImportStack(pt.Context(), pt.currentStack.Name(), source)
 	if err != nil {
 		ptFatalF(t, "failed to import stack: %s", err)
 	}

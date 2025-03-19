@@ -33,16 +33,16 @@ func Convert(t PT, source, language string, opts ...opttest.Option) ConvertResul
 
 // Convert a program to a given language.
 // It returns a new PulumiTest instance for the converted program which will be outputted into a temporary directory.
-func (a *PulumiTest) Convert(t PT, language string, opts ...opttest.Option) ConvertResult {
+func (pt *PulumiTest) Convert(t PT, language string, opts ...opttest.Option) ConvertResult {
 	t.Helper()
 
-	options := a.options.Copy()
+	options := pt.options.Copy()
 	for _, opt := range opts {
 		opt.Apply(options)
 	}
 
 	tempDir := tempDirWithoutCleanupOnFailedTest(t, "converted", options.TempDir)
-	base := filepath.Base(a.workingDir)
+	base := filepath.Base(pt.workingDir)
 	targetDir := filepath.Join(tempDir, fmt.Sprintf("%s-%s", base, language))
 	err := os.Mkdir(targetDir, 0755)
 	if err != nil {
@@ -51,14 +51,14 @@ func (a *PulumiTest) Convert(t PT, language string, opts ...opttest.Option) Conv
 
 	ptLogF(t, "converting to %s", language)
 	cmd := exec.Command("pulumi", "convert", "--language", language, "--generate-only", "--out", targetDir)
-	cmd.Dir = a.workingDir
+	cmd.Dir = pt.workingDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		ptFatalF(t, "failed to convert directory: %s\n%s", err, out)
 	}
 
 	convertedTest := &PulumiTest{
-		ctx:        a.ctx,
+		ctx:        pt.ctx,
 		workingDir: targetDir,
 		options:    options,
 	}

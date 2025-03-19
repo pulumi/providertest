@@ -12,41 +12,41 @@ import (
 // CopyToTempDir copies the program to a temporary directory.
 // It returns a new PulumiTest instance for the copied program.
 // This is used to avoid temporary files being written to the source directory.
-func (a *PulumiTest) CopyToTempDir(t PT, opts ...opttest.Option) *PulumiTest {
+func (pt *PulumiTest) CopyToTempDir(t PT, opts ...opttest.Option) *PulumiTest {
 	t.Helper()
-	options := a.options.Copy()
+	options := pt.options.Copy()
 	for _, opt := range opts {
 		opt.Apply(options)
 	}
 	tempDir := tempDirWithoutCleanupOnFailedTest(t, "programDir", options.TempDir)
 
 	// Maintain the directory name in the temp dir as this might be used for stack naming.
-	sourceBase := filepath.Base(a.workingDir)
+	sourceBase := filepath.Base(pt.workingDir)
 	destination := filepath.Join(tempDir, sourceBase)
 	err := os.Mkdir(destination, 0755)
 	if err != nil {
 		ptFatal(t, err)
 	}
 
-	return a.CopyTo(t, destination, opts...)
+	return pt.CopyTo(t, destination, opts...)
 }
 
 // CopyTo copies the program to the specified directory.
 // It returns a new PulumiTest instance for the copied program.
-func (a *PulumiTest) CopyTo(t PT, dir string, opts ...opttest.Option) *PulumiTest {
+func (pt *PulumiTest) CopyTo(t PT, dir string, opts ...opttest.Option) *PulumiTest {
 	t.Helper()
 
-	err := copyDirectory(a.workingDir, dir)
+	err := copyDirectory(pt.workingDir, dir)
 	if err != nil {
 		ptFatal(t, err)
 	}
 
-	options := a.options.Copy()
+	options := pt.options.Copy()
 	for _, opt := range opts {
 		opt.Apply(options)
 	}
 	newTest := &PulumiTest{
-		ctx:        a.ctx,
+		ctx:        pt.ctx,
 		workingDir: dir,
 		options:    options,
 	}

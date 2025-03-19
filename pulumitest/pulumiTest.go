@@ -65,21 +65,21 @@ func pulumiTestInit(t PT, pt *PulumiTest, options *opttest.Options) {
 
 // Deprecated: Use WorkingDir instead.
 // Source returns the current working directory.
-func (a *PulumiTest) Source() string {
-	return a.workingDir
+func (pt *PulumiTest) Source() string {
+	return pt.workingDir
 }
 
 // WorkingDir returns the current working directory.
-func (a *PulumiTest) WorkingDir() string {
-	return a.workingDir
+func (pt *PulumiTest) WorkingDir() string {
+	return pt.workingDir
 }
 
 // Context returns the current context.Context instance used for automation API calls.
-func (a *PulumiTest) Context() context.Context {
-	return a.ctx
+func (pt *PulumiTest) Context() context.Context {
+	return pt.ctx
 }
 
 // CurrentStack returns the last stack that was created or nil if no stack has been created yet.
-func (a *PulumiTest) CurrentStack() *auto.Stack {
-	return a.currentStack
+func (pt *PulumiTest) CurrentStack() *auto.Stack {
+	return pt.currentStack
 }

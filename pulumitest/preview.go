@@ -6,17 +6,18 @@ import (
 )
 
 // Preview previews an update to the current stack.
-func (a *PulumiTest) Preview(t PT, opts ...optpreview.Option) auto.PreviewResult {
+// If an error is expected, use `CurrentStack().Preview()` instead to be returned the error.
+func (pt *PulumiTest) Preview(t PT, opts ...optpreview.Option) auto.PreviewResult {
 	t.Helper()
 
 	t.Log("previewing update")
-	if a.currentStack == nil {
+	if pt.currentStack == nil {
 		ptFatal(t, "no current stack")
 	}
-	if !a.options.DisableGrpcLog {
-		a.ClearGrpcLog(t)
+	if !pt.options.DisableGrpcLog {
+		pt.ClearGrpcLog(t)
 	}
-	result, err := a.currentStack.Preview(a.ctx, opts...)
+	result, err := pt.currentStack.Preview(pt.ctx, opts...)
 	if err != nil {
 		ptFatalF(t, "failed to preview update: %s", err)
 	}
