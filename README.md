@@ -3,7 +3,7 @@
 Library for testing Pulumi providers by running Pulumi programs.
 
 > [!NOTE]
-> The libraries in this repo are used internally by the Pulumi providers team, and are still evolving; you should expect incomplete documentation and breaking changes. If you do choose to use this library we strongly recommend starting with [providertest/pulumitest](https://github.com/pulumi/providertest/tree/main/pulumitest) which is our latest approach. The ProviderTest abstraction is deprecated and will removed in a future release.
+> The libraries in this repo are used internally by the Pulumi providers team, and are still evolving; you should expect incomplete documentation and breaking changes. If you do choose to use this library we strongly recommend starting with [providertest/pulumitest](https://github.com/pulumi/providertest/tree/main/pulumitest) which is our latest approach. The ProviderTest abstraction is deprecated and will be removed in a future release.
 
 The library is composed of several modules. The most important of these is the [`pulumitest`](./pulumitest/) module. This is a library designed for testing any Pulumi program within a Go test. It extends the Go [Automation API](https://www.pulumi.com/automation/) with defaults appropriate for local testing such as using temporary directories for state.
 
@@ -25,9 +25,29 @@ func TestPulumiProgram(t *testing.T) {
 
 Refer to [the full documentation](./pulumitest/README.md) for a complete walkthrough of the features.
 
+## Attaching In-Process Providers
+
+If your provider implementation is available in the context of your test, the provider can be started in a background goroutine and used within the test using the `opttest.AttachProviderServer`. This avoids needing to build a provider binary before running the test, and allows stepping through from the test to the provider implementation when attaching a debugger.
+
+For bridged providers using the standard repository layout, this can be configured as such:
+
+```go
+//go:embed cmd/pulumi-resource-example/schema.json
+var schemaBytes []byte // Embed the generated schema (this might need to be re-generated before re-running tests)
+
+func exampleResourceProviderServerFactory(_ providers.PulumiTest) (pulumirpc.ResourceProviderServer, error) {
+  ctx := context.Background()
+  version.Version = "1.0.0" // Set the global version to a non-empty string
+  info := Provider() // Call the function defined in resource.go
+  return tfbridge.NewProvider(ctx, nil, "example", version.Version, info.P, info, schemaBytes), nil
+}
+```
+
+For native providers this function just returns your implementation of [the `pulumirpc.ResourceProviderServer` interface](https://pkg.go.dev/github.com/pulumi/pulumi/sdk/v3/proto/go#ResourceProviderServer).
+
 ## Upgrade Testing
 
-We perform "upgrade testing" on providers to indicate when there's a change in a new version of a provider which might cause resources to be re-created during an upgrade from a previous version.
+We perform "upgrade testing" on providers to fail when a resource might be re-created when updating to a new version of the provider.
 
 In the root `providertest` module there is a function called `PreviewProviderUpgrade(..)`. This shows the result of a preview when upgrading from a **baseline** version of a provider to a new version of the provider. On first run it records the *baseline* state after running the program with the *baseline* version of the provider and writes it into a `testdata` directory. On subsequent runs, it restores the state from the recorded *baseline* before performing a preview operation with the new version.
 
@@ -36,7 +56,7 @@ Here's an example of how to write an upgrade test:
 ```go
 pt := pulumitest.NewPulumiTest(t, "path-to-a-pulumi-program-dir",
   // Use our local implementation for the new version
-  opttest.AttachProviderServer("my-provider-name", myProviderServerFactory))
+  opttest.AttachProviderServer("my-provider-name", exampleResourceProviderServerFactory))
 // Perform a preview of upgrading from v0.0.1 of my-provider-name to our new version.
 previewResult := providertest.PreviewProviderUpgrade(t, pt, "my-provider-name", "0.0.1")
 // Assert the preview shows no changes
@@ -47,9 +67,9 @@ It's expected that the preview operation does not perform actual network calls, 
 
 ```go
 // Turn a server factory into a *resource provider* server factory
-resourceProviderFactory := providers.ResourceProviderFactory(myProviderServerFactory)
+resourceProviderFactory := providers.ResourceProviderFactory(exampleResourceProviderServerFactory)
 // Calculate the path to the baseline version recording
-upgradeCacheDir := providertest.GetUpgradeCacheDir("path-to-a-pulumi-program-dir", "5.60.0")
+upgradeCacheDir := providertest.GetUpgradeCacheDir("path-to-a-pulumi-program-dir", "0.0.1")
 // Create a new factory which will intercept and replay invokes from the recorded grpc.json
 factoryWithReplay := resourceProviderFactory.ReplayInvokes(filepath.Join(upgradeCacheDir, "grpc.json"), true)
 
