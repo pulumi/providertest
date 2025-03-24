@@ -3,7 +3,7 @@
 Library for testing Pulumi providers by running Pulumi programs.
 
 > [!NOTE]
-> The libraries in this repo are used internally by the Pulumi providers team, and are still evolving; you should expect incomplete documentation and breaking changes. If you do choose to use this library we strongly recommend starting with [providertest/pulumitest](https://github.com/pulumi/providertest/tree/main/pulumitest) which is our latest approach. The ProviderTest abstraction is deprecated and will be removed in a future release.
+> The libraries in this repo are used internally by the Pulumi providers team, and are still evolving; you should expect incomplete documentation and breaking changes.
 
 The library is composed of several modules. The most important of these is the [`pulumitest`](./pulumitest/) module. This is a library designed for testing any Pulumi program within a Go test. It extends the Go [Automation API](https://www.pulumi.com/automation/) with defaults appropriate for local testing such as using temporary directories for state.
 
