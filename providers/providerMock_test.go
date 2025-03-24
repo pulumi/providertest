@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pulumi/providertest/providers"
-	"github.com/pulumi/providertest/pulumitest"
-	"github.com/pulumi/providertest/pulumitest/opttest"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
+	"github.com/pulumi/pulumitest"
+	"github.com/pulumi/pulumitest/opttest"
+	"github.com/pulumi/pulumitest/providers"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -16,7 +16,7 @@ import (
 
 func TestProviderMock(t *testing.T) {
 	t.Parallel()
-	source := filepath.Join("..", "pulumitest", "testdata", "python_gcp")
+	source := filepath.Join("..", "testdata", "python_gcp")
 
 	t.Run("with mocks", func(t *testing.T) {
 		var attached, configured, checkedConfig, checked, created bool

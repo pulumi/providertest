@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pulumi/providertest/providers"
-	"github.com/pulumi/providertest/pulumitest"
-	"github.com/pulumi/providertest/pulumitest/opttest"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
+	"github.com/pulumi/pulumitest"
+	"github.com/pulumi/pulumitest/opttest"
+	"github.com/pulumi/pulumitest/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -38,7 +38,7 @@ func TestProviderInterceptProxy(t *testing.T) {
 		},
 	})
 	test := pulumitest.NewPulumiTest(t,
-		filepath.Join("..", "pulumitest", "testdata", "yaml_azure"),
+		filepath.Join("..", "testdata", "yaml_azure"),
 		opttest.AttachProvider("azure-native", interceptedFactory))
 
 	test.Preview(t)

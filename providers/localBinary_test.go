@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pulumi/providertest/providers"
+	"github.com/pulumi/pulumitest/providers"
 	"github.com/stretchr/testify/assert"
 )
 
