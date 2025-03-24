@@ -1,4 +1,4 @@
-package providertest
+package upgrade
 
 import (
 	"fmt"

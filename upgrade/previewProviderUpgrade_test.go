@@ -1,4 +1,4 @@
-package providertest_test
+package upgrade_test
 
 import (
 	"path/filepath"
