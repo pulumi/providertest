@@ -35,7 +35,9 @@ func ReportUpgradeCoverage(t *testing.T) {
 	dir := filepath.Join("testdata", "recorded", "TestProviderUpgrade")
 
 	states := findFiles(t, dir, func(fn string) bool {
-		return filepath.Base(fn) == "stack.json"
+		filename := filepath.Base(fn)
+		// Check for both the old name (state) from PulumiTest and the current name (stack).
+		return filename == "stack.json" || filename == "state.json"
 	})
 
 	for _, s := range states {
