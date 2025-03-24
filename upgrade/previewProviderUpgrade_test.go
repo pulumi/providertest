@@ -16,7 +16,7 @@ import (
 func TestPreviewUpgradeCached(t *testing.T) {
 	t.Parallel()
 	cacheDir := t.TempDir()
-	test := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_program"),
+	test := pulumitest.NewPulumiTest(t, filepath.Join("..", "testdata", "yaml_program"),
 		opttest.DownloadProviderVersion("random", "4.15.0"))
 
 	uncachedPreviewResult := upgrade.PreviewProviderUpgrade(t, test, "random", "4.5.0",
@@ -34,13 +34,13 @@ func TestPreviewUpgradeCached(t *testing.T) {
 func TestPreviewUpgradeWithKnownSourceEdit(t *testing.T) {
 	t.Parallel()
 	cacheDir := t.TempDir()
-	test := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_program"),
+	test := pulumitest.NewPulumiTest(t, filepath.Join("..", "testdata", "yaml_program"),
 		opttest.DownloadProviderVersion("random", "4.15.0"))
 
 	previewResult := upgrade.PreviewProviderUpgrade(t, test, "random", "4.5.0",
 		optproviderupgrade.CacheDir(cacheDir, "{programName}", "{baselineVersion}"),
 		optproviderupgrade.DisableAttach(),
-		optproviderupgrade.NewSourcePath(filepath.Join("pulumitest", "testdata", "yaml_program_updated")),
+		optproviderupgrade.NewSourcePath(filepath.Join("..", "testdata", "yaml_program_updated")),
 	)
 
 	assert.Contains(t, previewResult.StdOut, "random:index/randomPassword:RandomPassword::password")
@@ -53,7 +53,7 @@ func TestPreviewWithInvokeReplayed(t *testing.T) {
 	commandProvider := providers.DownloadPluginBinaryFactory("command", "1.0.1")
 	// Intercept all invokes and replay them from a gRPC log during the preview.
 	commandProvider = commandProvider.ReplayInvokes(filepath.Join(cacheDir, "grpc.json"), false)
-	test := pulumitest.NewPulumiTest(t, filepath.Join("pulumitest", "testdata", "yaml_command_invoke"),
+	test := pulumitest.NewPulumiTest(t, filepath.Join("..", "testdata", "yaml_command_invoke"),
 		opttest.AttachProvider("command", commandProvider))
 
 	// We're not changing the version, but if the preview doesn't re-use the captured invoke the value will be different.

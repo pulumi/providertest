@@ -38,7 +38,7 @@ func TestProviderInterceptProxy(t *testing.T) {
 		},
 	})
 	test := pulumitest.NewPulumiTest(t,
-		filepath.Join("..", "pulumitest", "testdata", "yaml_azure"),
+		filepath.Join("..", "testdata", "yaml_azure"),
 		opttest.AttachProvider("azure-native", interceptedFactory))
 
 	test.Preview(t)

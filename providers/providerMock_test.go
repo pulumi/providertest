@@ -16,7 +16,7 @@ import (
 
 func TestProviderMock(t *testing.T) {
 	t.Parallel()
-	source := filepath.Join("..", "pulumitest", "testdata", "python_gcp")
+	source := filepath.Join("..", "testdata", "python_gcp")
 
 	t.Run("with mocks", func(t *testing.T) {
 		var attached, configured, checkedConfig, checked, created bool
