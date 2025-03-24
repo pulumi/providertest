@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pulumi/providertest/pulumitest/optrun"
-	"github.com/pulumi/providertest/pulumitest/sanitize"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
+	"github.com/pulumi/pulumitest/optrun"
+	"github.com/pulumi/pulumitest/sanitize"
 )
 
 // Run will run the `execute` function in an isolated temp directory and with additional test options, then import the resulting stack state into the original test.

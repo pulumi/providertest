@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/pulumi/providertest/pulumitest/opttest"
+	"github.com/pulumi/pulumitest/opttest"
 )
 
 // ConvertResult encapsulates the result of a conversion operation.

@@ -3,8 +3,8 @@ package pulumitest
 import (
 	"context"
 
-	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"github.com/pulumi/pulumitest/opttest"
 )
 
 type PulumiTest struct {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/pulumi/providertest/pulumitest/assertpreview"
-	"github.com/pulumi/providertest/pulumitest/assertup"
-	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
+	"github.com/pulumi/pulumitest/assertpreview"
+	"github.com/pulumi/pulumitest/assertup"
+	"github.com/pulumi/pulumitest/opttest"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,10 +4,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pulumi/providertest/providers"
-	"github.com/pulumi/providertest/pulumitest/optnewstack"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/deepcopy"
+	"github.com/pulumi/pulumitest/optnewstack"
+	"github.com/pulumi/pulumitest/providers"
 )
 
 // StackName sets the default stack name to use when running the program under test.

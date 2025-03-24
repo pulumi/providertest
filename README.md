@@ -12,7 +12,7 @@ Here's a short example of how to use pulumitest:
 ```go
 import (
   "filepath"
-  "github.com/pulumi/providertest/pulumitest"
+  "github.com/pulumi/pulumitest"
 )
 
 func TestPulumiProgram(t *testing.T) {

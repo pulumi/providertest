@@ -1,7 +1,7 @@
 package pulumitest
 
 import (
-	"github.com/pulumi/providertest/pulumitest/optnewstack"
+	"github.com/pulumi/pulumitest/optnewstack"
 )
 
 // InstallStack installs packages, and creates a new stack.

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/pulumi/providertest/grpclog"
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
+	"github.com/pulumi/pulumitest/grpclog"
 )
 
 // ReplayInvokes wraps a provider factory, intercepting all invokes and replaying them from a gRPC log.

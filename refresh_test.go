@@ -3,8 +3,8 @@ package pulumitest_test
 import (
 	"testing"
 
-	"github.com/pulumi/providertest/pulumitest"
-	"github.com/pulumi/providertest/pulumitest/assertrefresh"
+	"github.com/pulumi/pulumitest"
+	"github.com/pulumi/pulumitest/assertrefresh"
 )
 
 func TestRefresh(t *testing.T) {

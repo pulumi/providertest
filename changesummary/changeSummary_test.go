@@ -3,8 +3,8 @@ package changesummary_test
 import (
 	"testing"
 
-	"github.com/pulumi/providertest/pulumitest/changesummary"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
+	"github.com/pulumi/pulumitest/changesummary"
 	"github.com/stretchr/testify/assert"
 )
 

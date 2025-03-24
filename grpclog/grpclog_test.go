@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pulumi/providertest/grpclog"
+	"github.com/pulumi/pulumitest/grpclog"
 	"github.com/stretchr/testify/assert"
 )
 

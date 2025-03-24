@@ -4,10 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pulumi/providertest/pulumitest"
-	"github.com/pulumi/providertest/pulumitest/assertpreview"
-	"github.com/pulumi/providertest/pulumitest/optrun"
-	"github.com/pulumi/providertest/pulumitest/opttest"
+	"github.com/pulumi/pulumitest"
+	"github.com/pulumi/pulumitest/assertpreview"
+	"github.com/pulumi/pulumitest/optrun"
+	"github.com/pulumi/pulumitest/opttest"
 	"github.com/stretchr/testify/assert"
 )
 

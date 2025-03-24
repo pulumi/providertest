@@ -3,8 +3,8 @@ package optrun
 import (
 	"path/filepath"
 
-	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/deepcopy"
+	"github.com/pulumi/pulumitest/opttest"
 )
 
 // WithCache enables caching of the stack state to the given path.

@@ -11,12 +11,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pulumi/providertest/providers"
-	"github.com/pulumi/providertest/pulumitest/optnewstack"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optremove"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/util/contract"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
+	"github.com/pulumi/pulumitest/optnewstack"
+	"github.com/pulumi/pulumitest/providers"
 )
 
 // NewStack creates a new stack, ensure it's cleaned up after the test is done.

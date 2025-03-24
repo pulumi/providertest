@@ -3,7 +3,7 @@ package pulumitest
 import (
 	"os"
 
-	"github.com/pulumi/providertest/grpclog"
+	"github.com/pulumi/pulumitest/grpclog"
 )
 
 // GrpcLog reads the gRPC log for the current stack based on the PULUMI_DEBUG_GRPC env var.

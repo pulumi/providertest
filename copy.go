@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pulumi/providertest/pulumitest/opttest"
+	"github.com/pulumi/pulumitest/opttest"
 )
 
 // CopyToTempDir copies the program to a temporary directory.

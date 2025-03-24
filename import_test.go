@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pulumi/providertest/pulumitest"
+	"github.com/pulumi/pulumitest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

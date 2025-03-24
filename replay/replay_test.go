@@ -9,7 +9,7 @@ import (
 
 	pulumirpc "github.com/pulumi/pulumi/sdk/v3/proto/go"
 
-	"github.com/pulumi/providertest/providers"
+	"github.com/pulumi/pulumitest/providers"
 )
 
 // When testing methods that return CheckFailure lists, the tests do not want to care about the

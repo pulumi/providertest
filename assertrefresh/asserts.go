@@ -3,9 +3,9 @@ package assertrefresh
 import (
 	"testing"
 
-	"github.com/pulumi/providertest/pulumitest/changesummary"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/apitype"
+	"github.com/pulumi/pulumitest/changesummary"
 )
 
 // HasNoChanges asserts that the given RefreshResult has no changes.

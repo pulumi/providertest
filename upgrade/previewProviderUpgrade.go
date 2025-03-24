@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/pulumi/providertest/optproviderupgrade"
-	"github.com/pulumi/providertest/pulumitest"
-	"github.com/pulumi/providertest/pulumitest/optnewstack"
-	"github.com/pulumi/providertest/pulumitest/optrun"
-	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optpreview"
+	"github.com/pulumi/pulumitest"
+	"github.com/pulumi/pulumitest/optnewstack"
+	"github.com/pulumi/pulumitest/optproviderupgrade"
+	"github.com/pulumi/pulumitest/optrun"
+	"github.com/pulumi/pulumitest/opttest"
 )
 
 // PreviewProviderUpgrade captures the state of a stack from a baseline provider configuration, then previews the stack

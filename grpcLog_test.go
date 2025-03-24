@@ -5,7 +5,7 @@ import (
 
 	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/pulumi/providertest/pulumitest"
+	"github.com/pulumi/pulumitest"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -1,7 +1,7 @@
 package optproviderupgrade
 
 import (
-	"github.com/pulumi/providertest/pulumitest/opttest"
+	"github.com/pulumi/pulumitest/opttest"
 )
 
 // DisableAttach will configure the provider binary in the program's Pulumi.yaml rather than attaching the running provider.

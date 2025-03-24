@@ -1,4 +1,4 @@
-module github.com/pulumi/providertest
+module github.com/pulumi/pulumitest
 
 go 1.23
 
