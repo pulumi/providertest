@@ -107,6 +107,11 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 			if err != nil {
 				ptFatalF(t, "failed to get absolute path for %s: %s", relPath, err)
 			}
+			_, err = os.Stat(absPath)
+			if err != nil {
+				ptFatalF(t, "failed to find binary for provider %q: %s", name, err)
+				return nil
+			}
 
 			found := false
 			for idx := range providerPlugins {
