@@ -37,6 +37,23 @@ type testingT interface {
 //
 // {"\\": x} matches only JSON documents strictly equal to x. This pattern essentially escapes the sub-tree, for example
 // use {"\\": "*"} to match only the literal string "*".
+//
+// An object pattern {"key1": "pattern1", "key2": "pattern2"} matches objects in a natural manner. By default it will
+// only match objects with the exact set of keys specified. To tolerate extraneous keys, a catch-all pattern can be
+// specified as follows, to match against all unspecified keys:
+//
+//	{"key1": "pattern1", "key2": "pattern2", "*": "catch-all-pattern"}
+//
+// In particular this can be used to ignore all extraneous keys:
+//
+//	{"key1": "pattern1", "key2": "pattern2", "*": "*"}
+//
+// It is possible to escape keys in an object pattern by prefixing them with "\\", for example this pattern:
+//
+//	{"\\*": "foo"}
+//
+// This pattern will only match the object {"*": "foo"}, that is the wildcard is interpreted literally and not as the
+// catch-all pattern.
 func AssertJSONMatchesPattern(
 	t *testing.T,
 	expectedPattern json.RawMessage,
@@ -113,6 +130,9 @@ func assertJSONMatchesPattern(
 			allKeys := []string{}
 
 			for k := range pp {
+				if k == "*" {
+					continue // ignore the catch-all pattern
+				}
 				if !seenKeys[k] {
 					allKeys = append(allKeys, k)
 				}
@@ -127,6 +147,8 @@ func assertJSONMatchesPattern(
 			}
 			sort.Strings(allKeys)
 
+			catchAllPattern, hasCatchAll := pp["*"]
+
 			for _, k := range allKeys {
 				pv, gotPV := pp[k]
 				av, gotAV := aa[k]
@@ -134,8 +156,10 @@ func assertJSONMatchesPattern(
 				switch {
 				case gotPV && gotAV:
 					match(subPath, pv, av)
-				case !gotPV && gotAV:
+				case !gotPV && gotAV && !hasCatchAll:
 					t.Errorf("[%s] unexpected value %s", subPath, prettyJSON(t, av))
+				case !gotPV && gotAV && hasCatchAll:
+					match(subPath, catchAllPattern, av)
 				case gotPV && !gotAV:
 					t.Errorf("[%s] missing a required value", subPath)
 				}
