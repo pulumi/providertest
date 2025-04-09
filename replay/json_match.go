@@ -121,6 +121,7 @@ func assertJSONMatchesPattern(
 				return
 			}
 			catchAllPattern, hasCatchAll := pp["*"]
+			delete(pp, "*")
 
 			// normalize escapes in pp keys
 			for k, v := range pp {
@@ -139,9 +140,6 @@ func assertJSONMatchesPattern(
 			allKeys := []string{}
 
 			for k := range pp {
-				if k == "*" {
-					continue // ignore the catch-all pattern
-				}
 				if !seenKeys[k] {
 					allKeys = append(allKeys, k)
 				}
@@ -157,7 +155,7 @@ func assertJSONMatchesPattern(
 			sort.Strings(allKeys)
 
 			for _, k := range allKeys {
-				pv, gotPV := pp[k] // pp
+				pv, gotPV := pp[k]
 				av, gotAV := aa[k]
 				subPath := fmt.Sprintf("%s[%q]", path, k)
 				switch {
