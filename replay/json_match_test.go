@@ -63,6 +63,20 @@ func TestCatchAllPattern(t *testing.T) {
 	})
 }
 
+func TestKeyEscapes(t *testing.T) {
+	t.Parallel()
+
+	assertJSONMatchesPattern(t,
+		[]byte(`{"\\foo": "bar"}`),
+		[]byte(`{"foo": "bar"}`))
+
+	mt := &mockTestingT{}
+	assertJSONMatchesPattern(mt,
+		[]byte(`{"\\*": "*"}`),
+		[]byte(`{"*": "ok", "extra": "_"}`))
+	require.NotEmpty(t, mt.errors)
+}
+
 type mockTestingT struct {
 	errors []string
 }

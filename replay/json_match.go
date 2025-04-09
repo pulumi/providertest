@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -119,6 +120,14 @@ func assertJSONMatchesPattern(
 				assertJSONEquals(t, path, esc, a)
 				return
 			}
+			catchAllPattern, hasCatchAll := pp["*"]
+
+			// normalize escapes in pp keys
+			for k, v := range pp {
+				delete(pp, k)
+				k = strings.TrimPrefix(k, "\\")
+				pp[k] = v
+			}
 
 			aa, ok := a.(map[string]interface{})
 			if !ok {
@@ -147,10 +156,8 @@ func assertJSONMatchesPattern(
 			}
 			sort.Strings(allKeys)
 
-			catchAllPattern, hasCatchAll := pp["*"]
-
 			for _, k := range allKeys {
-				pv, gotPV := pp[k]
+				pv, gotPV := pp[k] // pp
 				av, gotAV := aa[k]
 				subPath := fmt.Sprintf("%s[%q]", path, k)
 				switch {
