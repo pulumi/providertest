@@ -101,7 +101,7 @@ func tempDirWithoutCleanupOnFailedTest(t PT, desc, tempDir string) string {
 		ptFatalF(t, "TempDir: %v", c.tempDirErr)
 	}
 
-	dir := fmt.Sprintf("%s%c%03d", c.tempDir, os.PathSeparator, seq)
+	dir := filepath.ToSlash(filepath.Join(c.tempDir, fmt.Sprintf("%03d", seq)))
 	if err := os.Mkdir(dir, 0755); err != nil {
 		ptFatalF(t, "TempDir: %v", err)
 	}
