@@ -75,6 +75,9 @@ func TestKeyEscapes(t *testing.T) {
 		[]byte(`{"\\*": "*"}`),
 		[]byte(`{"*": "ok", "extra": "_"}`))
 	require.NotEmpty(t, mt.errors)
+	require.Equal(t, 1, len(mt.errors))
+	require.Contains(t, mt.errors[0], `#["extra"]`)
+	require.Contains(t, mt.errors[0], `unexpected value "_"`)
 }
 
 type mockTestingT struct {
