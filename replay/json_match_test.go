@@ -39,6 +39,57 @@ func TestJsonListLengthMistmatch(t *testing.T) {
 	require.Equal(t, "[#]: expected an array of length 2, but got [\n  1,\n  2,\n  3\n]", mt.errors[0])
 }
 
+func TestCatchAllPattern(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Accept extraneous keys", func(t *testing.T) {
+		t.Parallel()
+
+		assertJSONMatchesPattern(t,
+			[]byte(`{"foo": "bar", "*": "*"}`),
+			[]byte(`{"foo": "bar", "baz": 1}`))
+	})
+
+	t.Run("Reject extraneous keys that do not match", func(t *testing.T) {
+		t.Parallel()
+
+		mt := &mockTestingT{}
+		assertJSONMatchesPattern(mt,
+			[]byte(`{"foo": "bar", "*": "2"}`),
+			[]byte(`{"foo": "bar", "baz": 1, "x": "2"}`))
+		require.NotEmpty(t, mt.errors)
+		require.Equal(t, 1, len(mt.errors))
+		require.Contains(t, mt.errors[0], `#["baz"]`)
+	})
+}
+
+func TestKeyEscapes(t *testing.T) {
+	t.Parallel()
+
+	assertJSONMatchesPattern(t,
+		[]byte(`{"\\foo": "bar"}`),
+		[]byte(`{"foo": "bar"}`))
+
+	mt := &mockTestingT{}
+	assertJSONMatchesPattern(mt,
+		[]byte(`{"\\*": "*"}`),
+		[]byte(`{"*": "ok", "extra": "_"}`))
+	require.NotEmpty(t, mt.errors)
+	require.Equal(t, 1, len(mt.errors))
+	require.Contains(t, mt.errors[0], `#["extra"]`)
+	require.Contains(t, mt.errors[0], `unexpected value "_"`)
+}
+
+func TestObjectPatternConflict(t *testing.T) {
+	mt := &mockTestingT{}
+	assertJSONMatchesPattern(mt,
+		[]byte(`{"\\foo": "1", "foo": "2"}`),
+		[]byte(`{}`))
+	require.NotEmpty(t, mt.errors)
+	require.Equal(t, 1, len(mt.errors))
+	require.Contains(t, mt.errors[0], `object key pattern "foo" specified more than once`)
+}
+
 type mockTestingT struct {
 	errors []string
 }
