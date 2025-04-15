@@ -81,100 +81,105 @@ func assertJSONMatchesPattern(
 		require.NoError(t, err)
 	}
 
-	detectEscape := func(m map[string]interface{}) (interface{}, bool) {
-		if len(m) != 1 {
-			return nil, false
-		}
-		for k, v := range m {
-			if k == "\\" {
-				return v, true
-			}
-		}
-		return nil, false
-	}
+	match(t, "#", p, a)
+}
 
-	var match func(path string, p, a interface{})
-	match = func(path string, p, a interface{}) {
-		switch pp := p.(type) {
-		case string:
-			if pp != "*" {
-				assertJSONEquals(t, path, p, a)
-			}
-		case []interface{}:
-			aa, ok := a.([]interface{})
-			if !ok {
-				t.Errorf("[%s]: expected an array, but got %s", path, prettyJSON(t, a))
-				return
-			}
-			if len(aa) != len(pp) {
-				t.Errorf("[%s]: expected an array of length %d, but got %s",
-					path, len(pp), prettyJSON(t, a))
-				return
-			}
-			for i, pv := range pp {
-				av := aa[i]
-				match(fmt.Sprintf("%s[%d]", path, i), pv, av)
-			}
-		case map[string]interface{}:
-			if esc, isEsc := detectEscape(pp); isEsc {
-				assertJSONEquals(t, path, esc, a)
-				return
-			}
-			catchAllPattern, hasCatchAll := pp["*"]
-			delete(pp, "*")
-
-			// normalize escapes in pp keys
-			for k, v := range pp {
-				delete(pp, k)
-				k = strings.TrimPrefix(k, "\\")
-				pp[k] = v
-			}
-
-			aa, ok := a.(map[string]interface{})
-			if !ok {
-				t.Errorf("[%s]: expected an object, but got %s", path, prettyJSON(t, a))
-				return
-			}
-
-			seenKeys := map[string]bool{}
-			allKeys := []string{}
-
-			for k := range pp {
-				if !seenKeys[k] {
-					allKeys = append(allKeys, k)
-				}
-				seenKeys[k] = true
-			}
-
-			for k := range aa {
-				if !seenKeys[k] {
-					allKeys = append(allKeys, k)
-				}
-				seenKeys[k] = true
-			}
-			sort.Strings(allKeys)
-
-			for _, k := range allKeys {
-				pv, gotPV := pp[k]
-				av, gotAV := aa[k]
-				subPath := fmt.Sprintf("%s[%q]", path, k)
-				switch {
-				case gotPV && gotAV:
-					match(subPath, pv, av)
-				case !gotPV && gotAV && !hasCatchAll:
-					t.Errorf("[%s] unexpected value %s", subPath, prettyJSON(t, av))
-				case !gotPV && gotAV && hasCatchAll:
-					match(subPath, catchAllPattern, av)
-				case gotPV && !gotAV:
-					t.Errorf("[%s] missing a required value", subPath)
-				}
-			}
-		default:
+func match(t testingT, path string, p, a interface{}) {
+	switch pp := p.(type) {
+	case string:
+		if pp != "*" {
 			assertJSONEquals(t, path, p, a)
 		}
+	case []interface{}:
+		aa, ok := a.([]interface{})
+		if !ok {
+			t.Errorf("[%s]: expected an array, but got %s", path, prettyJSON(t, a))
+			return
+		}
+		if len(aa) != len(pp) {
+			t.Errorf("[%s]: expected an array of length %d, but got %s",
+				path, len(pp), prettyJSON(t, a))
+			return
+		}
+		for i, pv := range pp {
+			av := aa[i]
+			match(t, fmt.Sprintf("%s[%d]", path, i), pv, av)
+		}
+	case map[string]interface{}:
+		matchObjectPattern(t, path, pp, a)
+	default:
+		assertJSONEquals(t, path, p, a)
+	}
+}
+
+func matchObjectPattern(t testingT, path string, expectedPattern map[string]any, actual any) {
+	pp := expectedPattern
+	a := actual
+	if esc, isEsc := detectEscape(pp); isEsc {
+		assertJSONEquals(t, path, esc, a)
+		return
+	}
+	catchAllPattern, hasCatchAll := pp["*"]
+	delete(pp, "*")
+
+	// normalize escapes in pp keys
+	for k, v := range pp {
+		delete(pp, k)
+		k = strings.TrimPrefix(k, "\\")
+		pp[k] = v
 	}
 
-	match("#", p, a)
+	aa, ok := a.(map[string]interface{})
+	if !ok {
+		t.Errorf("[%s]: expected an object, but got %s", path, prettyJSON(t, a))
+		return
+	}
+
+	seenKeys := map[string]bool{}
+	allKeys := []string{}
+
+	for k := range pp {
+		if !seenKeys[k] {
+			allKeys = append(allKeys, k)
+		}
+		seenKeys[k] = true
+	}
+
+	for k := range aa {
+		if !seenKeys[k] {
+			allKeys = append(allKeys, k)
+		}
+		seenKeys[k] = true
+	}
+	sort.Strings(allKeys)
+
+	for _, k := range allKeys {
+		pv, gotPV := pp[k]
+		av, gotAV := aa[k]
+		subPath := fmt.Sprintf("%s[%q]", path, k)
+		switch {
+		case gotPV && gotAV:
+			match(t, subPath, pv, av)
+		case !gotPV && gotAV && !hasCatchAll:
+			t.Errorf("[%s] unexpected value %s", subPath, prettyJSON(t, av))
+		case !gotPV && gotAV && hasCatchAll:
+			match(t, subPath, catchAllPattern, av)
+		case gotPV && !gotAV:
+			t.Errorf("[%s] missing a required value", subPath)
+		}
+	}
+}
+
+func detectEscape(m map[string]interface{}) (interface{}, bool) {
+	if len(m) != 1 {
+		return nil, false
+	}
+	for k, v := range m {
+		if k == "\\" {
+			return v, true
+		}
+	}
+	return nil, false
 }
 
 func assertJSONEquals(t testingT, path string, expected, actual interface{}) {
