@@ -112,33 +112,31 @@ func match(t testingT, path string, p, a interface{}) {
 	}
 }
 
-func matchObjectPattern(t testingT, path string, expectedPattern map[string]any, actual any) {
-	pp := expectedPattern
-	a := actual
-	if esc, isEsc := detectEscape(pp); isEsc {
-		assertJSONEquals(t, path, esc, a)
+func matchObjectPattern(t testingT, path string, pattern map[string]any, value any) {
+	if esc, isEsc := detectEscape(pattern); isEsc {
+		assertJSONEquals(t, path, esc, value)
 		return
 	}
-	catchAllPattern, hasCatchAll := pp["*"]
-	delete(pp, "*")
+	catchAllPattern, hasCatchAll := pattern["*"]
+	delete(pattern, "*")
 
 	// normalize escapes in pp keys
-	for k, v := range pp {
-		delete(pp, k)
+	for k, v := range pattern {
+		delete(pattern, k)
 		k = strings.TrimPrefix(k, "\\")
-		pp[k] = v
+		pattern[k] = v
 	}
 
-	aa, ok := a.(map[string]interface{})
+	aa, ok := value.(map[string]interface{})
 	if !ok {
-		t.Errorf("[%s]: expected an object, but got %s", path, prettyJSON(t, a))
+		t.Errorf("[%s]: expected an object, but got %s", path, prettyJSON(t, value))
 		return
 	}
 
 	seenKeys := map[string]bool{}
 	allKeys := []string{}
 
-	for k := range pp {
+	for k := range pattern {
 		if !seenKeys[k] {
 			allKeys = append(allKeys, k)
 		}
@@ -154,7 +152,7 @@ func matchObjectPattern(t testingT, path string, expectedPattern map[string]any,
 	sort.Strings(allKeys)
 
 	for _, k := range allKeys {
-		pv, gotPV := pp[k]
+		pv, gotPV := pattern[k]
 		av, gotAV := aa[k]
 		subPath := fmt.Sprintf("%s[%q]", path, k)
 		switch {
