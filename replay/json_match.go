@@ -16,6 +16,7 @@ package replay
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -112,19 +113,67 @@ func match(t testingT, path string, p, a interface{}) {
 	}
 }
 
+type objectPattern struct {
+	keyPatterns        map[string]any
+	catchAllPattern    any
+	hasCatchAllPattern bool
+}
+
+func (p *objectPattern) sortedKeyUnion(value map[string]any) []string {
+	var keys []string
+	for k := range p.keyPatterns {
+		keys = append(keys, k)
+	}
+	for k := range value {
+		if _, seen := p.keyPatterns[k]; seen {
+			continue
+		}
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func compileObjectPattern(pattern map[string]any) (objectPattern, error) {
+	o := objectPattern{
+		keyPatterns: map[string]any{},
+	}
+
+	var err error
+	for k, v := range pattern {
+		if k == "*" {
+			o.hasCatchAllPattern = true
+			o.catchAllPattern = v
+			continue
+		}
+
+		// Keys in object patterns may be escaped.
+		cleanKey := strings.TrimPrefix(k, "\\")
+
+		if _, conflict := o.keyPatterns[cleanKey]; conflict {
+			err = errors.Join(err, fmt.Errorf("object key pattern %q specified more than once", cleanKey))
+		}
+
+		o.keyPatterns[cleanKey] = v
+	}
+
+	if err != nil {
+		return objectPattern{}, err
+	}
+
+	return o, nil
+}
+
 func matchObjectPattern(t testingT, path string, pattern map[string]any, value any) {
 	if esc, isEsc := detectEscape(pattern); isEsc {
 		assertJSONEquals(t, path, esc, value)
 		return
 	}
-	catchAllPattern, hasCatchAll := pattern["*"]
-	delete(pattern, "*")
 
-	// normalize escapes in pp keys
-	for k, v := range pattern {
-		delete(pattern, k)
-		k = strings.TrimPrefix(k, "\\")
-		pattern[k] = v
+	objPattern, err := compileObjectPattern(pattern)
+	if err != nil {
+		t.Errorf("[%s]: %v", err)
+		return
 	}
 
 	aa, ok := value.(map[string]interface{})
@@ -133,35 +182,17 @@ func matchObjectPattern(t testingT, path string, pattern map[string]any, value a
 		return
 	}
 
-	seenKeys := map[string]bool{}
-	allKeys := []string{}
-
-	for k := range pattern {
-		if !seenKeys[k] {
-			allKeys = append(allKeys, k)
-		}
-		seenKeys[k] = true
-	}
-
-	for k := range aa {
-		if !seenKeys[k] {
-			allKeys = append(allKeys, k)
-		}
-		seenKeys[k] = true
-	}
-	sort.Strings(allKeys)
-
-	for _, k := range allKeys {
-		pv, gotPV := pattern[k]
+	for _, k := range objPattern.sortedKeyUnion(aa) {
+		pv, gotPV := objPattern.keyPatterns[k]
 		av, gotAV := aa[k]
 		subPath := fmt.Sprintf("%s[%q]", path, k)
 		switch {
 		case gotPV && gotAV:
 			match(t, subPath, pv, av)
-		case !gotPV && gotAV && !hasCatchAll:
+		case !gotPV && gotAV && !objPattern.hasCatchAllPattern:
 			t.Errorf("[%s] unexpected value %s", subPath, prettyJSON(t, av))
-		case !gotPV && gotAV && hasCatchAll:
-			match(t, subPath, catchAllPattern, av)
+		case !gotPV && gotAV && objPattern.hasCatchAllPattern:
+			match(t, subPath, objPattern.catchAllPattern, av)
 		case gotPV && !gotAV:
 			t.Errorf("[%s] missing a required value", subPath)
 		}

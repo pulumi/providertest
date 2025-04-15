@@ -80,6 +80,16 @@ func TestKeyEscapes(t *testing.T) {
 	require.Contains(t, mt.errors[0], `unexpected value "_"`)
 }
 
+func TestObjectPatternConflict(t *testing.T) {
+	mt := &mockTestingT{}
+	assertJSONMatchesPattern(mt,
+		[]byte(`{"\\foo": "1", "foo": "2"}`),
+		[]byte(`{}`))
+	require.NotEmpty(t, mt.errors)
+	require.Equal(t, 1, len(mt.errors))
+	require.Contains(t, mt.errors[0], `object key pattern "foo" specified more than once`)
+}
+
 type mockTestingT struct {
 	errors []string
 }
