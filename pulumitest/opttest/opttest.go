@@ -101,7 +101,7 @@ func DownloadProviderVersion(name, version string) Option {
 // Each package is called with `yarn link <package>` on stack creation.
 func YarnLink(packages ...string) Option {
 	return optionFunc(func(o *Options) {
-		o.YarnLinks = append(o.YarnLinks, filepath.Join(packages...))
+		o.YarnLinks = append(o.YarnLinks, packages...)
 	})
 }
 
