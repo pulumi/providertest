@@ -1,6 +1,7 @@
 package pulumitest
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -145,4 +146,67 @@ func TestCustomTempDir(t *testing.T) {
 	if !strings.HasPrefix(workingDir, customTempDir) {
 		t.Fatalf("expected working directory to be in the custom temp directory, got %s", workingDir)
 	}
+}
+
+func TestDotNetDeploy(t *testing.T) {
+	t.Parallel()
+	test := NewPulumiTest(t, filepath.Join("testdata", "csharp_simple"))
+
+	// Test a preview.
+	preview := test.Preview(t)
+	assert.Equal(t,
+		map[apitype.OpType]int{apitype.OpCreate: 2},
+		preview.ChangeSummary)
+
+	// Now do a real deploy.
+	up := test.Up(t)
+	assert.Equal(t,
+		map[string]int{"create": 2},
+		*up.Summary.ResourceChanges)
+
+	assertup.HasNoDeletes(t, up)
+
+	// Verify outputs exist
+	assert.NotEmpty(t, up.Outputs["name"].Value)
+
+	// Test that a second preview shows no changes
+	preview2 := test.Preview(t)
+	assertpreview.HasNoChanges(t, preview2)
+}
+
+func TestDotNetSkipInstall(t *testing.T) {
+	t.Parallel()
+	test := NewPulumiTest(t, filepath.Join("testdata", "csharp_simple"), opttest.SkipInstall(), opttest.SkipStackCreate())
+
+	// Manually install and create stack
+	test.Install(t)
+	test.NewStack(t, "test")
+
+	// Test a preview.
+	preview := test.Preview(t)
+	assert.Equal(t,
+		map[apitype.OpType]int{apitype.OpCreate: 2},
+		preview.ChangeSummary)
+}
+
+func TestDotNetWithLocalReference(t *testing.T) {
+	t.Parallel()
+	mockSdkPath := filepath.Join("testdata", "mock_sdk")
+
+	// Create test with local project reference to mock SDK
+	// Skip install since we don't need to build, just verify .csproj modification
+	test := NewPulumiTest(t,
+		filepath.Join("testdata", "csharp_with_ref"),
+		opttest.DotNetReference("MockSdk", mockSdkPath),
+		opttest.SkipInstall())
+
+	// Verify that the .csproj was modified with the reference
+	// The modification happens during NewStack which is called automatically
+	csprojPath := filepath.Join(test.WorkingDir(), "csharp_with_ref.csproj")
+	csprojContent, err := os.ReadFile(csprojPath)
+	assert.NoError(t, err, "should be able to read .csproj")
+	assert.Contains(t, string(csprojContent), "<ProjectReference", "should contain ProjectReference")
+	assert.Contains(t, string(csprojContent), "MockSdk.csproj", "should reference MockSdk.csproj")
+
+	t.Log(".csproj successfully modified with local project reference")
 }

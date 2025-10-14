@@ -171,6 +171,44 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
+	// Handle .NET-specific configurations
+	if len(options.DotNetReferences) > 0 || options.DotNetTargetFramework != "" || options.DotNetBuildConfig != "" {
+		// Find the .csproj file in the working directory
+		csprojPath, err := findCsprojFile(pt.workingDir)
+		if err != nil {
+			ptFatalF(t, "failed to find .csproj file: %s", err)
+		}
+		ptLogF(t, "found .csproj file: %s", csprojPath)
+
+		// Add project references
+		if len(options.DotNetReferences) > 0 {
+			err = addProjectReferences(csprojPath, options.DotNetReferences)
+			if err != nil {
+				ptFatalF(t, "failed to add .NET project references: %s", err)
+			}
+
+			// Log the references that were added
+			for name, path := range options.DotNetReferences {
+				ptLogF(t, "added .NET project reference: %s -> %s", name, path)
+			}
+		}
+
+		// Set target framework if specified
+		if options.DotNetTargetFramework != "" {
+			err = setTargetFramework(csprojPath, options.DotNetTargetFramework)
+			if err != nil {
+				ptFatalF(t, "failed to set target framework: %s", err)
+			}
+			ptLogF(t, "set target framework to: %s", options.DotNetTargetFramework)
+		}
+	}
+
+	// Set build configuration environment variable if specified
+	if options.DotNetBuildConfig != "" {
+		env["DOTNET_BUILD_CONFIGURATION"] = options.DotNetBuildConfig
+		ptLogF(t, "set .NET build configuration to: %s", options.DotNetBuildConfig)
+	}
+
 	if err != nil {
 		ptFatalF(t, "failed to create stack: %s", err)
 		return nil

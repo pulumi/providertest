@@ -1,0 +1,3 @@
+name: csharp_aws
+runtime: dotnet
+description: A minimal AWS Pulumi C# program.

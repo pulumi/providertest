@@ -1,0 +1,3 @@
+name: csharp_with_ref
+runtime: dotnet
+description: A C# program using local project reference.
