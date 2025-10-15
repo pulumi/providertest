@@ -8,37 +8,40 @@ import (
 	"strings"
 )
 
-// CsprojProject represents a simplified .csproj XML structure
-type CsprojProject struct {
-	XMLName xml.Name `xml:"Project"`
-	Sdk     string   `xml:"Sdk,attr,omitempty"`
-	Groups  []CsprojItemGroup
+// xmlNode represents a generic XML node that preserves all structure, attributes, and content.
+// This approach allows us to manipulate .csproj files without losing any data.
+type xmlNode struct {
+	XMLName xml.Name
+	Attrs   []xml.Attr `xml:"-"`
+	Content []byte     `xml:",innerxml"`
+	Nodes   []xmlNode  `xml:",any"`
 }
 
-// CsprojItemGroup represents an ItemGroup in .csproj
-type CsprojItemGroup struct {
-	XMLName            xml.Name              `xml:"ItemGroup"`
-	PackageReferences  []CsprojPackageRef    `xml:"PackageReference"`
-	ProjectReferences  []CsprojProjectRef    `xml:"ProjectReference"`
-	PropertyGroups     []CsprojPropertyGroup `xml:"PropertyGroup"`
+func (n *xmlNode) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	n.XMLName = start.Name
+	n.Attrs = start.Attr
+	type node xmlNode
+	return d.DecodeElement((*node)(n), &start)
 }
 
-// CsprojPackageRef represents a PackageReference element
-type CsprojPackageRef struct {
-	XMLName xml.Name `xml:"PackageReference"`
-	Include string   `xml:"Include,attr"`
-	Version string   `xml:"Version,attr,omitempty"`
-}
-
-// CsprojProjectRef represents a ProjectReference element
-type CsprojProjectRef struct {
-	XMLName xml.Name `xml:"ProjectReference"`
-	Include string   `xml:"Include,attr"`
-}
-
-// CsprojPropertyGroup represents a PropertyGroup element
-type CsprojPropertyGroup struct {
-	XMLName xml.Name `xml:"PropertyGroup"`
+func (n *xmlNode) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = n.XMLName
+	start.Attr = n.Attrs
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+	if len(n.Nodes) > 0 {
+		for _, node := range n.Nodes {
+			if err := e.Encode(&node); err != nil {
+				return err
+			}
+		}
+	} else if len(n.Content) > 0 {
+		if err := e.EncodeToken(xml.CharData(n.Content)); err != nil {
+			return err
+		}
+	}
+	return e.EncodeToken(start.End())
 }
 
 // findCsprojFile finds a .csproj file in the given directory
@@ -59,21 +62,19 @@ func findCsprojFile(dir string) (string, error) {
 
 // addProjectReferences adds ProjectReference elements to a .csproj file
 func addProjectReferences(csprojPath string, references map[string]string) error {
-	// Read the existing .csproj file
+	// Read and parse the .csproj file
 	data, err := os.ReadFile(csprojPath)
 	if err != nil {
 		return fmt.Errorf("failed to read .csproj file: %w", err)
 	}
 
-	// Simple XML manipulation approach:
-	// We'll parse the file as text and insert new ProjectReference elements
-	// before the closing </Project> tag
-	content := string(data)
+	var root xmlNode
+	if err := xml.Unmarshal(data, &root); err != nil {
+		return fmt.Errorf("failed to parse .csproj XML: %w", err)
+	}
 
-	// Build the ProjectReference XML elements
-	var projectRefs strings.Builder
-	projectRefs.WriteString("\n\n  <ItemGroup>\n")
-
+	// Build ProjectReference nodes
+	var refNodes []xmlNode
 	for _, refPath := range references {
 		absPath, err := filepath.Abs(refPath)
 		if err != nil {
@@ -81,17 +82,12 @@ func addProjectReferences(csprojPath string, references map[string]string) error
 		}
 
 		// Check if the path exists
-		_, err = os.Stat(absPath)
+		info, err := os.Stat(absPath)
 		if err != nil {
 			return fmt.Errorf("reference path does not exist: %s: %w", absPath, err)
 		}
 
 		// If it's a directory, look for a .csproj file in it
-		info, err := os.Stat(absPath)
-		if err != nil {
-			return fmt.Errorf("failed to stat path %s: %w", absPath, err)
-		}
-
 		if info.IsDir() {
 			absPath, err = findCsprojFile(absPath)
 			if err != nil {
@@ -99,63 +95,29 @@ func addProjectReferences(csprojPath string, references map[string]string) error
 			}
 		}
 
-		projectRefs.WriteString(fmt.Sprintf("    <ProjectReference Include=\"%s\" />\n", absPath))
+		refNodes = append(refNodes, xmlNode{
+			XMLName: xml.Name{Local: "ProjectReference"},
+			Attrs:   []xml.Attr{{Name: xml.Name{Local: "Include"}, Value: absPath}},
+		})
 	}
 
-	projectRefs.WriteString("  </ItemGroup>\n")
-
-	// Find the closing </Project> tag and insert before it
-	closeTagIndex := strings.LastIndex(content, "</Project>")
-	if closeTagIndex == -1 {
-		return fmt.Errorf("malformed .csproj file: no closing </Project> tag found")
+	// Create new ItemGroup node with ProjectReferences
+	itemGroup := xmlNode{
+		XMLName: xml.Name{Local: "ItemGroup"},
+		Nodes:   refNodes,
 	}
 
-	// Insert the new ItemGroup before the closing tag
-	newContent := content[:closeTagIndex] + projectRefs.String() + content[closeTagIndex:]
+	// Add the new ItemGroup to the root
+	root.Nodes = append(root.Nodes, itemGroup)
+
+	// Marshal back to XML
+	output, err := xml.MarshalIndent(&root, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal .csproj XML: %w", err)
+	}
 
 	// Write back to file
-	err = os.WriteFile(csprojPath, []byte(newContent), 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write .csproj file: %w", err)
-	}
-
-	return nil
-}
-
-// setTargetFramework modifies the TargetFramework in a .csproj file
-func setTargetFramework(csprojPath string, framework string) error {
-	// Read the existing .csproj file
-	data, err := os.ReadFile(csprojPath)
-	if err != nil {
-		return fmt.Errorf("failed to read .csproj file: %w", err)
-	}
-
-	content := string(data)
-
-	// Find and replace the TargetFramework element
-	// Look for <TargetFramework>...</TargetFramework>
-	startTag := "<TargetFramework>"
-	endTag := "</TargetFramework>"
-
-	startIndex := strings.Index(content, startTag)
-	if startIndex == -1 {
-		return fmt.Errorf("no <TargetFramework> element found in .csproj file")
-	}
-
-	endIndex := strings.Index(content[startIndex:], endTag)
-	if endIndex == -1 {
-		return fmt.Errorf("malformed <TargetFramework> element in .csproj file")
-	}
-
-	// Calculate the actual end index in the full content
-	endIndex = startIndex + endIndex
-
-	// Replace the framework value
-	newContent := content[:startIndex+len(startTag)] + framework + content[endIndex:]
-
-	// Write back to file
-	err = os.WriteFile(csprojPath, []byte(newContent), 0644)
-	if err != nil {
+	if err := os.WriteFile(csprojPath, output, 0644); err != nil {
 		return fmt.Errorf("failed to write .csproj file: %w", err)
 	}
 

@@ -122,24 +122,6 @@ func DotNetReference(packageName string, localPathElem ...string) Option {
 	})
 }
 
-// DotNetBuildConfiguration sets the build configuration (Debug or Release) for .NET projects.
-// This sets the DOTNET_BUILD_CONFIGURATION environment variable used by `dotnet build`.
-// Default is Debug if not specified.
-func DotNetBuildConfiguration(config string) Option {
-	return optionFunc(func(o *Options) {
-		o.DotNetBuildConfig = config
-	})
-}
-
-// DotNetTargetFramework specifies the target framework for .NET projects (e.g., net6.0, net7.0, net8.0).
-// This sets the target framework in the .csproj file if specified.
-// If not set, the framework defined in the project file is used.
-func DotNetTargetFramework(framework string) Option {
-	return optionFunc(func(o *Options) {
-		o.DotNetTargetFramework = framework
-	})
-}
-
 // UseAmbientBackend skips setting `PULUMI_BACKEND_URL` to a local temporary directory which overrides any backend configuration which might have been done on the local environment via `pulumi login`.
 // Using this option will cause the program under test to use whatever backend configuration has been set via `pulumi login` or an existing `PULUMI_BACKEND_URL` value.
 func UseAmbientBackend() Option {
@@ -195,8 +177,6 @@ type Options struct {
 	YarnLinks             []string
 	GoModReplacements     map[string]string
 	DotNetReferences      map[string]string
-	DotNetBuildConfig     string
-	DotNetTargetFramework string
 	CustomEnv             map[string]string
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
 	DisableGrpcLog        bool
@@ -232,8 +212,6 @@ func Defaults() Option {
 		o.YarnLinks = []string{}
 		o.GoModReplacements = make(map[string]string)
 		o.DotNetReferences = make(map[string]string)
-		o.DotNetBuildConfig = ""
-		o.DotNetTargetFramework = ""
 		o.CustomEnv = make(map[string]string)
 		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
 		o.DisableGrpcLog = false

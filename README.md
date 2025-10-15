@@ -7,7 +7,9 @@ Library for testing Pulumi providers by running Pulumi programs.
 
 The library is composed of several modules. The most important of these is the [`pulumitest`](./pulumitest/) module. This is a library designed for testing any Pulumi program within a Go test. It extends the Go [Automation API](https://www.pulumi.com/automation/) with defaults appropriate for local testing such as using temporary directories for state.
 
-Here's a short example of how to use pulumitest:
+## Quick Start
+
+Here's a basic example of how to use pulumitest:
 
 ```go
 import (
@@ -23,7 +25,7 @@ func TestPulumiProgram(t *testing.T) {
 }
 ```
 
-Refer to [the full documentation](./pulumitest/README.md) for a complete walkthrough of the features.
+For detailed usage patterns, examples, and configuration options, see [the pulumitest documentation](./pulumitest/README.md).
 
 ## Attaching In-Process Providers
 
@@ -93,3 +95,4 @@ The `providers` module provides additional utilities for `pulumitest` when build
 The `grpclog` module contains types and functions for reading, querying and writing Pulumi's grpc log format (normally living in a `grpc.json` file).
 
 The `replay` module has methods for exercising specific provider gRPC methods directly and from existing log files.
+

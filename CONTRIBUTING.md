@@ -1,6 +1,6 @@
-# CLAUDE.md
+# Contributing to pulumitest
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This guide provides detailed information about the pulumitest library's architecture, testing patterns, and development practices.
 
 ## Build Commands
 - Run all tests in pulumitest module: `go test -v ./...`
@@ -80,73 +80,8 @@ The library supports multiple ways to configure providers for testing:
 - Sets `plugins.providers` in Pulumi.yaml for providers that don't support attachment
 - Provider is started by Pulumi engine, not attached
 
-### Testing Patterns
 
-**Default Behavior**
-- Programs copied to temp directory (OS-specific or `PULUMITEST_TEMP_DIR`)
-- Dependencies installed automatically unless `SkipInstall()` used
-- Stack named "test" created automatically unless `SkipStackCreate()` used
-- Local backend in temp directory unless `UseAmbientBackend()` used
-- Stacks automatically destroyed on test completion
-- Temp directories retained on failure for debugging (configurable via env vars)
 
-**gRPC Logging** (`grpcLog.go`, `grpcLog_test.go`)
-- Enabled by default, written to `grpc.json` in working directory
-- Disable with `opttest.DisableGrpcLog()`
-- Access via `test.GrpcLog(t)` which returns parsed log entries
-- Supports sanitization of secrets before writing to disk
-
-**Multi-Step Tests**
-- Use `UpdateSource(t, path)` to replace program files between operations
-- Useful for testing update behavior, replacements, etc.
-- Example pattern: `Up()` → `UpdateSource()` → `Up()` → assert changes
-
-**SDK Configuration**
-- Node.js: Use `YarnLink("@pulumi/package")` after running `yarn link` in SDK directory
-- Go: Use `GoModReplacement("module", "path", "to", "replacement")` to add go.mod replacements
-- .NET/C#:
-  - Use `DotNetReference("package", "path", "to", "project")` to add project references to .csproj files
-    - Path can point to a .csproj file or a directory containing one
-    - Absolute paths are resolved automatically
-    - ProjectReference elements are added to the .csproj file on stack creation
-  - Use `DotNetBuildConfiguration("Release")` to set build configuration (Debug/Release)
-    - Sets `DOTNET_BUILD_CONFIGURATION` environment variable
-    - Default is Debug if not specified
-  - Use `DotNetTargetFramework("net8.0")` to override target framework
-    - Modifies `<TargetFramework>` element in .csproj
-    - Useful for testing across different .NET versions
-
-**Examples**
-```go
-// Basic .NET test
-test := NewPulumiTest(t, "path/to/csharp/project")
-up := test.Up(t)
-
-// Test with local SDK reference
-test := NewPulumiTest(t,
-    "path/to/csharp/project",
-    opttest.DotNetReference("Pulumi.Aws", "../pulumi-aws/sdk/dotnet"),
-)
-
-// Test with specific framework and configuration
-test := NewPulumiTest(t,
-    "path/to/csharp/project",
-    opttest.DotNetTargetFramework("net7.0"),
-    opttest.DotNetBuildConfiguration("Release"),
-)
-```
-
-### Environment Variables
-
-| Variable | Purpose |
-|----------|---------|
-| `CI` | Adjusts defaults for CI environment (affects file retention) |
-| `PULUMITEST_RETAIN_FILES` | Set to `true` to always retain temp directories |
-| `PULUMITEST_RETAIN_FILES_ON_FAILURE` | Retain temp files on test failure (default: `true` locally, `false` in CI) |
-| `PULUMITEST_SKIP_DESTROY_ON_FAILURE` | Skip automatic destroy on test failure (default: `false`) |
-| `PULUMITEST_TEMP_DIR` | Custom temp directory instead of OS default |
-| `PULUMI_CONFIG_PASSPHRASE` | Override default passphrase (defaults to "correct horse battery staple") |
-| `PULUMI_BACKEND_URL` | Override default local backend |
 
 ### Subdirectories
 
@@ -200,12 +135,8 @@ test := NewPulumiTest(t,
 
 **Target Framework Not Found**
 - Error: `Framework 'Microsoft.NETCore.App', version 'X.X.X' not found`
-- Solution: Install the required .NET SDK version or use `DotNetTargetFramework()` to specify an installed version
+- Solution: Install the required .NET SDK version
 - Check installed versions: `dotnet --list-sdks`
-
-**Build Configuration Issues**
-- If builds are slow or producing unexpected results, explicitly set: `DotNetBuildConfiguration("Release")`
-- Debug builds include more information but are larger and slower
 
 **Project Reference Resolution**
 - Ensure referenced projects use compatible target frameworks

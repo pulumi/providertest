@@ -131,6 +131,34 @@ NewPulumiTest(t, "test_dir",
   opttest.GoModReplacement("github.com/pulumi/pulumi-my-provider/sdk/v3", "..", "sdk"))
 ```
 
+### .NET/C# - Project References
+
+For .NET/C#, we support adding local project references to the `.csproj` file. This is useful when testing with a locally built SDK that hasn't been published to NuGet.
+
+The reference can be specified using the `DotNetReference` test option:
+
+```go
+// Path can point to a .csproj file or a directory containing one
+NewPulumiTest(t, "test_dir",
+  opttest.DotNetReference("Pulumi.Aws", "..", "pulumi-aws", "sdk", "dotnet"))
+```
+
+The `DotNetReference` option adds a `<ProjectReference>` element to the test program's `.csproj` file, and the framework automatically resolves relative paths to absolute paths.
+
+### .NET/C# Examples
+
+```go
+// Basic .NET test
+test := NewPulumiTest(t, "path/to/csharp/project")
+up := test.Up(t)
+
+// Test with local SDK reference
+test := NewPulumiTest(t,
+    "path/to/csharp/project",
+    opttest.DotNetReference("Pulumi.Aws", "../pulumi-aws/sdk/dotnet"),
+)
+```
+
 ## Additional Operations
 
 ### Update Source
@@ -149,6 +177,27 @@ Set a variable in the stack's config:
 test.SetConfig(t, "gcp:project", "pulumi-development")
 ```
 
+## Testing Patterns
+
+### Default Behavior
+- Programs are copied to a temporary directory (OS-specific or `PULUMITEST_TEMP_DIR`)
+- Dependencies are installed automatically unless `SkipInstall()` is used
+- A stack named "test" is created automatically unless `SkipStackCreate()` is used
+- Local backend is used in the temp directory unless `UseAmbientBackend()` is used
+- Stacks are automatically destroyed on test completion
+- Temp directories are retained on failure for debugging (configurable via environment variables)
+
+### gRPC Logging
+- Enabled by default, written to `grpc.json` in the working directory
+- Disable with `opttest.DisableGrpcLog()`
+- Access via `test.GrpcLog(t)` which returns parsed log entries
+- Supports sanitization of secrets before writing to disk
+
+### Multi-Step Tests
+- Use `UpdateSource(t, path)` to replace program files between operations
+- Useful for testing update behavior, replacements, etc.
+- Example pattern: `Up()` → `UpdateSource()` → `Up()` → assert changes
+
 ## Environment Variables
 
 The behavior of pulumitest can be adjusted through use of certain environment variables:
@@ -160,6 +209,8 @@ The behavior of pulumitest can be adjusted through use of certain environment va
 | `PULUMITEST_RETAIN_FILES_ON_FAILURE` | Can be set explicitly to `true` or `false`. Defaults to `true` locally and `false` in CI environments. |
 | `PULUMITEST_SKIP_DESTROY_ON_FAILURE` | Skips the automatic attempt to destroy a stack even after a test failure. This defaults to `false`. If set to true, the files will also be retained unless `PULUMITEST_RETAIN_FILES_ON_FAILURE` set to `false`. |
 | `PULUMITEST_TEMP_DIR` | Changes the default temp directory from the OS-specific system location. |
+| `PULUMI_CONFIG_PASSPHRASE` | Override default passphrase (defaults to "correct horse battery staple") |
+| `PULUMI_BACKEND_URL` | Override default local backend |
 
 ## Asserts
 
