@@ -105,6 +105,14 @@ func YarnLink(packages ...string) Option {
 	})
 }
 
+// PythonLink specifies packages which should be installed from a local path via `pip install -e` (editable mode).
+// Each package path is installed with `pip install -e <path>` on stack creation.
+func PythonLink(packagePaths ...string) Option {
+	return optionFunc(func(o *Options) {
+		o.PythonLinks = append(o.PythonLinks, packagePaths...)
+	})
+}
+
 // GoModReplacement specifies replacements to be add to the go.mod file when running the program under test.
 // Each replacement is added to the go.mod file with `go mod edit -replace <replacement>` on stack creation.
 func GoModReplacement(packageSpecifier string, replacementPathElem ...string) Option {
@@ -175,6 +183,7 @@ type Options struct {
 	Providers             map[providers.ProviderName]ProviderConfigUnion
 	UseAmbientBackend     bool
 	YarnLinks             []string
+	PythonLinks           []string
 	GoModReplacements     map[string]string
 	DotNetReferences      map[string]string
 	CustomEnv             map[string]string
@@ -210,6 +219,7 @@ func Defaults() Option {
 		o.Providers = make(map[providers.ProviderName]ProviderConfigUnion)
 		o.UseAmbientBackend = false
 		o.YarnLinks = []string{}
+		o.PythonLinks = []string{}
 		o.GoModReplacements = make(map[string]string)
 		o.DotNetReferences = make(map[string]string)
 		o.CustomEnv = make(map[string]string)
