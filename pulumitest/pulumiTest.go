@@ -20,6 +20,7 @@ type PulumiTest struct {
 	workingDir   string
 	options      *opttest.Options
 	currentStack *auto.Stack
+	javaPrepared bool
 }
 
 // NewPulumiTest creates a new PulumiTest instance.
