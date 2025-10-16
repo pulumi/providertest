@@ -8,42 +8,6 @@ import (
 	"strings"
 )
 
-// xmlNode represents a generic XML node that preserves all structure, attributes, and content.
-// This approach allows us to manipulate .csproj files without losing any data.
-type xmlNode struct {
-	XMLName xml.Name
-	Attrs   []xml.Attr `xml:"-"`
-	Content []byte     `xml:",innerxml"`
-	Nodes   []xmlNode  `xml:",any"`
-}
-
-func (n *xmlNode) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	n.XMLName = start.Name
-	n.Attrs = start.Attr
-	type node xmlNode
-	return d.DecodeElement((*node)(n), &start)
-}
-
-func (n *xmlNode) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	start.Name = n.XMLName
-	start.Attr = n.Attrs
-	if err := e.EncodeToken(start); err != nil {
-		return err
-	}
-	if len(n.Nodes) > 0 {
-		for _, node := range n.Nodes {
-			if err := e.Encode(&node); err != nil {
-				return err
-			}
-		}
-	} else if len(n.Content) > 0 {
-		if err := e.EncodeToken(xml.CharData(n.Content)); err != nil {
-			return err
-		}
-	}
-	return e.EncodeToken(start.End())
-}
-
 // findCsprojFile finds a .csproj file in the given directory
 func findCsprojFile(dir string) (string, error) {
 	entries, err := os.ReadDir(dir)
