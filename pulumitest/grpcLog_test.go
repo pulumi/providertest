@@ -18,5 +18,5 @@ func TestGrpc(t *testing.T) {
 	creates, err := log.Creates()
 	assert.NoError(t, err)
 	assert.Len(t, creates, 1)
-	snaps.MatchJSON(t, creates, match.Any("0.Response.id", "0.Response.properties.id"))
+	snaps.MatchJSON(t, creates, match.Any("0.Response.id", "0.Response.properties.id", "0.Response.properties.__pulumi_raw_state_delta"))
 }

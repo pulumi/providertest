@@ -11,6 +11,7 @@
   "Response": {
    "id": "<Any value>",
    "properties": {
+    "__pulumi_raw_state_delta": "<Any value>",
     "id": "<Any value>",
     "length": 2,
     "separator": "-"

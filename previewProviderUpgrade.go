@@ -33,7 +33,10 @@ func PreviewProviderUpgrade(t pulumitest.PT, pulumiTest *pulumitest.PulumiTest, 
 			grpcLogPath := filepath.Join(cacheDir, "grpc.json")
 			t.Log(fmt.Sprintf("writing grpc log to %s", grpcLogPath))
 			grptLog.SanitizeSecrets()
-			grptLog.WriteTo(grpcLogPath)
+			if err := grptLog.WriteTo(grpcLogPath); err != nil {
+				t.Log(fmt.Sprintf("failed to write grpc log: %v", err))
+				t.FailNow()
+			}
 		},
 		optrun.WithCache(filepath.Join(cacheDir, "stack.json")),
 		optrun.WithOpts(
