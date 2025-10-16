@@ -202,6 +202,7 @@ type Options struct {
 	RequireYarnLinks        *bool
 	GoModReplacements       map[string]string
 	DotNetReferences        map[string]string
+	DependencyEdits         []DependencyEdit
 	CustomEnv               map[string]string
 	ExtraWorkspaceOptions   []auto.LocalWorkspaceOption
 	DisableGrpcLog          bool
@@ -240,6 +241,7 @@ func Defaults() Option {
 		o.RequireYarnLinks = nil
 		o.GoModReplacements = make(map[string]string)
 		o.DotNetReferences = make(map[string]string)
+		o.DependencyEdits = []DependencyEdit{}
 		o.CustomEnv = make(map[string]string)
 		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
 		o.DisableGrpcLog = false

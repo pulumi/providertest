@@ -67,6 +67,10 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 
 	ptLogF(t, "creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.workingDir, stackOpts...)
+	if err != nil {
+		ptFatalF(t, "failed to create stack: %s", err)
+		return nil
+	}
 
 	providerPluginPaths := options.ProviderPluginPaths()
 	if len(providerPluginPaths) > 0 {
@@ -212,9 +216,15 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if err != nil {
-		ptFatalF(t, "failed to create stack: %s", err)
-		return nil
+	// Warn if EditDependency is used with LocalProviderPath
+	if len(options.DependencyEdits) > 0 && len(providerPluginPaths) > 0 {
+		ptLogF(t, "WARNING: EditDependency is being used with LocalProviderPath. The local provider path may override the version from the SDK, causing potential conflicts.")
+	}
+
+	if len(options.DependencyEdits) > 0 {
+		if err := editDependencies(t, pt.workingDir, options.DependencyEdits); err != nil {
+			ptFatalF(t, "failed to edit dependencies: %s", err)
+		}
 	}
 	if !stackOptions.SkipDestroy {
 		t.Cleanup(func() {
