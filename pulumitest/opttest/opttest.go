@@ -137,6 +137,46 @@ func DotNetReference(packageName string, localPathElem ...string) Option {
 	})
 }
 
+// JavaMavenDependency specifies a local Maven dependency to use when running the program under test.
+// The path can be either a JAR file or a directory containing the built Maven artifact.
+// This will modify the pom.xml to add or update the dependency with system scope.
+func JavaMavenDependency(groupID, artifactID string, pathElem ...string) Option {
+	return optionFunc(func(o *Options) {
+		if o.JavaMavenDependencies == nil {
+			o.JavaMavenDependencies = make(map[string]MavenDependency)
+		}
+		o.JavaMavenDependencies[groupID+":"+artifactID] = MavenDependency{
+			GroupID:    groupID,
+			ArtifactID: artifactID,
+			Path:       filepath.Join(pathElem...),
+		}
+	})
+}
+
+// JavaMavenProfile activates a Maven profile when running the program under test.
+// This sets the Maven `-P` flag to activate the specified profile.
+func JavaMavenProfile(profile string) Option {
+	return optionFunc(func(o *Options) {
+		o.JavaMavenProfile = profile
+	})
+}
+
+// JavaTargetVersion sets the Java compiler target version in the pom.xml.
+// This modifies maven.compiler.source and maven.compiler.target properties.
+func JavaTargetVersion(version string) Option {
+	return optionFunc(func(o *Options) {
+		o.JavaTargetVersion = version
+	})
+}
+
+// JavaMavenSettings specifies a custom Maven settings.xml file to use when running the program under test.
+// This will pass the `-s` flag to Maven commands.
+func JavaMavenSettings(path string) Option {
+	return optionFunc(func(o *Options) {
+		o.JavaMavenSettings = path
+	})
+}
+
 // UseAmbientBackend skips setting `PULUMI_BACKEND_URL` to a local temporary directory which overrides any backend configuration which might have been done on the local environment via `pulumi login`.
 // Using this option will cause the program under test to use whatever backend configuration has been set via `pulumi login` or an existing `PULUMI_BACKEND_URL` value.
 func UseAmbientBackend() Option {
@@ -179,24 +219,35 @@ func NewStackOptions(opts ...optnewstack.NewStackOpt) Option {
 	})
 }
 
+// MavenDependency represents a Maven dependency to be added to pom.xml.
+type MavenDependency struct {
+	GroupID    string
+	ArtifactID string
+	Path       string
+}
+
 type Options struct {
-	StackName             string
-	SkipInstall           bool
-	SkipStackCreate       bool
-	NewStackOpts          []optnewstack.NewStackOpt
-	TestInPlace           bool
-	TempDir               string
-	ConfigPassphrase      string
-	Providers             map[providers.ProviderName]ProviderConfigUnion
-	UseAmbientBackend     bool
-	YarnLinks             []string
-	PythonLinks           []string
-	RequireYarnLinks      *bool
-	GoModReplacements     map[string]string
-	DotNetReferences      map[string]string
-	CustomEnv             map[string]string
-	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
-	DisableGrpcLog        bool
+	StackName              string
+	SkipInstall            bool
+	SkipStackCreate        bool
+	NewStackOpts           []optnewstack.NewStackOpt
+	TestInPlace            bool
+	TempDir                string
+	ConfigPassphrase       string
+	Providers              map[providers.ProviderName]ProviderConfigUnion
+	UseAmbientBackend      bool
+	YarnLinks              []string
+	PythonLinks            []string
+	RequireYarnLinks       *bool
+	GoModReplacements      map[string]string
+	DotNetReferences       map[string]string
+	JavaMavenDependencies  map[string]MavenDependency
+	JavaMavenProfile       string
+	JavaTargetVersion      string
+	JavaMavenSettings      string
+	CustomEnv              map[string]string
+	ExtraWorkspaceOptions  []auto.LocalWorkspaceOption
+	DisableGrpcLog         bool
 }
 
 // ProviderConfigUnion is a union type for specifying a provider configuration.
@@ -231,6 +282,10 @@ func Defaults() Option {
 		o.RequireYarnLinks = nil
 		o.GoModReplacements = make(map[string]string)
 		o.DotNetReferences = make(map[string]string)
+		o.JavaMavenDependencies = make(map[string]MavenDependency)
+		o.JavaMavenProfile = ""
+		o.JavaTargetVersion = ""
+		o.JavaMavenSettings = ""
 		o.CustomEnv = make(map[string]string)
 		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
 		o.DisableGrpcLog = false
