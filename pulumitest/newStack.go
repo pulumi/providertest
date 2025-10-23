@@ -171,6 +171,27 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
+	// Handle .NET-specific configurations
+	if len(options.DotNetReferences) > 0 {
+		// Find the .csproj file in the working directory
+		csprojPath, err := findCsprojFile(pt.workingDir)
+		if err != nil {
+			ptFatalF(t, "failed to find .csproj file: %s", err)
+		}
+		ptLogF(t, "found .csproj file: %s", csprojPath)
+
+		// Add project references
+		err = addProjectReferences(csprojPath, options.DotNetReferences)
+		if err != nil {
+			ptFatalF(t, "failed to add .NET project references: %s", err)
+		}
+
+		// Log the references that were added
+		for name, path := range options.DotNetReferences {
+			ptLogF(t, "added .NET project reference: %s -> %s", name, path)
+		}
+	}
+
 	if err != nil {
 		ptFatalF(t, "failed to create stack: %s", err)
 		return nil

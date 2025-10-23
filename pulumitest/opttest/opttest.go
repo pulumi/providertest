@@ -113,6 +113,15 @@ func GoModReplacement(packageSpecifier string, replacementPathElem ...string) Op
 	})
 }
 
+// DotNetReference specifies local NuGet packages or projects to reference when running the program under test.
+// This adds a <ProjectReference> element to the .csproj file on stack creation.
+// The path can point to a .csproj file or a directory containing one.
+func DotNetReference(packageName string, localPathElem ...string) Option {
+	return optionFunc(func(o *Options) {
+		o.DotNetReferences[packageName] = filepath.Join(localPathElem...)
+	})
+}
+
 // UseAmbientBackend skips setting `PULUMI_BACKEND_URL` to a local temporary directory which overrides any backend configuration which might have been done on the local environment via `pulumi login`.
 // Using this option will cause the program under test to use whatever backend configuration has been set via `pulumi login` or an existing `PULUMI_BACKEND_URL` value.
 func UseAmbientBackend() Option {
@@ -167,6 +176,7 @@ type Options struct {
 	UseAmbientBackend     bool
 	YarnLinks             []string
 	GoModReplacements     map[string]string
+	DotNetReferences      map[string]string
 	CustomEnv             map[string]string
 	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
 	DisableGrpcLog        bool
@@ -201,6 +211,7 @@ func Defaults() Option {
 		o.UseAmbientBackend = false
 		o.YarnLinks = []string{}
 		o.GoModReplacements = make(map[string]string)
+		o.DotNetReferences = make(map[string]string)
 		o.CustomEnv = make(map[string]string)
 		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
 		o.DisableGrpcLog = false
