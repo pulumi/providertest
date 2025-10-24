@@ -162,7 +162,7 @@ The library supports multiple ways to configure providers for testing:
 
 **Python Environment Detection**
 - The library prefers `python3` command, then falls back to `python`
-- Uses `python3 -m pip install -e <path>` for installation
+- Uses `python3 -m pip install -e <path>` for installation (falls back to `python` if `python3` is not available)
 - Ensure the Python interpreter used matches the one configured in your Pulumi program
 
 **Package Not Found After PythonLink**

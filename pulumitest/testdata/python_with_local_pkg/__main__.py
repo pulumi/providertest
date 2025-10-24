@@ -1,5 +1,6 @@
 """Pulumi program that uses the local test package."""
 
+import pulumi
 import pulumi_test_pkg
 
 # Import the test package and verify version
