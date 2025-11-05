@@ -91,6 +91,9 @@ func Replay(t *testing.T, server pulumirpc.ResourceProviderServer, jsonLog strin
 	var entry jsonLogEntry
 	err := json.Unmarshal([]byte(jsonLog), &entry)
 	assert.NoError(t, err)
+	if isPartialEntry(entry) {
+		return
+	}
 
 	switch entry.Method {
 
@@ -160,6 +163,13 @@ func Replay(t *testing.T, server pulumirpc.ResourceProviderServer, jsonLog strin
 	}
 }
 
+// isPartialEntry indicates whether a log entry is partial and should be skipped during replay.
+// partial entries include those that only indicate progress of a request, such as "request_started".
+// these entries do not contain response information and cannot be replayed.
+func isPartialEntry(entry jsonLogEntry) bool {
+	return entry.Method == "" || entry.Progress == "request_started"
+}
+
 // ReplaySequence is exactly like Replay, but expects jsonLog to encode a sequence of events `[e1, e2, e3]`, and will
 // call Replay on each of those events in the given order.
 func ReplaySequence(t *testing.T, server pulumirpc.ResourceProviderServer, jsonLog string) {
@@ -167,6 +177,9 @@ func ReplaySequence(t *testing.T, server pulumirpc.ResourceProviderServer, jsonL
 	err := json.Unmarshal([]byte(jsonLog), &entries)
 	assert.NoError(t, err)
 	for _, e := range entries {
+		if isPartialEntry(e) {
+			continue
+		}
 		bytes, err := json.Marshal(e)
 		assert.NoError(t, err)
 		Replay(t, server, string(bytes))
@@ -249,7 +262,7 @@ func ReplayFile(t *testing.T, server pulumirpc.ResourceProviderServer, traceFile
 
 	count := 0
 	for _, entry := range entries {
-		if entry.Method == "" {
+		if isPartialEntry(entry) {
 			continue
 		}
 
@@ -278,6 +291,7 @@ type jsonLogEntry struct {
 	Request  json.RawMessage `json:"request,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
 	Errors   []string        `json:"errors,omitempty"`
+	Progress string          `json:"progress,omitempty"`
 }
 
 func normInvokeResponse(resp *pulumirpc.InvokeResponse) {
