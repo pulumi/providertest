@@ -27,6 +27,37 @@ func TestPulumiProgram(t *testing.T) {
 
 For detailed usage patterns, examples, and configuration options, see [the pulumitest documentation](./pulumitest/README.md).
 
+## Editing SDK Dependencies
+
+You can specify a specific version for a dependency in the program under test using the `opttest.EditDependency()` option. This automatically detects the language/build system and modifies the appropriate dependency file:
+
+```go
+import (
+  "filepath"
+  "github.com/pulumi/providertest/pulumitest"
+  "github.com/pulumi/providertest/pulumitest/opttest"
+)
+
+func TestPulumiProgramWithSpecificVersion(t *testing.T) {
+  test := pulumitest.NewPulumiTest(t, filepath.Join("path", "to", "program"),
+    opttest.EditDependency("pulumi", "3.50.0"))
+  test.Preview(t)
+  test.Up(t)
+}
+```
+
+The `EditDependency()` function supports the following languages:
+
+- **Node.js** - Edits `package.json` to set version for npm/yarn packages
+- **Python** - Edits `requirements.txt` to set version for pip packages
+- **Go** - Uses `go get package@version` to set version in `go.mod`
+- **.NET** - Edits `.csproj` files to set NuGet package version
+- **YAML** - For YAML-only projects, returns an error (manual configuration required)
+
+Language detection is automatic based on the presence of standard configuration files (`package.json`, `requirements.txt`, `go.mod`, `.csproj`, etc.).
+
+**Note:** When using `EditDependency()` together with `LocalProviderPath()`, be aware that the local provider path will override the version specified in the SDK, which may cause conflicts. The library will log a warning if this combination is detected.
+
 ## Attaching In-Process Providers
 
 If your provider implementation is available in the context of your test, the provider can be started in a background goroutine and used within the test using the `opttest.AttachProviderServer`. This avoids needing to build a provider binary before running the test, and allows stepping through from the test to the provider implementation when attaching a debugger.

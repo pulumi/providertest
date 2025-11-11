@@ -83,6 +83,10 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 
 	ptLogF(t, "creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.workingDir, stackOpts...)
+	if err != nil {
+		ptFatalF(t, "failed to create stack: %s", err)
+		return nil
+	}
 
 	providerPluginPaths := options.ProviderPluginPaths()
 	if len(providerPluginPaths) > 0 {
@@ -136,7 +140,7 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if options.YarnLinks != nil && len(options.YarnLinks) > 0 {
+	if len(options.YarnLinks) > 0 {
 		for _, pkg := range options.YarnLinks {
 			cmd := exec.Command("yarn", "link", pkg)
 			cmd.Dir = pt.workingDir
@@ -148,7 +152,7 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if options.GoModReplacements != nil && len(options.GoModReplacements) > 0 {
+	if len(options.GoModReplacements) > 0 {
 		orderedReplacements := make([]string, 0, len(options.GoModReplacements))
 		for old := range options.GoModReplacements {
 			orderedReplacements = append(orderedReplacements, old)
@@ -192,9 +196,15 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if err != nil {
-		ptFatalF(t, "failed to create stack: %s", err)
-		return nil
+	// Warn if EditDependency is used with LocalProviderPath
+	if len(options.DependencyEdits) > 0 && len(providerPluginPaths) > 0 {
+		ptLogF(t, "WARNING: EditDependency is being used with LocalProviderPath. The local provider path may override the version from the SDK, causing potential conflicts.")
+	}
+
+	if len(options.DependencyEdits) > 0 {
+		if err := editDependencies(t, pt.workingDir, options.DependencyEdits); err != nil {
+			ptFatalF(t, "failed to edit dependencies: %s", err)
+		}
 	}
 	if !stackOptions.SkipDestroy {
 		t.Cleanup(func() {
@@ -236,8 +246,11 @@ cd "$(dirname "$0")" || exit
 pulumi stack select %q
 pulumi destroy --yes`, envPrefix, stackName)
 	destroyScriptPath := filepath.Join(dir, "destroy.sh")
-	os.WriteFile(destroyScriptPath, []byte(scriptContent), 0755)
-	ptLogF(t, "Destroy can be run manually by running script at %q", destroyScriptPath)
+	if err := os.WriteFile(destroyScriptPath, []byte(scriptContent), 0755); err != nil {
+		ptLogF(t, "Warning: failed to write destroy script: %v", err)
+	} else {
+		ptLogF(t, "Destroy can be run manually by running script at %q", destroyScriptPath)
+	}
 }
 
 func randomStackName(dir string) string {
