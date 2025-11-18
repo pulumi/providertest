@@ -23,6 +23,7 @@ type GrpcLogEntry struct {
 	Method   string          `json:"method"`
 	Request  json.RawMessage `json:"request,omitempty"`
 	Response json.RawMessage `json:"response,omitempty"`
+	Progress string          `json:"progress,omitempty"`
 }
 
 type Method string
@@ -182,6 +183,10 @@ func ParseLog(log []byte) (*GrpcLog, error) {
 		err := json.Unmarshal([]byte(line), &entry)
 		if err != nil {
 			return nil, err
+		}
+		// Ignore incomplete entries.
+		if entry.Progress == "request_started" {
+			continue
 		}
 		parsed.Entries = append(parsed.Entries, entry)
 	}
