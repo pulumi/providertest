@@ -12,7 +12,7 @@ func TestGrpcLog(t *testing.T) {
 	t.Parallel()
 	log, err := grpclog.LoadLog(filepath.Join("testdata", "aws_bucket_grpc.json"))
 	assert.NoError(t, err)
-	assert.Equal(t, 71, len(log.Entries))
+	assert.Equal(t, 72, len(log.Entries))
 
 	t.Run("where filter", func(t *testing.T) {
 		creates := log.WhereMethod(grpclog.Create)
