@@ -148,7 +148,7 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if options.PythonLinks != nil && len(options.PythonLinks) > 0 {
+	if len(options.PythonLinks) > 0 {
 		// Determine which Python interpreter to use. Try python3 first for better
 		// compatibility with modern systems, then fall back to python.
 		pythonCmd := "python"
