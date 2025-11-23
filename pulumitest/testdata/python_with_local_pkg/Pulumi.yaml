@@ -1,0 +1,3 @@
+name: python-with-local-pkg
+runtime: python
+description: Test program for PythonLink integration tests

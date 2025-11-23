@@ -29,7 +29,7 @@ The `pulumitest` module is the core testing library for Pulumi programs and prov
 
 **Options System** (`opttest/opttest.go`)
 - Functional options pattern via `opttest.Option` interface
-- Key options: `AttachProvider`, `AttachProviderServer`, `AttachProviderBinary`, `TestInPlace`, `SkipInstall`, `SkipStackCreate`, `YarnLink`, `GoModReplacement`, `DotNetReference`, `LocalProviderPath`
+- Key options: `AttachProvider`, `AttachProviderServer`, `AttachProviderBinary`, `TestInPlace`, `SkipInstall`, `SkipStackCreate`, `YarnLink`, `PythonLink`, `GoModReplacement`, `DotNetReference`, `LocalProviderPath`
 - Options are deeply copied to allow independent modification when using `CopyToTempDir()`
 - Default passphrase: "correct horse battery staple" for deterministic encryption
 
@@ -152,3 +152,31 @@ The library supports multiple ways to configure providers for testing:
 - `pulumi install` fails: Check .csproj package versions are available on NuGet
 - Build fails with missing types: Verify all project references are correctly added
 - Stack creation hangs: Check for `PULUMI_AUTOMATION_API_SKIP_VERSION_CHECK=true` in CI environments
+
+### Python Issues
+
+**PythonLink Path Resolution**
+- Relative paths in `PythonLink()` are converted to absolute paths automatically
+- Use paths relative to the test working directory
+- The test framework resolves paths before passing to `pip install -e`
+
+**Python Environment Detection**
+- The library prefers `python3` command, then falls back to `python`
+- Uses `python3 -m pip install -e <path>` for installation (falls back to `python` if `python3` is not available)
+- Ensure the Python interpreter used matches the one configured in your Pulumi program
+
+**Package Not Found After PythonLink**
+- Error: Pulumi program fails with `ModuleNotFoundError` despite `PythonLink()`
+- Solution: Verify the test Python environment matches the Pulumi program's Python environment
+- Check installed packages: `python3 -m pip list | grep <package-name>`
+- Ensure virtual environment is activated before running tests if your program uses one
+
+**Editable Install Issues**
+- Error: `error: invalid command 'develop'` or setup.py errors
+- Solution: Ensure the package directory has a valid `setup.py` or `pyproject.toml`
+- `PythonLink()` expects a package directory, not a Python file
+
+**Common Test Failures**
+- `pulumi install` fails: Unrelated to `PythonLink`; check `requirements.txt` in your Pulumi program
+- Import errors with local SDK: The editable install creates symlinks; ensure no version conflicts
+- Test passes but program fails: Python environments differ between test and Pulumi execution

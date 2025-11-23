@@ -159,6 +159,23 @@ test := NewPulumiTest(t,
 )
 ```
 
+### Python - Local Package Installation
+
+For Python, we support installing local packages in editable mode via `pip install -e`. This allows using a local build of the Python SDK during testing. Before running your test, ensure your Python environment is properly configured (typically within a virtual environment).
+
+The local package installation can be specified using the `PythonLink` test option:
+
+```go
+NewPulumiTest(t, "test_dir", opttest.PythonLink("../sdk/python"))
+```
+
+Multiple packages can be specified:
+
+```go
+NewPulumiTest(t, "test_dir",
+  opttest.PythonLink("../sdk/python", "../other-sdk/python"))
+```
+
 ## Additional Operations
 
 ### Update Source
