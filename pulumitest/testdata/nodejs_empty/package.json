@@ -1,0 +1,6 @@
+{
+    "name": "nodejs_empty",
+    "dependencies": {
+        "@pulumi/pulumi": "latest"
+    }
+}
