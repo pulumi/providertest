@@ -19,6 +19,10 @@ func TestGrpc(t *testing.T) {
 	contract.AssertNoErrorf(err, "failed to get pulumi version: %s", version)
 	t.Logf("pulumi version: %s", version)
 
+	plugins, _, _, err := versionCmd.Run(test.Context(), test.WorkingDir(), nil, nil, nil, nil, "plugin", "ls", "-p")
+	contract.AssertNoErrorf(err, "failed to get pulumi plugins: %s", plugins)
+	t.Logf("pulumi plugins: %s", plugins)
+
 	test.Up(t)
 	log := test.GrpcLog(t)
 	assert.NotEmpty(t, log)
