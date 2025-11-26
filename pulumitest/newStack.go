@@ -136,7 +136,7 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if options.YarnLinks != nil && len(options.YarnLinks) > 0 {
+	if len(options.YarnLinks) > 0 {
 		for _, pkg := range options.YarnLinks {
 			cmd := exec.Command("yarn", "link", pkg)
 			cmd.Dir = pt.workingDir
@@ -146,9 +146,23 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 				ptFatalF(t, "failed to link yarn package %s: %s\n%s", pkg, err, out)
 			}
 		}
+	} else {
+		projectSettings, err := stack.Workspace().ProjectSettings(pt.ctx)
+		if err != nil {
+			ptFatalF(t, "failed to get project settings: %s", err)
+		}
+		if projectSettings.Runtime.Name() == "nodejs" && len(options.YarnLinks) == 0 {
+			if options.RequireYarnLinks == nil {
+				ptLogF(t, "WARNING: YarnLinks were not set, but project runtime is nodejs. Module under test may not be used. Pass RequireYarnLinks(false) to silence this warning.")
+			} else if *options.RequireYarnLinks {
+				ptFatalF(t, "module under test may not be used: YarnLinks were not set, but project runtime is nodejs and RequireYarnLinks is true.")
+			} else {
+				// User decided to silence the warning explicitly by passing RequireYarnLinks(false)
+			}
+		}
 	}
 
-	if options.GoModReplacements != nil && len(options.GoModReplacements) > 0 {
+	if len(options.GoModReplacements) > 0 {
 		orderedReplacements := make([]string, 0, len(options.GoModReplacements))
 		for old := range options.GoModReplacements {
 			orderedReplacements = append(orderedReplacements, old)
