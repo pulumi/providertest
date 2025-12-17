@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 )
 
 func DownloadPluginBinaryFactory(name, version string) ProviderFactory {
@@ -26,13 +28,9 @@ func DownloadPluginBinary(name, version string) (string, error) {
 		return "", fmt.Errorf("failed to install plugin: %s\n%s", err, out)
 	}
 
-	pulumiHome := os.Getenv("PULUMI_HOME")
-	if pulumiHome == "" {
-		userHomeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("failed to get user home dir: %v", err)
-		}
-		pulumiHome = filepath.Join(userHomeDir, ".pulumi")
+	pulumiHome, err := workspace.GetPulumiHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get pulumi home dir: %v", err)
 	}
 
 	binaryPath := filepath.Join(pulumiHome, "plugins", fmt.Sprintf("resource-%s-v%s", name, version))
