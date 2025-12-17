@@ -6,3 +6,6 @@ outputs:
 resources:
   username:
     type: random:RandomPet
+    options:
+      # Pin pulumi-random version
+      version: 4.18.4

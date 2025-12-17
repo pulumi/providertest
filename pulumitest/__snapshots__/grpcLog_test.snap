@@ -11,6 +11,28 @@
   "Response": {
    "id": "<Any value>",
    "properties": {
+    "__pulumi_raw_state_delta": {
+     "obj": {
+      "ps": {
+       "keepers": {
+        "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+        "value": {
+         "replace": {
+          "raw": null
+         }
+        }
+       },
+       "prefix": {
+        "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+        "value": {
+         "replace": {
+          "raw": null
+         }
+        }
+       }
+      }
+     }
+    },
     "id": "<Any value>",
     "length": 2,
     "separator": "-"

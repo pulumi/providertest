@@ -113,6 +113,13 @@ func PythonLink(packagePaths ...string) Option {
 	})
 }
 
+// RequireYarnLinks specifies that the program under test requires yarn links to be specified.
+func RequireYarnLinks(require bool) Option {
+	return optionFunc(func(o *Options) {
+		o.RequireYarnLinks = &require
+	})
+}
+
 // GoModReplacement specifies replacements to be add to the go.mod file when running the program under test.
 // Each replacement is added to the go.mod file with `go mod edit -replace <replacement>` on stack creation.
 func GoModReplacement(packageSpecifier string, replacementPathElem ...string) Option {
@@ -184,6 +191,7 @@ type Options struct {
 	UseAmbientBackend     bool
 	YarnLinks             []string
 	PythonLinks           []string
+	RequireYarnLinks      *bool
 	GoModReplacements     map[string]string
 	DotNetReferences      map[string]string
 	CustomEnv             map[string]string
@@ -220,6 +228,7 @@ func Defaults() Option {
 		o.UseAmbientBackend = false
 		o.YarnLinks = []string{}
 		o.PythonLinks = []string{}
+		o.RequireYarnLinks = nil
 		o.GoModReplacements = make(map[string]string)
 		o.DotNetReferences = make(map[string]string)
 		o.CustomEnv = make(map[string]string)

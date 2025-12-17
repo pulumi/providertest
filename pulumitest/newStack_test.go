@@ -19,3 +19,25 @@ func TestMissingProviderBinaryPath(t *testing.T) {
 
 	assert.True(t, tt.Failed(), "expected test to fail")
 }
+
+func TestRequireYarnLinksEnforced(t *testing.T) {
+	t.Parallel()
+
+	tt := mockT{T: t}
+	pulumitest.NewPulumiTest(&tt, filepath.Join("testdata", "nodejs_empty"),
+		opttest.RequireYarnLinks(true),
+	)
+
+	assert.True(t, tt.Failed(), "expected test to fail")
+}
+
+func TestRequireYarnLinksSilenced(t *testing.T) {
+	t.Parallel()
+
+	tt := mockT{T: t}
+	pulumitest.NewPulumiTest(&tt, filepath.Join("testdata", "nodejs_empty"),
+		opttest.RequireYarnLinks(false),
+	)
+
+	assert.False(t, tt.Failed(), "expected test to pass")
+}
