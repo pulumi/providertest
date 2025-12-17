@@ -162,6 +162,29 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
+	if len(options.PythonLinks) > 0 {
+		// Determine which Python interpreter to use. Try python3 first for better
+		// compatibility with modern systems, then fall back to python.
+		pythonCmd := "python"
+		if _, err := exec.LookPath("python3"); err == nil {
+			pythonCmd = "python3"
+		}
+
+		for _, pkgPath := range options.PythonLinks {
+			absPath, err := filepath.Abs(pkgPath)
+			if err != nil {
+				ptFatalF(t, "failed to get absolute path for %s: %s", pkgPath, err)
+			}
+			cmd := exec.Command(pythonCmd, "-m", "pip", "install", "-e", absPath)
+			cmd.Dir = pt.workingDir
+			ptLogF(t, "installing python package: %s", cmd)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				ptFatalF(t, "failed to install python package %s: %s\n%s", pkgPath, err, out)
+			}
+		}
+	}
+
 	if len(options.GoModReplacements) > 0 {
 		orderedReplacements := make([]string, 0, len(options.GoModReplacements))
 		for old := range options.GoModReplacements {

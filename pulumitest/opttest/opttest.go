@@ -105,6 +105,14 @@ func YarnLink(packages ...string) Option {
 	})
 }
 
+// PythonLink specifies packages which should be installed from a local path via `pip install -e` (editable mode).
+// Each package path is installed with `pip install -e <path>` on stack creation.
+func PythonLink(packagePaths ...string) Option {
+	return optionFunc(func(o *Options) {
+		o.PythonLinks = append(o.PythonLinks, packagePaths...)
+	})
+}
+
 // RequireYarnLinks specifies that the program under test requires yarn links to be specified.
 func RequireYarnLinks(require bool) Option {
 	return optionFunc(func(o *Options) {
@@ -182,6 +190,7 @@ type Options struct {
 	Providers             map[providers.ProviderName]ProviderConfigUnion
 	UseAmbientBackend     bool
 	YarnLinks             []string
+	PythonLinks           []string
 	RequireYarnLinks      *bool
 	GoModReplacements     map[string]string
 	DotNetReferences      map[string]string
@@ -218,6 +227,7 @@ func Defaults() Option {
 		o.Providers = make(map[providers.ProviderName]ProviderConfigUnion)
 		o.UseAmbientBackend = false
 		o.YarnLinks = []string{}
+		o.PythonLinks = []string{}
 		o.RequireYarnLinks = nil
 		o.GoModReplacements = make(map[string]string)
 		o.DotNetReferences = make(map[string]string)
