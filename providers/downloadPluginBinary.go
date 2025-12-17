@@ -28,12 +28,12 @@ func DownloadPluginBinary(name, version string) (string, error) {
 		return "", fmt.Errorf("failed to install plugin: %s\n%s", err, out)
 	}
 
-	pulumiHome, err := workspace.GetPulumiHomeDir()
+	pluginDir, err := workspace.GetPluginDir()
 	if err != nil {
-		return "", fmt.Errorf("failed to get pulumi home dir: %v", err)
+		return "", fmt.Errorf("failed to get plugin dir: %v", err)
 	}
 
-	binaryPath := filepath.Join(pulumiHome, "plugins", fmt.Sprintf("resource-%s-v%s", name, version))
+	binaryPath := filepath.Join(pluginDir, fmt.Sprintf("resource-%s-v%s", name, version))
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("expected plugin binary to exist at %s", binaryPath)
 	}
