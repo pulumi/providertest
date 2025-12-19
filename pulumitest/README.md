@@ -161,7 +161,16 @@ test := NewPulumiTest(t,
 
 ### Python - Local Package Installation
 
-For Python, we support installing local packages in editable mode via `pip install -e`. This allows using a local build of the Python SDK during testing. Before running your test, ensure your Python environment is properly configured (typically within a virtual environment).
+For Python, we support installing local packages in editable mode via `pip install -e`. This allows using a local build of the Python SDK during testing.
+
+**How it works:**
+When `PythonLink` is specified, the test framework handles Python dependency installation itself instead of using `pulumi install`. This avoids PEP 668 issues on systems with externally-managed Python.
+
+1. Creates a virtual environment at `venv` in the test directory
+2. Upgrades pip, setuptools, and wheel in the venv
+3. Installs local packages via `pip install -e` (PythonLinks)
+4. Installs requirements.txt dependencies
+5. Runs `pulumi plugin install` for Pulumi provider plugins
 
 The local package installation can be specified using the `PythonLink` test option:
 
@@ -175,6 +184,20 @@ Multiple packages can be specified:
 NewPulumiTest(t, "test_dir",
   opttest.PythonLink("../sdk/python", "../other-sdk/python"))
 ```
+
+**Note:** You do NOT need to use `SkipInstall()` with PythonLink. The framework automatically handles Python installation, bypassing `pulumi install` to avoid PEP 668 issues.
+
+**Pulumi.yaml Configuration:** Your Python project's `Pulumi.yaml` must specify the virtualenv location so Pulumi knows where to find the virtual environment that PythonLink creates:
+
+```yaml
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+```
+
+If the `virtualenv` option is missing, the framework will display a helpful error message explaining exactly what needs to be added to your `Pulumi.yaml` file.
 
 ## Additional Operations
 

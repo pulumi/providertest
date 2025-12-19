@@ -1,1 +1,6 @@
-# This is intentionally empty - we'll use PythonLink to install the local package
+# Pulumi SDK is required for all Pulumi programs
+pulumi>=3.0.0
+
+# This package doesn't exist on PyPI - it must be installed via PythonLink
+# before `pulumi install` runs, otherwise pip will fail.
+pulumi-test-pkg>=0.0.1
