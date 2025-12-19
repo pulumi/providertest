@@ -59,7 +59,8 @@ func TestConvertPython(t *testing.T) {
 	config, err := os.ReadFile(filepath.Join(converted.WorkingDir(), "Pulumi.yaml"))
 	assert.NoError(t, err)
 	config = []byte(strings.Replace(string(config), "runtime: python", fixedPythonRuntime, 1))
-	os.WriteFile(filepath.Join(converted.WorkingDir(), "Pulumi.yaml"), config, 0644)
+	err = os.WriteFile(filepath.Join(converted.WorkingDir(), "Pulumi.yaml"), config, 0644)
+	assert.NoError(t, err)
 
 	converted.Install(t)
 

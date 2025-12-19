@@ -156,9 +156,8 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 				ptLogF(t, "WARNING: YarnLinks were not set, but project runtime is nodejs. Module under test may not be used. Pass RequireYarnLinks(false) to silence this warning.")
 			} else if *options.RequireYarnLinks {
 				ptFatalF(t, "module under test may not be used: YarnLinks were not set, but project runtime is nodejs and RequireYarnLinks is true.")
-			} else {
-				// User decided to silence the warning explicitly by passing RequireYarnLinks(false)
 			}
+			// else: User decided to silence the warning explicitly by passing RequireYarnLinks(false)
 		}
 	}
 
@@ -273,7 +272,10 @@ cd "$(dirname "$0")" || exit
 pulumi stack select %q
 pulumi destroy --yes`, envPrefix, stackName)
 	destroyScriptPath := filepath.Join(dir, "destroy.sh")
-	os.WriteFile(destroyScriptPath, []byte(scriptContent), 0755)
+	if err := os.WriteFile(destroyScriptPath, []byte(scriptContent), 0755); err != nil {
+		ptLogF(t, "failed to write destroy script: %v", err)
+		return
+	}
 	ptLogF(t, "Destroy can be run manually by running script at %q", destroyScriptPath)
 }
 

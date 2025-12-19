@@ -52,8 +52,7 @@ func ProviderInterceptFactory(ctx context.Context, factory ProviderFactory, inte
 
 // NewProviderInterceptProxy creates a new provider proxy that can be used to intercept calls to a downstream provider.
 func NewProviderInterceptProxy(ctx context.Context, downstreamProviderPort Port, interceptors ProviderInterceptors) (rpc.ResourceProviderServer, error) {
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		fmt.Sprintf("127.0.0.1:%d", downstreamProviderPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(rpcutil.OpenTracingClientInterceptor()),

@@ -114,20 +114,28 @@ func copyDirectory(scrDir, dest string) error {
 	return nil
 }
 
-func copy(srcFile, dstFile string) error {
+func copy(srcFile, dstFile string) (err error) {
 	out, err := os.Create(dstFile)
 	if err != nil {
 		return err
 	}
 
-	defer out.Close()
+	defer func() {
+		if cerr := out.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	in, err := os.Open(srcFile)
 	if err != nil {
 		return err
 	}
 
-	defer in.Close()
+	defer func() {
+		if cerr := in.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	_, err = io.Copy(out, in)
 	if err != nil {

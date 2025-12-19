@@ -26,8 +26,8 @@ func (pt *PulumiTest) execCmd(t PT, args ...string) cmdOutput {
 
 	s1, s2, code, err := workspace.PulumiCommand().Run(ctx, workdir, stdin, nil, nil, env, args...)
 	if err != nil {
-		ptLogF(t, s1)
-		ptLogF(t, s2)
+		ptLogF(t, "%s", s1)
+		ptLogF(t, "%s", s2)
 		ptFatalF(t, "Failed to run command %v: %v", args, err)
 	}
 
