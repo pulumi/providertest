@@ -155,6 +155,23 @@ The library supports multiple ways to configure providers for testing:
 
 ### Python Issues
 
+**How PythonLink Works**
+- When `PythonLink` is specified, the framework bypasses `pulumi install` entirely for Python projects
+- It creates a virtual environment at `venv`, installs local packages, installs requirements.txt, then runs `pulumi plugin install`
+- This avoids PEP 668 issues on systems with externally-managed Python
+
+**Pulumi.yaml Configuration Required**
+- Your Python project's `Pulumi.yaml` must specify the virtualenv location:
+  ```yaml
+  runtime:
+    name: python
+    options:
+      toolchain: pip
+      virtualenv: venv
+  ```
+- Without this configuration, Pulumi won't find the venv created by PythonLink
+- **Auto-detection**: The framework automatically validates Pulumi.yaml and provides helpful error messages if the virtualenv option is missing, showing exactly what YAML needs to be added
+
 **PythonLink Path Resolution**
 - Relative paths in `PythonLink()` are converted to absolute paths automatically
 - Use paths relative to the test working directory
@@ -162,14 +179,13 @@ The library supports multiple ways to configure providers for testing:
 
 **Python Environment Detection**
 - The library prefers `python3` command, then falls back to `python`
-- Uses `python3 -m pip install -e <path>` for installation (falls back to `python` if `python3` is not available)
-- Ensure the Python interpreter used matches the one configured in your Pulumi program
+- The venv is created using `python3 -m venv venv`
+- All pip operations use the venv's pip directly (not system pip)
 
 **Package Not Found After PythonLink**
 - Error: Pulumi program fails with `ModuleNotFoundError` despite `PythonLink()`
-- Solution: Verify the test Python environment matches the Pulumi program's Python environment
-- Check installed packages: `python3 -m pip list | grep <package-name>`
-- Ensure virtual environment is activated before running tests if your program uses one
+- Solution 1: Ensure `Pulumi.yaml` has `virtualenv: venv` in runtime options
+- Solution 2: Check installed packages: `venv/bin/pip list | grep <package-name>`
 
 **Editable Install Issues**
 - Error: `error: invalid command 'develop'` or setup.py errors
@@ -177,6 +193,6 @@ The library supports multiple ways to configure providers for testing:
 - `PythonLink()` expects a package directory, not a Python file
 
 **Common Test Failures**
-- `pulumi install` fails: Unrelated to `PythonLink`; check `requirements.txt` in your Pulumi program
+- `ModuleNotFoundError: No module named 'pulumi'`: Missing `virtualenv: venv` in Pulumi.yaml
 - Import errors with local SDK: The editable install creates symlinks; ensure no version conflicts
-- Test passes but program fails: Python environments differ between test and Pulumi execution
+- Test passes but program fails: Check that the venv at `venv/` contains the expected packages
