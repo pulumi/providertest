@@ -83,6 +83,10 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 
 	ptLogF(t, "creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.workingDir, stackOpts...)
+	if err != nil {
+		ptFatalF(t, "failed to create stack: %s", err)
+		return nil
+	}
 
 	providerPluginPaths := options.ProviderPluginPaths()
 	if len(providerPluginPaths) > 0 {
@@ -228,10 +232,76 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if err != nil {
-		ptFatalF(t, "failed to create stack: %s", err)
-		return nil
+	// Handle Java/Maven configuration
+	if options.JavaTargetVersion != "" || len(options.JavaMavenDependencies) > 0 {
+		pomPath, err := findPomFile(pt.workingDir)
+		if err != nil {
+			ptFatalF(t, "Java options specified but pom.xml not found in %s: %s",
+				pt.workingDir, err)
+		}
+		// Set Java target version
+		if options.JavaTargetVersion != "" {
+			ptLogF(t, "setting Java target version to %s", options.JavaTargetVersion)
+			err := setJavaVersion(pomPath, options.JavaTargetVersion)
+			if err != nil {
+				ptFatalF(t, "failed to set Java version in pom.xml: %s", err)
+			}
+		}
+
+		// Add/update Maven dependencies
+		if len(options.JavaMavenDependencies) > 0 {
+			// Sort dependencies for consistent order
+			orderedDeps := make([]string, 0, len(options.JavaMavenDependencies))
+			for depKey := range options.JavaMavenDependencies {
+				orderedDeps = append(orderedDeps, depKey)
+			}
+			sort.Strings(orderedDeps)
+
+			for _, depKey := range orderedDeps {
+				dep := options.JavaMavenDependencies[depKey]
+				absPath, err := filepath.Abs(dep.Path)
+				if err != nil {
+					ptFatalF(t, "failed to get absolute path for %s: %s", dep.Path, err)
+				}
+
+				// Validate path exists
+				if _, err := os.Stat(absPath); err != nil {
+					ptFatalF(t, "failed to find Maven dependency for %s:%s at %s: %s",
+						dep.GroupID, dep.ArtifactID, absPath, err)
+				}
+
+				ptLogF(t, "adding Maven dependency %s:%s with path %s", dep.GroupID, dep.ArtifactID, absPath)
+				err = addOrUpdateDependency(pomPath, dep.GroupID, dep.ArtifactID, "0.0.0-dev", absPath)
+				if err != nil {
+					ptFatalF(t, "failed to add Maven dependency: %s", err)
+				}
+			}
+		}
 	}
+
+	// Set Maven profile environment variable if specified
+	// Note: These environment variables are not standard Maven variables.
+	// Their support depends on Pulumi's Java runtime implementation.
+	// TODO: Verify with Pulumi Java SDK maintainers or implement via pom.xml modification
+	if options.JavaMavenProfile != "" {
+		env["MAVEN_ACTIVE_PROFILES"] = options.JavaMavenProfile
+		ptLogF(t, "setting Maven active profile: %s", options.JavaMavenProfile)
+	}
+
+	// Set Maven settings file if specified
+	if options.JavaMavenSettings != "" {
+		absSettingsPath, err := filepath.Abs(options.JavaMavenSettings)
+		if err != nil {
+			ptFatalF(t, "failed to get absolute path for Maven settings: %s", err)
+		}
+		// Validate settings file exists
+		if _, err := os.Stat(absSettingsPath); err != nil {
+			ptFatalF(t, "Maven settings file not found at %s: %s", absSettingsPath, err)
+		}
+		env["MAVEN_SETTINGS"] = absSettingsPath
+		ptLogF(t, "setting Maven settings file: %s", absSettingsPath)
+	}
+
 	if !stackOptions.SkipDestroy {
 		t.Cleanup(func() {
 			t.Helper()
