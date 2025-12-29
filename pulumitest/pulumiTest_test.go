@@ -210,3 +210,65 @@ func TestDotNetWithLocalReference(t *testing.T) {
 
 	t.Log(".csproj successfully modified with local project reference")
 }
+
+func TestJavaMavenTargetVersion(t *testing.T) {
+	t.Parallel()
+	// Test that JavaTargetVersion option can be created without errors
+	opts := opttest.DefaultOptions()
+	opttest.JavaTargetVersion("17").Apply(opts)
+
+	// Verify the option was applied
+	assert.Equal(t, "17", opts.JavaTargetVersion,
+		"should set Java target version to 17")
+}
+
+func TestJavaMavenProfile(t *testing.T) {
+	t.Parallel()
+	// Test that JavaMavenProfile option can be created without errors
+	opts := opttest.DefaultOptions()
+	opttest.JavaMavenProfile("development").Apply(opts)
+
+	// Verify the option was applied
+	assert.Equal(t, "development", opts.JavaMavenProfile,
+		"should set Maven profile to development")
+}
+
+func TestJavaMavenSettings(t *testing.T) {
+	t.Parallel()
+	// Create a temporary settings file
+	settingsDir := t.TempDir()
+	settingsPath := filepath.Join(settingsDir, "settings.xml")
+	err := os.WriteFile(settingsPath, []byte("<settings></settings>"), 0644)
+	assert.NoError(t, err, "should create settings file")
+
+	// Test that JavaMavenSettings option can be created without errors
+	opts := opttest.DefaultOptions()
+	opttest.JavaMavenSettings(settingsPath).Apply(opts)
+
+	// Verify the option was applied
+	assert.Equal(t, settingsPath, opts.JavaMavenSettings,
+		"should set Maven settings path")
+}
+
+func TestJavaMavenDependency(t *testing.T) {
+	t.Parallel()
+	// Create a test directory to use as local Maven dependency
+	depDir := t.TempDir()
+
+	// Test that JavaMavenDependency option can be created without errors
+	opts := opttest.DefaultOptions()
+	opttest.JavaMavenDependency("com.example", "mylib", depDir).Apply(opts)
+
+	// Verify the option was applied
+	assert.NotEmpty(t, opts.JavaMavenDependencies,
+		"should add Maven dependency")
+
+	key := "com.example:mylib"
+	assert.Contains(t, opts.JavaMavenDependencies, key,
+		"should have dependency key")
+
+	dep := opts.JavaMavenDependencies[key]
+	assert.Equal(t, "com.example", dep.GroupID, "should set groupId")
+	assert.Equal(t, "mylib", dep.ArtifactID, "should set artifactId")
+	assert.Equal(t, depDir, dep.Path, "should set path")
+}
