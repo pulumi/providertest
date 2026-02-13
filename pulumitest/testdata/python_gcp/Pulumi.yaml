@@ -1,5 +1,5 @@
-name: yaml_gcp
-description: A minimal Google Cloud Pulumi YAML program
+name: python_gcp
+description: A minimal Google Cloud Pulumi Python program
 runtime:
   name: python
   options:
