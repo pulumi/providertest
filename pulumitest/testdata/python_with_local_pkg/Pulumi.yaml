@@ -1,3 +1,7 @@
 name: python-with-local-pkg
-runtime: python
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
 description: Test program for PythonLink integration tests

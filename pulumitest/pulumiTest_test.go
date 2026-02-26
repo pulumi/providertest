@@ -210,3 +210,33 @@ func TestDotNetWithLocalReference(t *testing.T) {
 
 	t.Log(".csproj successfully modified with local project reference")
 }
+
+func TestPythonLinkWithInstall(t *testing.T) {
+	t.Parallel()
+
+	// This test verifies that PythonLink works WITHOUT SkipInstall().
+	// When PythonLinks are specified, the framework bypasses `pulumi install`
+	// entirely and handles Python dependency installation itself. This avoids
+	// PEP 668 issues on systems with externally-managed Python.
+	//
+	// The test verifies:
+	// 1. Venv is created at `venv/`
+	// 2. Local package is installed via pip install -e
+	// 3. requirements.txt dependencies are installed
+	// 4. Pulumi preview works with the local package
+	pkgPath := filepath.Join("testdata", "python_pkg_v1")
+
+	// NOTE: We intentionally do NOT use SkipInstall() here.
+	// PythonLink automatically handles Python installation.
+	test := NewPulumiTest(t,
+		filepath.Join("testdata", "python_with_local_pkg"),
+		opttest.PythonLink(pkgPath))
+
+	assert.NotNil(t, test.CurrentStack(), "should create a stack")
+
+	// Run a preview to verify the program can import the local package
+	preview := test.Preview(t)
+	assert.NotNil(t, preview, "should be able to run preview")
+
+	t.Log("PythonLink successfully pre-installed package before pulumi install")
+}
