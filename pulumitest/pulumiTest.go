@@ -2,12 +2,18 @@ package pulumitest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
+
+// errStartProviders is a sentinel error wrapped by withProviders when the
+// in-process provider subprocesses fail to start. Callers can distinguish this
+// from engine/operation failures with errors.Is.
+var errStartProviders = errors.New("failed to start providers")
 
 type PulumiTest struct {
 	ctx          context.Context
@@ -104,7 +110,7 @@ func (pt *PulumiTest) withProviders(t PT, stack *auto.Stack, fn func() error) er
 
 	ports, err := providers.StartProviders(providerCtx, factories, pt)
 	if err != nil {
-		return fmt.Errorf("failed to start providers: %w", err)
+		return fmt.Errorf("%w: %w", errStartProviders, err)
 	}
 
 	stack.Workspace().SetEnvVar(

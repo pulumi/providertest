@@ -3,6 +3,7 @@ package pulumitest
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -231,7 +232,7 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 				return destroyErr
 			})
 			if err != nil {
-				if strings.Contains(err.Error(), "failed to start providers:") {
+				if errors.Is(err, errStartProviders) {
 					ptErrorF(t, "failed to start providers for cleanup destroy of stack %q; leaving stack state for manual cleanup: %s", stackName, err)
 				} else {
 					ptErrorF(t, "failed to destroy stack %q during cleanup; leaving stack state for manual cleanup: %s", stackName, err)
