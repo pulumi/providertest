@@ -17,7 +17,12 @@ func (pt *PulumiTest) Refresh(t PT, opts ...optrefresh.Option) auto.RefreshResul
 	if !pt.options.DisableGrpcLog {
 		pt.ClearGrpcLog(t)
 	}
-	result, err := pt.currentStack.Refresh(pt.ctx, opts...)
+	var result auto.RefreshResult
+	err := pt.withProviders(t, func() error {
+		var refreshErr error
+		result, refreshErr = pt.currentStack.Refresh(pt.ctx, opts...)
+		return refreshErr
+	})
 	if err != nil {
 		ptFatalF(t, "failed to refresh: %s", err)
 	}

@@ -1,7 +1,6 @@
 package pulumitest
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -52,22 +51,6 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		grpcLogDir := tempDirWithoutCleanupOnFailedTest(t, "grpcLogDir", options.TempDir)
 		t.Log("PULUMI_DEBUG_GRPC=" + filepath.Join(grpcLogDir, "grpc.json"))
 		env["PULUMI_DEBUG_GRPC"] = filepath.Join(grpcLogDir, "grpc.json")
-	}
-
-	providerFactories := options.ProviderFactories()
-	if len(providerFactories) > 0 {
-		t.Log("starting providers")
-		providerContext, cancelProviders := context.WithCancel(pt.ctx)
-		providerPorts, err := providers.StartProviders(providerContext, providerFactories, pt)
-		if err != nil {
-			cancelProviders()
-			ptFatalF(t, "failed to start providers: %v", err)
-		} else {
-			t.Cleanup(func() {
-				cancelProviders()
-			})
-		}
-		env["PULUMI_DEBUG_PROVIDERS"] = providers.GetDebugProvidersEnv(providerPorts)
 	}
 
 	// Apply custom env last to allow overriding any of the above.
@@ -243,7 +226,10 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 			}
 
 			t.Log("destroying stack, to skip this set PULUMITEST_SKIP_DESTROY_ON_FAILURE=true")
-			_, err := stack.Destroy(pt.ctx)
+			err := pt.withProviders(t, func() error {
+				_, destroyErr := stack.Destroy(pt.ctx)
+				return destroyErr
+			})
 			if err != nil {
 				ptErrorF(t, "failed to destroy stack: %s", err)
 			}

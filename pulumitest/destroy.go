@@ -17,7 +17,12 @@ func (pt *PulumiTest) Destroy(t PT, opts ...optdestroy.Option) auto.DestroyResul
 	if !pt.options.DisableGrpcLog {
 		pt.ClearGrpcLog(t)
 	}
-	result, err := pt.currentStack.Destroy(pt.ctx, opts...)
+	var result auto.DestroyResult
+	err := pt.withProviders(t, func() error {
+		var destroyErr error
+		result, destroyErr = pt.currentStack.Destroy(pt.ctx, opts...)
+		return destroyErr
+	})
 	if err != nil {
 		ptFatalF(t, "failed to destroy: %s", err)
 	}

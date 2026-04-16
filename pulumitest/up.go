@@ -17,7 +17,12 @@ func (pt *PulumiTest) Up(t PT, opts ...optup.Option) auto.UpResult {
 	if !pt.options.DisableGrpcLog {
 		pt.ClearGrpcLog(t)
 	}
-	result, err := pt.currentStack.Up(pt.ctx, opts...)
+	var result auto.UpResult
+	err := pt.withProviders(t, func() error {
+		var upErr error
+		result, upErr = pt.currentStack.Up(pt.ctx, opts...)
+		return upErr
+	})
 	if err != nil {
 		ptFatalF(t, "failed to deploy: %s", err)
 	}

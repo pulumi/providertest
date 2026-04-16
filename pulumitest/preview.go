@@ -17,7 +17,12 @@ func (pt *PulumiTest) Preview(t PT, opts ...optpreview.Option) auto.PreviewResul
 	if !pt.options.DisableGrpcLog {
 		pt.ClearGrpcLog(t)
 	}
-	result, err := pt.currentStack.Preview(pt.ctx, opts...)
+	var result auto.PreviewResult
+	err := pt.withProviders(t, func() error {
+		var previewErr error
+		result, previewErr = pt.currentStack.Preview(pt.ctx, opts...)
+		return previewErr
+	})
 	if err != nil {
 		ptFatalF(t, "failed to preview update: %s", err)
 	}
