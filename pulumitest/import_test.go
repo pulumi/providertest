@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/pulumi/providertest/pulumitest"
+	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,4 +82,16 @@ func TestImportWithArgs(t *testing.T) {
 	}
 
 	t.Fatalf("resource not found in state")
+}
+
+func TestImportWithoutCurrentStackFails(t *testing.T) {
+	t.Parallel()
+
+	tt := &mockT{T: t}
+	test := pulumitest.NewPulumiTest(tt, "testdata/yaml_empty", opttest.SkipStackCreate())
+
+	res := test.Import(tt, "random:index/randomString:RandomString", "str", "importedString", "")
+
+	assert.True(t, tt.Failed(), "expected Import to fail when no stack exists")
+	assert.Empty(t, res.Args)
 }

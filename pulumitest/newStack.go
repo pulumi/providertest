@@ -226,12 +226,18 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 			}
 
 			t.Log("destroying stack, to skip this set PULUMITEST_SKIP_DESTROY_ON_FAILURE=true")
-			err := pt.withProviders(t, func() error {
+			err := pt.withProviders(t, &stack, func() error {
 				_, destroyErr := stack.Destroy(pt.ctx)
 				return destroyErr
 			})
 			if err != nil {
-				ptErrorF(t, "failed to destroy stack: %s", err)
+				if strings.Contains(err.Error(), "failed to start providers:") {
+					ptErrorF(t, "failed to start providers for cleanup destroy of stack %q; leaving stack state for manual cleanup: %s", stackName, err)
+				} else {
+					ptErrorF(t, "failed to destroy stack %q during cleanup; leaving stack state for manual cleanup: %s", stackName, err)
+				}
+				writeDestroyScript(t, stack.Workspace().WorkDir(), stackName, env)
+				return
 			}
 			err = stack.Workspace().RemoveStack(pt.ctx, stackName, optremove.Force())
 			if err != nil {

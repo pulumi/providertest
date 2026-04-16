@@ -90,7 +90,9 @@ func (pt *PulumiTest) CurrentStack() *auto.Stack {
 // Each engine operation (Preview/Up/Refresh/Destroy) should be wrapped with this so that
 // providers get a clean lifecycle per operation, matching real subprocess-provider behavior.
 // If no provider factories are configured, fn is called directly with no overhead.
-func (pt *PulumiTest) withProviders(t PT, fn func() error) error {
+// The stack parameter specifies which stack's workspace receives the PULUMI_DEBUG_PROVIDERS
+// env var — callers must pass the stack they are actually invoking.
+func (pt *PulumiTest) withProviders(t PT, stack *auto.Stack, fn func() error) error {
 	t.Helper()
 	factories := pt.options.ProviderFactories()
 	if len(factories) == 0 {
@@ -105,11 +107,11 @@ func (pt *PulumiTest) withProviders(t PT, fn func() error) error {
 		return fmt.Errorf("failed to start providers: %w", err)
 	}
 
-	pt.currentStack.Workspace().SetEnvVar(
+	stack.Workspace().SetEnvVar(
 		"PULUMI_DEBUG_PROVIDERS",
 		providers.GetDebugProvidersEnv(ports),
 	)
-	defer pt.currentStack.Workspace().UnsetEnvVar("PULUMI_DEBUG_PROVIDERS")
+	defer stack.Workspace().UnsetEnvVar("PULUMI_DEBUG_PROVIDERS")
 
 	return fn()
 }

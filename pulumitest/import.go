@@ -6,15 +6,19 @@ import "fmt"
 // The resource type, name, and ID are required. The provider URN is optional.
 func (pt *PulumiTest) Import(t PT, resourceType, resourceName, resourceID string, providerUrn string, args ...string) cmdOutput {
 	t.Helper()
+	if pt.currentStack == nil {
+		ptFatal(t, "no current stack")
+		return cmdOutput{}
+	}
 	arguments := []string{
-		"import", resourceType, resourceName, resourceID, "--yes", "--protect=false", "-s", pt.CurrentStack().Name(),
+		"import", resourceType, resourceName, resourceID, "--yes", "--protect=false", "-s", pt.currentStack.Name(),
 	}
 	if providerUrn != "" {
 		arguments = append(arguments, "--provider="+providerUrn)
 	}
 	arguments = append(arguments, args...)
 	var ret cmdOutput
-	err := pt.withProviders(t, func() error {
+	err := pt.withProviders(t, pt.currentStack, func() error {
 		ret = pt.execCmd(t, arguments...)
 		if ret.ReturnCode != 0 {
 			return fmt.Errorf("failed to import resource %s: %s", resourceName, ret.Stderr)
@@ -22,7 +26,9 @@ func (pt *PulumiTest) Import(t PT, resourceType, resourceName, resourceID string
 		return nil
 	})
 	if err != nil {
-		t.Log(ret.Stdout)
+		if ret.ReturnCode != 0 && ret.Stdout != "" {
+			t.Log(ret.Stdout)
+		}
 		ptFatalF(t, "%s", err)
 	}
 
