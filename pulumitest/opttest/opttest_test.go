@@ -104,6 +104,29 @@ func TestPythonLinkIntegrationV2(t *testing.T) {
 	assert.True(t, len(opts.PythonLinks[0]) > 0, "expected non-empty package path")
 }
 
+func TestDisablePulumiVersionLogOption(t *testing.T) {
+	t.Parallel()
+
+	opts := opttest.DefaultOptions()
+	assert.False(t, opts.DisablePulumiVersionLog, "expected DisablePulumiVersionLog to be false by default")
+
+	opttest.DisablePulumiVersionLog().Apply(opts)
+
+	assert.True(t, opts.DisablePulumiVersionLog, "expected DisablePulumiVersionLog() to set the flag to true")
+}
+
+func TestDefaultsResetsDisablePulumiVersionLog(t *testing.T) {
+	t.Parallel()
+
+	opts := opttest.DefaultOptions()
+	opttest.DisablePulumiVersionLog().Apply(opts)
+	assert.True(t, opts.DisablePulumiVersionLog, "expected DisablePulumiVersionLog to be true before Defaults()")
+
+	opttest.Defaults().Apply(opts)
+
+	assert.False(t, opts.DisablePulumiVersionLog, "expected Defaults() to reset DisablePulumiVersionLog to false")
+}
+
 func TestPythonLinkUpgradePathGeneration(t *testing.T) {
 	t.Parallel()
 

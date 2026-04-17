@@ -254,6 +254,9 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		})
 	}
 	pt.currentStack = &stack
+	if !options.DisablePulumiVersionLog {
+		pt.logPulumiVersionInfo(t)
+	}
 	return &stack
 }
 
