@@ -5,6 +5,8 @@
   "Request": {
    "name": "username",
    "properties": {},
+   "resource_status_address": "<Any value>",
+   "resource_status_token": "<Any value>",
    "type": "random:index/randomPet:RandomPet",
    "urn": "urn:pulumi:test::yaml_program::random:index/randomPet:RandomPet::username"
   },

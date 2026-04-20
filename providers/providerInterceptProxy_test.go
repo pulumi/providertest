@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/providertest/pulumitest"
@@ -43,4 +44,35 @@ func TestProviderInterceptProxy(t *testing.T) {
 
 	test.Preview(t)
 	assert.True(t, didAttach, "expected Attach to be called in proxy")
+}
+
+func TestProviderInterceptFactoryUsesOperationContext(t *testing.T) {
+	t.Parallel()
+
+	outerCtx, cancelOuter := context.WithCancel(context.Background())
+	t.Cleanup(cancelOuter)
+	operationCtx, cancelOperation := context.WithCancel(context.Background())
+	t.Cleanup(cancelOperation)
+
+	factoryCtx := make(chan context.Context, 1)
+	interceptedFactory := providers.ProviderInterceptFactory(outerCtx, func(ctx context.Context, _ providers.PulumiTest) (providers.Port, error) {
+		factoryCtx <- ctx
+		return 0, assert.AnError
+	}, providers.ProviderInterceptors{})
+
+	_, err := interceptedFactory(operationCtx, stubPulumiTest{})
+	require.Error(t, err)
+
+	select {
+	case got := <-factoryCtx:
+		assert.Same(t, operationCtx, got)
+	case <-time.After(5 * time.Second):
+		t.Fatal("expected downstream provider factory to be invoked")
+	}
+}
+
+type stubPulumiTest struct{}
+
+func (stubPulumiTest) Source() string {
+	return ""
 }

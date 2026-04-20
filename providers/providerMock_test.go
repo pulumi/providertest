@@ -2,6 +2,7 @@ package providers_test
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -61,4 +62,85 @@ func TestProviderMock(t *testing.T) {
 		assert.True(t, checked, "expected Check to be called in mock")
 		assert.True(t, created, "expected Create to be called in mock")
 	})
+
+	t.Run("preview err with mocks", func(t *testing.T) {
+		var attached bool
+		test := pulumitest.NewPulumiTest(t, source,
+			opttest.AttachProvider("gcp",
+				providers.ProviderMockFactory(providers.ProviderMocks{
+					Attach: func(ctx context.Context, in *pulumirpc.PluginAttach) (*emptypb.Empty, error) {
+						attached = true
+						return &emptypb.Empty{}, nil
+					},
+					Configure: func(ctx context.Context, in *pulumirpc.ConfigureRequest) (*pulumirpc.ConfigureResponse, error) {
+						return &pulumirpc.ConfigureResponse{}, nil
+					},
+					CheckConfig: func(ctx context.Context, in *pulumirpc.CheckRequest) (*pulumirpc.CheckResponse, error) {
+						return &pulumirpc.CheckResponse{}, nil
+					},
+					Check: func(ctx context.Context, in *pulumirpc.CheckRequest) (*pulumirpc.CheckResponse, error) {
+						return &pulumirpc.CheckResponse{Inputs: in.News}, nil
+					},
+					Create: func(ctx context.Context, in *pulumirpc.CreateRequest) (*pulumirpc.CreateResponse, error) {
+						return &pulumirpc.CreateResponse{Id: "fake-id", Properties: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"url": {
+									Kind: &structpb.Value_StringValue{StringValue: "fake-url"},
+								},
+							},
+						}}, nil
+					},
+				})))
+
+		_, err := test.PreviewErr(t)
+		assert.NoError(t, err)
+		assert.True(t, attached, "expected Attach to be called in PreviewErr")
+	})
+}
+
+// Regression test for pulumi/pulumi#22569: attached providers reused across
+// operations had their provider-scoped context cancelled by the prior op's
+// Cancel RPC. Each engine op must now get a fresh provider instance.
+func TestAttachedProviderSurvivesCancelAcrossOperations(t *testing.T) {
+	t.Parallel()
+	source := filepath.Join("..", "pulumitest", "testdata", "python_gcp")
+
+	buildMocks := func() providers.ProviderMocks {
+		providerCtx, cancelProvider := context.WithCancel(context.Background())
+
+		return providers.ProviderMocks{
+			Cancel: func(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+				cancelProvider()
+				return &emptypb.Empty{}, nil
+			},
+			Create: func(ctx context.Context, in *pulumirpc.CreateRequest) (*pulumirpc.CreateResponse, error) {
+				if err := providerCtx.Err(); err != nil {
+					return nil, fmt.Errorf("provider context: %w", err)
+				}
+				return &pulumirpc.CreateResponse{
+					Id: "fake-id",
+					Properties: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"url": {Kind: &structpb.Value_StringValue{StringValue: "fake-url"}},
+						},
+					},
+				}, nil
+			},
+			Delete: func(ctx context.Context, in *pulumirpc.DeleteRequest) (*emptypb.Empty, error) {
+				return &emptypb.Empty{}, nil
+			},
+		}
+	}
+
+	// ProviderMockFactory captures ProviderMocks by value, so it cannot give
+	// each instance its own providerCtx.
+	factory := providers.ResourceProviderFactory(func(_ providers.PulumiTest) (pulumirpc.ResourceProviderServer, error) {
+		return providers.NewProviderMock(buildMocks())
+	})
+
+	test := pulumitest.NewPulumiTest(t, source,
+		opttest.AttachProvider("gcp", factory))
+
+	test.Preview(t)
+	test.Up(t)
 }

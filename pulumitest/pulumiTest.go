@@ -2,10 +2,18 @@ package pulumitest
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	"github.com/pulumi/providertest/providers"
 	"github.com/pulumi/providertest/pulumitest/opttest"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
+
+// errStartProviders is a sentinel error wrapped by withProviders when the
+// in-process provider subprocesses fail to start. Callers can distinguish this
+// from engine/operation failures with errors.Is.
+var errStartProviders = errors.New("failed to start providers")
 
 type PulumiTest struct {
 	ctx          context.Context
@@ -82,4 +90,34 @@ func (pt *PulumiTest) Context() context.Context {
 // CurrentStack returns the last stack that was created or nil if no stack has been created yet.
 func (pt *PulumiTest) CurrentStack() *auto.Stack {
 	return pt.currentStack
+}
+
+// withProviders starts fresh provider instances for the duration of fn, then stops them.
+// Each engine operation (Preview/Up/Refresh/Destroy) should be wrapped with this so that
+// providers get a clean lifecycle per operation, matching real subprocess-provider behavior.
+// If no provider factories are configured, fn is called directly with no overhead.
+// The stack parameter specifies which stack's workspace receives the PULUMI_DEBUG_PROVIDERS
+// env var — callers must pass the stack they are actually invoking.
+func (pt *PulumiTest) withProviders(t PT, stack *auto.Stack, fn func() error) error {
+	t.Helper()
+	factories := pt.options.ProviderFactories()
+	if len(factories) == 0 {
+		return fn()
+	}
+
+	providerCtx, cancelProviders := context.WithCancel(pt.ctx)
+	defer cancelProviders()
+
+	ports, err := providers.StartProviders(providerCtx, factories, pt)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errStartProviders, err)
+	}
+
+	stack.Workspace().SetEnvVar(
+		"PULUMI_DEBUG_PROVIDERS",
+		providers.GetDebugProvidersEnv(ports),
+	)
+	defer stack.Workspace().UnsetEnvVar("PULUMI_DEBUG_PROVIDERS")
+
+	return fn()
 }
