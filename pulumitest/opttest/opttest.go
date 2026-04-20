@@ -152,6 +152,14 @@ func DisableGrpcLog() Option {
 	})
 }
 
+// DisablePulumiVersionLog disables logging the Pulumi CLI version and project plugin list when a stack is created.
+// By default, NewStack runs `pulumi version` and `pulumi plugin ls -p` and writes their output to the test log to aid debugging.
+func DisablePulumiVersionLog() Option {
+	return optionFunc(func(o *Options) {
+		o.DisablePulumiVersionLog = true
+	})
+}
+
 // Set a custom environment variable to use when running the program under test.
 func Env(key, value string) Option {
 	return optionFunc(func(o *Options) {
@@ -180,23 +188,24 @@ func NewStackOptions(opts ...optnewstack.NewStackOpt) Option {
 }
 
 type Options struct {
-	StackName             string
-	SkipInstall           bool
-	SkipStackCreate       bool
-	NewStackOpts          []optnewstack.NewStackOpt
-	TestInPlace           bool
-	TempDir               string
-	ConfigPassphrase      string
-	Providers             map[providers.ProviderName]ProviderConfigUnion
-	UseAmbientBackend     bool
-	YarnLinks             []string
-	PythonLinks           []string
-	RequireYarnLinks      *bool
-	GoModReplacements     map[string]string
-	DotNetReferences      map[string]string
-	CustomEnv             map[string]string
-	ExtraWorkspaceOptions []auto.LocalWorkspaceOption
-	DisableGrpcLog        bool
+	StackName               string
+	SkipInstall             bool
+	SkipStackCreate         bool
+	NewStackOpts            []optnewstack.NewStackOpt
+	TestInPlace             bool
+	TempDir                 string
+	ConfigPassphrase        string
+	Providers               map[providers.ProviderName]ProviderConfigUnion
+	UseAmbientBackend       bool
+	YarnLinks               []string
+	PythonLinks             []string
+	RequireYarnLinks        *bool
+	GoModReplacements       map[string]string
+	DotNetReferences        map[string]string
+	CustomEnv               map[string]string
+	ExtraWorkspaceOptions   []auto.LocalWorkspaceOption
+	DisableGrpcLog          bool
+	DisablePulumiVersionLog bool
 }
 
 // ProviderConfigUnion is a union type for specifying a provider configuration.
@@ -234,6 +243,7 @@ func Defaults() Option {
 		o.CustomEnv = make(map[string]string)
 		o.ExtraWorkspaceOptions = []auto.LocalWorkspaceOption{}
 		o.DisableGrpcLog = false
+		o.DisablePulumiVersionLog = false
 		o.TempDir = os.Getenv("PULUMITEST_TEMP_DIR")
 	})
 }
