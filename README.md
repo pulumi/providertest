@@ -33,7 +33,7 @@ You can specify a specific version for a dependency in the program under test us
 
 ```go
 import (
-  "filepath"
+  "path/filepath"
   "github.com/pulumi/providertest/pulumitest"
   "github.com/pulumi/providertest/pulumitest/opttest"
 )
@@ -52,7 +52,7 @@ The `EditDependency()` function supports the following languages:
 - **Python** - Edits `requirements.txt` to set version for pip packages
 - **Go** - Uses `go get package@version` to set version in `go.mod`
 - **.NET** - Edits `.csproj` files to set NuGet package version
-- **YAML** - For YAML-only projects, returns an error (manual configuration required)
+- **YAML** - For YAML-only projects, updates the version on an explicit `pulumi:providers:<pkg>` resource in `Pulumi.yaml`; returns an error if no such explicit provider resource is declared (manual configuration required).
 
 Language detection is automatic based on the presence of standard configuration files (`package.json`, `requirements.txt`, `go.mod`, `.csproj`, etc.).
 

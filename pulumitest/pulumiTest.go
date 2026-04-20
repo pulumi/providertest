@@ -63,6 +63,24 @@ func testContext(t PT) context.Context {
 // Perform the common initialization steps for a PulumiTest instance.
 func pulumiTestInit(t PT, pt *PulumiTest, options *opttest.Options) {
 	t.Helper()
+
+	// Warn if EditDependency is used with any provider override, since the override
+	// will win at runtime regardless of what version is pinned in the dependency file.
+	if len(options.DependencyEdits) > 0 {
+		if len(options.ProviderPluginPaths()) > 0 || len(options.ProviderFactories()) > 0 {
+			ptLogF(t, "WARNING: EditDependency is being used alongside a provider path or in-process provider override. "+
+				"The attached provider will be used at runtime regardless of the SDK version pinned in the dependency file.")
+		}
+	}
+
+	// Edit dependency files before install so the package manager picks up the pinned versions.
+	if len(options.DependencyEdits) > 0 {
+		if err := editDependencies(t, pt.workingDir, options.DependencyEdits); err != nil {
+			ptFatalF(t, "failed to edit dependencies: %s", err)
+			return
+		}
+	}
+
 	if !options.SkipInstall {
 		pt.Install(t)
 	}

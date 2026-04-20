@@ -1,0 +1,14 @@
+name: yaml_random_explicit
+runtime: yaml
+description: A Random Pulumi YAML program using an explicit provider for version pinning.
+resources:
+  random-prov:
+    type: pulumi:providers:random
+    options:
+      version: 4.13.0
+  username:
+    type: random:RandomPet
+    options:
+      provider: ${random-prov}
+outputs:
+  name: ${username.id}

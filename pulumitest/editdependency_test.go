@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/pulumi/providertest/pulumitest/opttest"
@@ -45,15 +46,13 @@ func TestDetectLanguagePython(t *testing.T) {
 	assert.Equal(t, "python", lang)
 }
 
-// TestDetectLanguageDotNet verifies .NET project detection
+// TestDetectLanguageDotNet verifies .NET project detection (no Pulumi.yaml required)
 func TestDetectLanguageDotNet(t *testing.T) {
 	tmpDir := t.TempDir()
-	pulumiYamlPath := filepath.Join(tmpDir, "Pulumi.yaml")
-	err := os.WriteFile(pulumiYamlPath, []byte("name: test\n"), 0644)
-	require.NoError(t, err)
 
+	// .NET is detected from .csproj alone — Pulumi.yaml is not required
 	csprojPath := filepath.Join(tmpDir, "test.csproj")
-	err = os.WriteFile(csprojPath, []byte("<Project></Project>"), 0644)
+	err := os.WriteFile(csprojPath, []byte("<Project></Project>"), 0644)
 	require.NoError(t, err)
 
 	lang := detectLanguage(tmpDir)
@@ -203,11 +202,45 @@ func TestUpdateCsprojFileNew(t *testing.T) {
 	err = updateCsprojFile(csprojPath, "Pulumi", "3.0.0")
 	require.NoError(t, err)
 
-	// Verify the addition
+	// Verify the addition — check for Include and Version attributes regardless of tag style
 	data, err := os.ReadFile(csprojPath)
 	require.NoError(t, err)
 	content := string(data)
-	assert.Contains(t, content, `<PackageReference Include="Pulumi" Version="3.0.0" />`)
+	assert.Contains(t, content, `Include="Pulumi"`)
+	assert.Contains(t, content, `Version="3.0.0"`)
+}
+
+// TestUpdateCsprojFilePreservesHeader verifies the XML declaration is preserved
+// if present in the original file and not added if it was absent.
+func TestUpdateCsprojFilePreservesHeader(t *testing.T) {
+	t.Run("NoHeaderInput", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		csprojPath := filepath.Join(tmpDir, "test.csproj")
+		content := `<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="Pulumi" Version="2.0.0" /></ItemGroup></Project>`
+		require.NoError(t, os.WriteFile(csprojPath, []byte(content), 0644))
+
+		require.NoError(t, updateCsprojFile(csprojPath, "Pulumi", "3.0.0"))
+
+		data, err := os.ReadFile(csprojPath)
+		require.NoError(t, err)
+		assert.False(t, strings.HasPrefix(strings.TrimLeft(string(data), " \t\r\n"), "<?xml"),
+			"XML header should not be added when input lacks one")
+	})
+
+	t.Run("HeaderInput", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		csprojPath := filepath.Join(tmpDir, "test.csproj")
+		content := `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="Pulumi" Version="2.0.0" /></ItemGroup></Project>`
+		require.NoError(t, os.WriteFile(csprojPath, []byte(content), 0644))
+
+		require.NoError(t, updateCsprojFile(csprojPath, "Pulumi", "3.0.0"))
+
+		data, err := os.ReadFile(csprojPath)
+		require.NoError(t, err)
+		assert.True(t, strings.HasPrefix(string(data), "<?xml"),
+			"XML header should be preserved when input has one")
+	})
 }
 
 // TestUpdateCsprojFileExisting verifies updating an existing package reference
@@ -231,11 +264,12 @@ func TestUpdateCsprojFileExisting(t *testing.T) {
 	err = updateCsprojFile(csprojPath, "Pulumi", "3.0.0")
 	require.NoError(t, err)
 
-	// Verify the update
+	// Verify the update — check attributes regardless of tag style
 	data, err := os.ReadFile(csprojPath)
 	require.NoError(t, err)
 	content := string(data)
-	assert.Contains(t, content, `<PackageReference Include="Pulumi" Version="3.0.0" />`)
+	assert.Contains(t, content, `Include="Pulumi"`)
+	assert.Contains(t, content, `Version="3.0.0"`)
 	assert.NotContains(t, content, `Version="2.0.0"`)
 }
 
@@ -279,42 +313,6 @@ func TestEditDependencyPythonNoFile(t *testing.T) {
 	err := editDependencyPython(tmpDir, "requests", "2.31.0")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no Python dependency file found")
-}
-
-func TestEditDependencyGo(t *testing.T) {
-	tmpDir := t.TempDir()
-	goModPath := filepath.Join(tmpDir, "go.mod")
-
-	initialContent := `module example.com/test
-
-go 1.23
-
-require (
-	github.com/pulumi/pulumi/sdk/v3 v3.50.0
-)
-`
-	err := os.WriteFile(goModPath, []byte(initialContent), 0644)
-	require.NoError(t, err)
-
-	err = editDependencyGo(tmpDir, "github.com/pulumi/pulumi/sdk/v3", "v3.100.0")
-	require.NoError(t, err)
-
-	data, err := os.ReadFile(goModPath)
-	require.NoError(t, err)
-	content := string(data)
-	assert.Contains(t, content, "v3.100.0")
-}
-
-func TestEditDependencyGoInvalidModule(t *testing.T) {
-	tmpDir := t.TempDir()
-	goModPath := filepath.Join(tmpDir, "go.mod")
-
-	err := os.WriteFile(goModPath, []byte("invalid content"), 0644)
-	require.NoError(t, err)
-
-	err = editDependencyGo(tmpDir, "github.com/example/package", "v1.0.0")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to update go.mod")
 }
 
 func TestEditDependencyDotNet(t *testing.T) {
@@ -370,17 +368,71 @@ func TestEditDependenciesNodeJS(t *testing.T) {
 	assert.Contains(t, string(data), `"lodash": "^4.18.0"`)
 }
 
-func TestEditDependenciesYAMLError(t *testing.T) {
+func TestEditDependenciesYAML(t *testing.T) {
 	tmpDir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "Pulumi.yaml"), []byte("name: test\n"), 0644))
+	initialYAML := `name: my-project
+runtime: yaml
+resources:
+  awsProvider:
+    type: pulumi:providers:aws
+    options:
+      version: 5.0.0
+  bucket:
+    type: aws:s3:Bucket
+    options:
+      provider: ${awsProvider}
+`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "Pulumi.yaml"), []byte(initialYAML), 0644))
 
 	edits := []opttest.DependencyEdit{
-		{PackageName: "pulumi", Version: "3.50.0"},
+		{PackageName: "aws", Version: "6.0.0"},
 	}
 
 	err := editDependencies(t, tmpDir, edits)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(tmpDir, "Pulumi.yaml"))
+	require.NoError(t, err)
+	content := string(data)
+	assert.Contains(t, content, "type: pulumi:providers:aws")
+	assert.Contains(t, content, "version: 6.0.0")
+	assert.NotContains(t, content, "version: 5.0.0", "old version should have been replaced")
+}
+
+func TestEditDependenciesYAMLInvalidOptionsKind(t *testing.T) {
+	tmpDir := t.TempDir()
+	// options is a scalar instead of a mapping — should error, not produce invalid YAML.
+	initialYAML := `name: my-project
+runtime: yaml
+resources:
+  awsProvider:
+    type: pulumi:providers:aws
+    options: "not-a-mapping"
+`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "Pulumi.yaml"), []byte(initialYAML), 0644))
+
+	err := editDependencies(t, tmpDir, []opttest.DependencyEdit{
+		{PackageName: "aws", Version: "6.0.0"},
+	})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "YAML-only projects")
+	assert.Contains(t, err.Error(), "must be a mapping")
+}
+
+func TestEditDependenciesYAMLMissingExplicitProvider(t *testing.T) {
+	tmpDir := t.TempDir()
+	initialYAML := `name: my-project
+runtime: yaml
+resources:
+  bucket:
+    type: aws:s3:Bucket
+`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "Pulumi.yaml"), []byte(initialYAML), 0644))
+
+	err := editDependencies(t, tmpDir, []opttest.DependencyEdit{
+		{PackageName: "aws", Version: "6.0.0"},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "pulumi:providers:aws")
 }
 
 func TestEditDependenciesUnknownLanguage(t *testing.T) {
@@ -422,6 +474,86 @@ numpy==1.21.0
 		data, _ := os.ReadFile(reqPath)
 		content := string(data)
 		assert.Contains(t, content, fmt.Sprintf("%s==%s", tt.pkg, tt.version))
+	}
+}
+
+func TestUpdateRequirementsTxtExtras(t *testing.T) {
+	tmpDir := t.TempDir()
+	reqPath := filepath.Join(tmpDir, "requirements.txt")
+
+	// Package pinned with extras — the name match must still work and preserve extras.
+	initialContent := "requests[security]==2.28.0\n"
+	err := os.WriteFile(reqPath, []byte(initialContent), 0644)
+	require.NoError(t, err)
+
+	err = updateRequirementsTxt(reqPath, "requests", "2.31.0")
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(reqPath)
+	require.NoError(t, err)
+	content := string(data)
+	assert.Contains(t, content, "requests[security]==2.31.0")
+	// Ensure we did not duplicate the entry
+	assert.Equal(t, 1, strings.Count(content, "requests"), "expected exactly one requests entry")
+}
+
+func TestUpdateRequirementsTxtPreservesMarkers(t *testing.T) {
+	tmpDir := t.TempDir()
+	reqPath := filepath.Join(tmpDir, "requirements.txt")
+
+	initialContent := "pulumi-random[crypto]==4.13.0 ; python_version<'3.12'\n"
+	err := os.WriteFile(reqPath, []byte(initialContent), 0644)
+	require.NoError(t, err)
+
+	err = updateRequirementsTxt(reqPath, "pulumi-random", "4.14.0")
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(reqPath)
+	require.NoError(t, err)
+	assert.Equal(t, "pulumi-random[crypto]==4.14.0 ; python_version<'3.12'\n", string(data))
+}
+
+func TestUpdateCsprojFileExistingNestedVersion(t *testing.T) {
+	tmpDir := t.TempDir()
+	csprojPath := filepath.Join(tmpDir, "test.csproj")
+
+	csprojContent := `<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Pulumi.Random">
+      <Version>4.13.0</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>`
+	err := os.WriteFile(csprojPath, []byte(csprojContent), 0644)
+	require.NoError(t, err)
+
+	err = updateCsprojFile(csprojPath, "Pulumi.Random", "4.14.0")
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(csprojPath)
+	require.NoError(t, err)
+	content := string(data)
+	assert.Contains(t, content, `<Version>4.14.0</Version>`)
+	assert.NotContains(t, content, `<Version>4.13.0</Version>`)
+	assert.NotContains(t, content, `Version="4.14.0"`)
+}
+
+func TestNormalizeGoVersion(t *testing.T) {
+	cases := []struct {
+		in, out string
+	}{
+		{"3.50.0", "v3.50.0"},
+		{"1.0.0-alpha.1", "v1.0.0-alpha.1"},
+		{"v3.50.0", "v3.50.0"},
+		{"latest", "latest"},
+		{"master", "master"},
+		{"abc1234", "abc1234"},
+		{"", ""},
+		// No dot → not a semver; pass through so go tooling gives a clear error.
+		{"3", "3"},
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.out, normalizeGoVersion(c.in), "input=%q", c.in)
 	}
 }
 

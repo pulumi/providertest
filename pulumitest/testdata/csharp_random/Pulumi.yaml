@@ -1,0 +1,3 @@
+name: csharp_random
+runtime: dotnet
+description: A minimal Random Pulumi C# program for EditDependency tests.

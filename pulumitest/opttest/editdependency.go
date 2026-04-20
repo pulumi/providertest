@@ -9,7 +9,7 @@ type DependencyEdit struct {
 // EditDependency sets a specific version for a dependency in the program under test.
 // This is language-dependent and will modify the appropriate dependency file based on the project structure:
 // - Node.js: package.json (npm/yarn)
-// - Python: requirements.txt or setup.py (pip)
+// - Python: requirements.txt (pip)
 // - Go: go.mod (via go get)
 // - .NET: .csproj files (NuGet)
 // - YAML: provider version config
