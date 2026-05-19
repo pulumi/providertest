@@ -67,6 +67,10 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 
 	ptLogF(t, "creating stack %s", stackName)
 	stack, err := auto.NewStackLocalSource(pt.ctx, stackName, pt.workingDir, stackOpts...)
+	if err != nil {
+		ptFatalF(t, "failed to create stack: %s", err)
+		return nil
+	}
 
 	providerPluginPaths := options.ProviderPluginPaths()
 	if len(providerPluginPaths) > 0 {
@@ -212,10 +216,6 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 		}
 	}
 
-	if err != nil {
-		ptFatalF(t, "failed to create stack: %s", err)
-		return nil
-	}
 	if !stackOptions.SkipDestroy {
 		t.Cleanup(func() {
 			t.Helper()
