@@ -19,19 +19,73 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 )
 
-// NewStack creates a new stack, ensure it's cleaned up after the test is done.
-// If no stack name is provided, a random one will be generated.
-func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewStackOpt) *auto.Stack {
+func resolveJavaMavenDependencyPath(path, artifactID string) (string, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute path for %s: %w", path, err)
+	}
+
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return "", err
+	}
+
+	if !info.IsDir() {
+		base := filepath.Base(absPath)
+		if !strings.HasSuffix(base, ".jar") {
+			return "", fmt.Errorf("dependency path %s must point to a .jar file or directory containing one", absPath)
+		}
+		if strings.HasSuffix(base, "-sources.jar") || strings.HasSuffix(base, "-javadoc.jar") {
+			return "", fmt.Errorf("dependency path %s must point to a runtime JAR, not a sources or javadoc archive", absPath)
+		}
+		return absPath, nil
+	}
+
+	entries, err := os.ReadDir(absPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read Maven dependency directory %s: %w", absPath, err)
+	}
+
+	var exactMatches []string
+	var jarMatches []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".jar") {
+			continue
+		}
+		if strings.HasSuffix(name, "-sources.jar") || strings.HasSuffix(name, "-javadoc.jar") {
+			continue
+		}
+
+		fullPath := filepath.Join(absPath, name)
+		jarMatches = append(jarMatches, fullPath)
+		if strings.HasPrefix(name, artifactID+"-") || name == artifactID+".jar" {
+			exactMatches = append(exactMatches, fullPath)
+		}
+	}
+
+	sort.Strings(exactMatches)
+	sort.Strings(jarMatches)
+
+	switch {
+	case len(exactMatches) == 1:
+		return exactMatches[0], nil
+	case len(exactMatches) > 1:
+		return "", fmt.Errorf("multiple JARs matching artifact %s found in %s", artifactID, absPath)
+	case len(jarMatches) == 1:
+		return jarMatches[0], nil
+	case len(jarMatches) > 1:
+		return "", fmt.Errorf("multiple JARs found in %s; provide a specific JAR path", absPath)
+	default:
+		return "", fmt.Errorf("no JAR found in %s; provide a specific JAR path", absPath)
+	}
+}
+
+func (pt *PulumiTest) workspaceEnv(t PT) map[string]string {
 	t.Helper()
-
-	stackOptions := optnewstack.Defaults()
-	for _, opt := range opts {
-		opt.Apply(&stackOptions)
-	}
-
-	if stackName == "" {
-		stackName = randomStackName(pt.workingDir)
-	}
 
 	options := pt.options
 
@@ -58,6 +112,102 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 	for k, v := range options.CustomEnv {
 		env[k] = v
 	}
+
+	// Note: These environment variables are not standard Maven variables.
+	// Their support depends on Pulumi's Java runtime implementation.
+	if options.JavaMavenProfile != "" {
+		env["MAVEN_ACTIVE_PROFILES"] = options.JavaMavenProfile
+		ptLogF(t, "setting Maven active profile: %s", options.JavaMavenProfile)
+	}
+
+	if options.JavaMavenSettings != "" {
+		absSettingsPath, err := filepath.Abs(options.JavaMavenSettings)
+		if err != nil {
+			ptFatalF(t, "failed to get absolute path for Maven settings: %s", err)
+		}
+		if _, err := os.Stat(absSettingsPath); err != nil {
+			ptFatalF(t, "Maven settings file not found at %s: %s", absSettingsPath, err)
+		}
+		env["MAVEN_SETTINGS"] = absSettingsPath
+		ptLogF(t, "setting Maven settings file: %s", absSettingsPath)
+	}
+
+	return env
+}
+
+func (pt *PulumiTest) prepareJavaWorkspace(t PT) {
+	t.Helper()
+
+	if pt.javaPrepared {
+		return
+	}
+
+	options := pt.options
+	if options.JavaTargetVersion == "" && len(options.JavaMavenDependencies) == 0 {
+		pt.javaPrepared = true
+		return
+	}
+
+	pomPath, err := findPomFile(pt.workingDir)
+	if err != nil {
+		ptFatalF(t, "Java options specified but pom.xml not found in %s: %s",
+			pt.workingDir, err)
+	}
+
+	if options.JavaTargetVersion != "" {
+		ptLogF(t, "setting Java target version to %s", options.JavaTargetVersion)
+		if err := setJavaVersion(pomPath, options.JavaTargetVersion); err != nil {
+			ptFatalF(t, "failed to set Java version in pom.xml: %s", err)
+		}
+	}
+
+	if len(options.JavaMavenDependencies) > 0 {
+		orderedDeps := make([]string, 0, len(options.JavaMavenDependencies))
+		for depKey := range options.JavaMavenDependencies {
+			orderedDeps = append(orderedDeps, depKey)
+		}
+		sort.Strings(orderedDeps)
+
+		for _, depKey := range orderedDeps {
+			dep := options.JavaMavenDependencies[depKey]
+			resolvedPath, err := resolveJavaMavenDependencyPath(dep.Path, dep.ArtifactID)
+			if err != nil {
+				ptFatalF(t, "failed to resolve Maven dependency for %s:%s at %s: %s",
+					dep.GroupID, dep.ArtifactID, dep.Path, err)
+			}
+
+			version := dep.Version
+			if version == "" {
+				version = "0.0.0-dev"
+			}
+
+			ptLogF(t, "adding Maven dependency %s:%s@%s with path %s", dep.GroupID, dep.ArtifactID, version, resolvedPath)
+			if err := addOrUpdateDependency(pomPath, dep.GroupID, dep.ArtifactID, version, resolvedPath); err != nil {
+				ptFatalF(t, "failed to add Maven dependency: %s", err)
+			}
+		}
+	}
+
+	pt.javaPrepared = true
+}
+
+// NewStack creates a new stack, ensure it's cleaned up after the test is done.
+// If no stack name is provided, a random one will be generated.
+func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewStackOpt) *auto.Stack {
+	t.Helper()
+
+	stackOptions := optnewstack.Defaults()
+	for _, opt := range opts {
+		opt.Apply(&stackOptions)
+	}
+
+	if stackName == "" {
+		stackName = randomStackName(pt.workingDir)
+	}
+
+	options := pt.options
+	pt.prepareJavaWorkspace(t)
+	env := pt.workspaceEnv(t)
 
 	stackOpts := []auto.LocalWorkspaceOption{
 		auto.EnvVars(env),
