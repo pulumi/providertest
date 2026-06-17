@@ -19,7 +19,7 @@ runs:
     - name: Install Pulumi CLI
       uses: pulumi/actions@v6
       with:
-        pulumi-version: dev
+        pulumi-version: 3.237.0
 
     - name: Setup Node
       uses: actions/setup-node@v4
