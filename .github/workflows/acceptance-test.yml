@@ -27,9 +27,13 @@ jobs:
         with:
           skip_dotnet_and_java: "true"
 
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0
+
       - name: Run acceptance tests
         run: make test
         env:
+          GO_TEST_EXEC: "gotestsum --format github-actions --"
           PULUMITEST_TEMP_DIR: ${{ github.workspace }}/test_temp
           PULUMITEST_RETAIN_FILES_ON_FAILURE: "true"
 
