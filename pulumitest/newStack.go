@@ -38,6 +38,11 @@ func (pt *PulumiTest) NewStack(t PT, stackName string, opts ...optnewstack.NewSt
 	// Set default stack opts. These can be overridden by the caller.
 	env := map[string]string{}
 
+	// Isolate Pulumi's on-disk schema cache per-test (see isolatedPulumiHome).
+	if options.PulumiHome != "" {
+		env["PULUMI_HOME"] = options.PulumiHome
+	}
+
 	if options.ConfigPassphrase != "" {
 		env["PULUMI_CONFIG_PASSPHRASE"] = options.ConfigPassphrase
 	}

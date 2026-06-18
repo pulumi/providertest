@@ -93,7 +93,8 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, "correct horse battery staple", env["PULUMI_CONFIG_PASSPHRASE"], "should configure passphrase for encryption")
 	assert.NotEmpty(t, env["PULUMI_BACKEND_URL"], "should configure backend URL")
 	assert.NotEmpty(t, env["PULUMI_DEBUG_GRPC"], "should configure gRPC debug log")
-	assert.Len(t, env, 3, "should not configure additional environment variables")
+	assert.NotEmpty(t, env["PULUMI_HOME"], "should isolate PULUMI_HOME per test")
+	assert.Len(t, env, 4, "should not configure additional environment variables")
 }
 
 func TestInPlace(t *testing.T) {
@@ -107,7 +108,8 @@ func TestInPlace(t *testing.T) {
 	assert.Equal(t, "correct horse battery staple", env["PULUMI_CONFIG_PASSPHRASE"], "should configure passphrase for encryption")
 	assert.NotEmpty(t, env["PULUMI_BACKEND_URL"], "should configure backend URL")
 	assert.NotEmpty(t, env["PULUMI_DEBUG_GRPC"], "should configure gRPC debug log")
-	assert.Len(t, env, 3, "should not configure additional environment variables")
+	assert.NotEmpty(t, env["PULUMI_HOME"], "should isolate PULUMI_HOME per test")
+	assert.Len(t, env, 4, "should not configure additional environment variables")
 }
 
 func TestSkipStackCreate(t *testing.T) {

@@ -34,6 +34,9 @@ func NewPulumiTest(t PT, source string, opts ...opttest.Option) *PulumiTest {
 	for _, opt := range opts {
 		opt.Apply(options)
 	}
+	if options.PulumiHome == "" {
+		options.PulumiHome = isolatedPulumiHome(t)
+	}
 	pt := &PulumiTest{
 		ctx:        ctx,
 		workingDir: source,

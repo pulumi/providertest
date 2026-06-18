@@ -206,6 +206,10 @@ type Options struct {
 	ExtraWorkspaceOptions   []auto.LocalWorkspaceOption
 	DisableGrpcLog          bool
 	DisablePulumiVersionLog bool
+	// PulumiHome is the PULUMI_HOME to run pulumi commands against. It is set
+	// per-test by NewPulumiTest to isolate Pulumi's on-disk schema cache between
+	// parallel tests. Empty means use the ambient PULUMI_HOME.
+	PulumiHome string
 }
 
 // ProviderConfigUnion is a union type for specifying a provider configuration.

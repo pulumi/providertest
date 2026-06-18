@@ -40,6 +40,9 @@ func (pt *PulumiTest) Convert(t PT, language string, opts ...opttest.Option) Con
 	for _, opt := range opts {
 		opt.Apply(options)
 	}
+	if options.PulumiHome == "" {
+		options.PulumiHome = isolatedPulumiHome(t)
+	}
 
 	tempDir := tempDirWithoutCleanupOnFailedTest(t, "converted", options.TempDir)
 	base := filepath.Base(pt.workingDir)
@@ -52,6 +55,7 @@ func (pt *PulumiTest) Convert(t PT, language string, opts ...opttest.Option) Con
 	ptLogF(t, "converting to %s", language)
 	cmd := exec.Command("pulumi", "convert", "--language", language, "--generate-only", "--out", targetDir)
 	cmd.Dir = pt.workingDir
+	cmd.Env = withPulumiHome(options.PulumiHome)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		ptFatalF(t, "failed to convert directory: %s\n%s", err, out)

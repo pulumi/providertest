@@ -11,6 +11,7 @@ func (pt *PulumiTest) Install(t PT) string {
 	t.Log("installing packages and plugins")
 	cmd := exec.Command("pulumi", "install")
 	cmd.Dir = pt.workingDir
+	cmd.Env = withPulumiHome(pt.options.PulumiHome)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		ptFatalF(t, "failed to install packages and plugins: %s\n%s", err, out)
