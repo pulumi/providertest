@@ -1,0 +1,6 @@
+name: python_random
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: A minimal Random Pulumi Python program.
