@@ -103,6 +103,9 @@ func Replay(t *testing.T, server pulumirpc.ResourceProviderServer, jsonLog strin
 	case "/pulumirpc.ResourceProvider/CheckConfig":
 		replay(t, entry, new(pulumirpc.CheckRequest), server.CheckConfig, normCheckResponse)
 
+	case "/pulumirpc.ResourceProvider/CheckConfig2":
+		replay(t, entry, new(pulumirpc.CheckConfigRequest), server.CheckConfig2, normCheckConfigResponse)
+
 	case "/pulumirpc.ResourceProvider/DiffConfig":
 		replay(t, entry, new(pulumirpc.DiffRequest), server.DiffConfig, nil)
 
@@ -315,13 +318,23 @@ func normCheckResponse(resp *pulumirpc.CheckResponse) {
 	sortCheckFailures(resp.Failures)
 }
 
-func sortCheckFailures(cf []*pulumirpc.CheckFailure) {
+func normCheckConfigResponse(resp *pulumirpc.CheckConfigResponse) {
+	if resp == nil {
+		return
+	}
+	sortCheckFailures(resp.Failures)
+}
+
+func sortCheckFailures[F interface {
+	GetProperty() string
+	GetReason() string
+}](cf []F) {
 	sort.SliceStable(cf, func(i, j int) bool {
 		a, b := cf[i], cf[j]
-		if a.Property < b.Property {
+		if a.GetProperty() < b.GetProperty() {
 			return true
 		}
-		if a.Reason < b.Reason {
+		if a.GetReason() < b.GetReason() {
 			return true
 		}
 		return false

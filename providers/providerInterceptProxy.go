@@ -24,6 +24,7 @@ type ProviderInterceptors struct {
 	Cancel        func(ctx context.Context, in *emptypb.Empty, client rpc.ResourceProviderClient) (*emptypb.Empty, error)
 	Check         func(ctx context.Context, in *rpc.CheckRequest, client rpc.ResourceProviderClient) (*rpc.CheckResponse, error)
 	CheckConfig   func(ctx context.Context, in *rpc.CheckRequest, client rpc.ResourceProviderClient) (*rpc.CheckResponse, error)
+	CheckConfig2  func(ctx context.Context, in *rpc.CheckConfigRequest, client rpc.ResourceProviderClient) (*rpc.CheckConfigResponse, error)
 	Configure     func(ctx context.Context, in *rpc.ConfigureRequest, client rpc.ResourceProviderClient) (*rpc.ConfigureResponse, error)
 	Construct     func(ctx context.Context, in *rpc.ConstructRequest, client rpc.ResourceProviderClient) (*rpc.ConstructResponse, error)
 	Create        func(ctx context.Context, in *rpc.CreateRequest, client rpc.ResourceProviderClient) (*rpc.CreateResponse, error)
@@ -110,6 +111,13 @@ func (i *providerInterceptProxy) CheckConfig(ctx context.Context, in *rpc.CheckR
 		return i.interceptors.CheckConfig(ctx, in, i.client)
 	}
 	return i.client.CheckConfig(ctx, in)
+}
+
+func (i *providerInterceptProxy) CheckConfig2(ctx context.Context, in *rpc.CheckConfigRequest) (*rpc.CheckConfigResponse, error) {
+	if i.interceptors.CheckConfig2 != nil {
+		return i.interceptors.CheckConfig2(ctx, in, i.client)
+	}
+	return i.client.CheckConfig2(ctx, in)
 }
 
 func (i *providerInterceptProxy) Configure(ctx context.Context, in *rpc.ConfigureRequest) (*rpc.ConfigureResponse, error) {

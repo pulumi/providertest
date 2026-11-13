@@ -20,6 +20,7 @@ type ProviderMocks struct {
 	Cancel        func(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error)
 	Check         func(ctx context.Context, in *rpc.CheckRequest) (*rpc.CheckResponse, error)
 	CheckConfig   func(ctx context.Context, in *rpc.CheckRequest) (*rpc.CheckResponse, error)
+	CheckConfig2  func(ctx context.Context, in *rpc.CheckConfigRequest) (*rpc.CheckConfigResponse, error)
 	Configure     func(ctx context.Context, in *rpc.ConfigureRequest) (*rpc.ConfigureResponse, error)
 	Handshake     func(ctx context.Context, in *rpc.ProviderHandshakeRequest) (*rpc.ProviderHandshakeResponse, error)
 	Construct     func(ctx context.Context, in *rpc.ConstructRequest) (*rpc.ConstructResponse, error)
@@ -87,6 +88,26 @@ func (i *providerMock) CheckConfig(ctx context.Context, in *rpc.CheckRequest) (*
 	return &rpc.CheckResponse{
 		Inputs: in.News,
 	}, nil
+}
+
+// CheckConfig2 answers with the CheckConfig mock unless a CheckConfig2 mock is set.
+func (i *providerMock) CheckConfig2(
+	ctx context.Context, in *rpc.CheckConfigRequest,
+) (*rpc.CheckConfigResponse, error) {
+	if i.mocks.CheckConfig2 != nil {
+		return i.mocks.CheckConfig2(ctx, in)
+	}
+	resp, err := i.CheckConfig(ctx, &rpc.CheckRequest{
+		Urn: in.GetUrn(), Olds: in.GetOlds(), News: in.GetNews(), Name: in.GetName(), Type: in.GetType(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	failures := make([]*rpc.CheckConfigFailure, len(resp.GetFailures()))
+	for j, f := range resp.GetFailures() {
+		failures[j] = &rpc.CheckConfigFailure{Property: f.GetProperty(), Reason: f.GetReason()}
+	}
+	return &rpc.CheckConfigResponse{Inputs: resp.GetInputs(), Failures: failures}, nil
 }
 
 func (i *providerMock) Configure(ctx context.Context, in *rpc.ConfigureRequest) (*rpc.ConfigureResponse, error) {
