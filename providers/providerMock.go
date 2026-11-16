@@ -98,7 +98,7 @@ func (i *providerMock) CheckConfig2(
 		return i.mocks.CheckConfig2(ctx, in)
 	}
 	resp, err := i.CheckConfig(ctx, &rpc.CheckRequest{
-		Urn: in.GetUrn(), Olds: in.GetOlds(), News: in.GetNews(), Name: in.GetName(), Type: in.GetType(),
+		Urn: in.GetUrn(), Olds: in.GetOldInputs(), News: in.GetNewInputs(), Name: in.GetName(), Type: in.GetType(),
 	})
 	if err != nil {
 		return nil, err

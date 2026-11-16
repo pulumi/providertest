@@ -85,7 +85,7 @@ func TestReplayNormalizesCheckFailureOrder(t *testing.T) {
 	  "method": "/pulumirpc.ResourceProvider/CheckConfig2",
 	  "request": {
 	    "urn": "u",
-	    "news": {}
+	    "newInputs": {}
 	  },
 	  "response": {
 	    "failures": [
