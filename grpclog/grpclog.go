@@ -34,6 +34,7 @@ const (
 	Cancel        Method = "/pulumirpc.ResourceProvider/Cancel"
 	Check         Method = "/pulumirpc.ResourceProvider/Check"
 	CheckConfig   Method = "/pulumirpc.ResourceProvider/CheckConfig"
+	CheckConfig2  Method = "/pulumirpc.ResourceProvider/CheckConfig2"
 	Configure     Method = "/pulumirpc.ResourceProvider/Configure"
 	Construct     Method = "/pulumirpc.ResourceProvider/Construct"
 	Create        Method = "/pulumirpc.ResourceProvider/Create"
@@ -75,6 +76,10 @@ func (l *GrpcLog) Checks() ([]TypedEntry[rpc.CheckRequest, rpc.CheckResponse], e
 
 func (l *GrpcLog) CheckConfigs() ([]TypedEntry[rpc.CheckRequest, rpc.CheckResponse], error) {
 	return unmarshalTypedEntries[rpc.CheckRequest, rpc.CheckResponse](l.WhereMethod(CheckConfig))
+}
+
+func (l *GrpcLog) CheckConfig2s() ([]TypedEntry[rpc.CheckConfigRequest, rpc.CheckConfigResponse], error) {
+	return unmarshalTypedEntries[rpc.CheckConfigRequest, rpc.CheckConfigResponse](l.WhereMethod(CheckConfig2))
 }
 
 func (l *GrpcLog) Configures() ([]TypedEntry[rpc.ConfigureRequest, rpc.ConfigureResponse], error) {

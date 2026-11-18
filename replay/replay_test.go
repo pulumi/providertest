@@ -82,6 +82,27 @@ func TestReplayNormalizesCheckFailureOrder(t *testing.T) {
 
 	Replay(t, p, `
 	{
+	  "method": "/pulumirpc.ResourceProvider/CheckConfig2",
+	  "request": {
+	    "urn": "u",
+	    "newInputs": {}
+	  },
+	  "response": {
+	    "failures": [
+	      {
+		"property": "A",
+		"reason": "A-failed"
+	      },
+	      {
+		"property": "B",
+		"reason": "B-failed"
+	      }
+	    ]
+	  }
+	}`)
+
+	Replay(t, p, `
+	{
 	  "method": "/pulumirpc.ResourceProvider/Invoke",
 	  "request": {
 	    "tok": "t",
