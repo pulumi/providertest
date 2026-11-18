@@ -46,7 +46,7 @@ func (pulumiTest *PulumiTest) Run(t PT, execute func(test *PulumiTest), opts ...
 			ptLogF(t, "sanitizing secrets from stack state")
 			sanitizedStack, err := sanitize.SanitizeSecretsInStackState(&exportedStack)
 			if err != nil {
-				ptError(t, "failed to sanitize secrets from stack state: %v", err)
+				ptErrorF(t, "failed to sanitize secrets from stack state: %v", err)
 			}
 
 			ptLogF(t, "writing stack state to %s", options.CachePath)
